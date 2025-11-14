@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,8 +13,9 @@ export class AdminService {
     private readonly adminRepository: Repository<Admin>
   ){}
 
-  create(createAdminDto: CreateAdminDto) {
-    return 'This action adds a new admin';
+  async create(createAdminDto: CreateAdminDto) {
+    const admin = this.adminRepository.create(createAdminDto);
+    return await this.adminRepository.save(admin);
   }
 
   async findAll() {
@@ -40,4 +41,24 @@ export class AdminService {
   remove(id: number) {
     return `This action removes a #${id} admin`;
   }
+
+
+  buscarPorEmail(email: string) {
+    return this.adminRepository.findOne({
+      where: { email },
+      select: [ 'admin_id', 'email', 'rol', 'name', 'password' ]
+    })
+  }
+
+  async buscarAdminPorEmail(email: string){
+
+    const adminEmail = await this.adminRepository.findOneBy({ email })
+
+    if (adminEmail) {
+      throw new UnauthorizedException('El Email ya se encuentra registrado')
+    }
+
+    return adminEmail;
+  }
+
 }
