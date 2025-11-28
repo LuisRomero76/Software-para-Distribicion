@@ -4,10 +4,19 @@ import { IsEmail, IsNotEmpty, IsString, MinLength } from "class-validator";
 export class RegisterDto {
 
     @IsString()
-    @MinLength(1)
     @IsNotEmpty()
     @Transform(({ value }) => value.trim())
-    name: string;
+    nombre: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @Transform(({ value }) => value.trim())
+    apellido: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @Transform(({ value }) => value.trim())
+    telefono: string;
 
     @IsEmail()
     @IsNotEmpty()

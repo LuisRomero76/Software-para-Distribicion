@@ -46,7 +46,7 @@ export class AdminService {
   buscarPorEmail(email: string) {
     return this.adminRepository.findOne({
       where: { email },
-      select: [ 'admin_id', 'email', 'rol', 'name', 'password' ]
+      select: [ 'admin_id', 'email', 'nombre', 'apellido', 'telefono', 'password' ]
     })
   }
 

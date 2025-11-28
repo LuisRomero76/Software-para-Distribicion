@@ -13,11 +13,13 @@ export class AuthService {
         private readonly jwtService: JwtService
     ) {}
 
-    async register({ name, email, password }: RegisterDto) {
+    async register({ nombre, apellido, telefono, email, password }: RegisterDto) {
         await this.adminsService.buscarAdminPorEmail(email);
         
         return await this.adminsService.create({
-            name,
+            nombre,
+            apellido,
+            telefono,
             email,
             password: await bcrypt.hash(password, 10)
         });
@@ -38,8 +40,8 @@ export class AuthService {
 
         const payload = {
             email: admin.email,
-            name: admin.name,
-            rol: admin.rol
+            nombre: admin.nombre,
+            apellido: admin.apellido
         }
 
         const token = await this.jwtService.signAsync(payload)
@@ -47,7 +49,8 @@ export class AuthService {
         return {
             token,
             email,
-            rol: admin.rol
+            nombre: admin.nombre,
+            apellido: admin.apellido
         }
 
     }

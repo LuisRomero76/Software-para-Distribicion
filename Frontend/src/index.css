@@ -1,0 +1,38 @@
+/* Dark theme (default) */
+:root, [data-theme='dark'] {
+	--bg: #0b1220;
+	--bg-2: #0f172a;
+	--card: #121a2e;
+	--primary: #0ea5e9;
+	--primary-700: #0369a1;
+	--text: #e5e7eb;
+	--muted: #94a3b8;
+	--danger: #ef4444;
+	--success: #22c55e;
+	--border: #1f2a44;
+}
+
+/* Light theme */
+[data-theme='light'] {
+	--bg: #f1f5f9;
+	--bg-2: #e2e8f0;
+	--card: #ffffff;
+	--primary: #0ea5e9;
+	--primary-700: #0369a1;
+	--text: #0f172a;
+	--muted: #64748b;
+	--danger: #dc2626;
+	--success: #16a34a;
+	--border: #cbd5e1;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+	margin: 0;
+	color: var(--text);
+	background: linear-gradient(120deg, var(--bg), var(--bg-2));
+	transition: background 0.4s ease, color 0.3s ease;
+	font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+input, button { font: inherit; }
