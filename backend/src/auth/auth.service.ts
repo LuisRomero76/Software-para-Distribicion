@@ -4,6 +4,7 @@ import { AdminService } from 'src/admin/admin.service';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,8 @@ export class AuthService {
         const payload = {
             email: admin.email,
             nombre: admin.nombre,
-            apellido: admin.apellido
+            apellido: admin.apellido,
+            admin_id: admin.admin_id
         }
 
         const token = await this.jwtService.signAsync(payload)
@@ -50,8 +52,32 @@ export class AuthService {
             token,
             email,
             nombre: admin.nombre,
-            apellido: admin.apellido
+            apellido: admin.apellido,
+            admin_id: admin.admin_id,
+            telefono: admin.telefono
         }
 
+    }
+
+    async changePassword({ email, currentPassword, newPassword }: ChangePasswordDto) {
+        const admin = await this.adminsService.buscarPorEmail(email);
+
+        if (!admin) {
+            throw new UnauthorizedException('El Email no es válido');
+        }
+
+        const passwordEsValido = await bcrypt.compare(currentPassword, admin.password);
+
+        if (!passwordEsValido) {
+            throw new UnauthorizedException('La contraseña actual no es válida');
+        }
+
+        // Actualizar la contraseña
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.adminsService.update(admin.admin_id, { password: hashedPassword });
+
+        return {
+            message: 'Contraseña actualizada exitosamente'
+        };
     }
 }

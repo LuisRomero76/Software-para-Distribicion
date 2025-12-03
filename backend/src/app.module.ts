@@ -3,6 +3,10 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
+import { DistributionModule } from './distribution/distribution.module';
+import { CollaboratorModule } from './collaborator/collaborator.module';
+import { CategoryModule } from './category/category.module';
+import { SubCategoryModule } from './sub-category/sub-category.module';
 
 @Module({
   imports: [
@@ -20,7 +24,11 @@ import { AdminModule } from './admin/admin.module';
       synchronize: true,
     }),
     AuthModule,
-    AdminModule
+    AdminModule,
+    DistributionModule,
+    CollaboratorModule,
+    CategoryModule,
+    SubCategoryModule
   ],
   controllers: [],
   providers: [],

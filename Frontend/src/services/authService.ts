@@ -5,6 +5,8 @@ export interface AuthResponse {
   email: string;
   nombre: string;
   apellido: string;
+  admin_id: number;
+  telefono: string;
 }
 
 export interface LoginInput {

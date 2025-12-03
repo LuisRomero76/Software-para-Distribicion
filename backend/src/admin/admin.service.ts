@@ -34,12 +34,27 @@ export class AdminService {
     return admin;
   }
 
-  update(id: number, updateAdminDto: UpdateAdminDto) {
-    return `This action updates a #${id} admin`;
+  async update(id: number, updateAdminDto: UpdateAdminDto) {
+    const admin = await this.findOne(id);
+    
+    // Si se está actualizando el email, verificar que no exista en otro admin
+    if (updateAdminDto.email && updateAdminDto.email !== admin.email) {
+      const existingAdmin = await this.adminRepository.findOneBy({ email: updateAdminDto.email });
+      if (existingAdmin) {
+        throw new BadRequestException('El email ya está registrado por otro administrador');
+      }
+    }
+
+    // Actualizar campos
+    Object.assign(admin, updateAdminDto);
+    
+    return await this.adminRepository.save(admin);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} admin`;
+  async remove(id: number) {
+    const admin = await this.findOne(id);
+    await this.adminRepository.remove(admin);
+    return { message: `Administrador #${id} eliminado exitosamente` };
   }
 
 
