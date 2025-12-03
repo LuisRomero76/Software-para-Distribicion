@@ -35,6 +35,10 @@ export function useCategoriesManagement() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    document.title = 'Grupo Vicorsa | Gestión de Categorías';
+  }, []);
+
+  useEffect(() => {
     loadCategories();
     loadSubCategories();
   }, []);
