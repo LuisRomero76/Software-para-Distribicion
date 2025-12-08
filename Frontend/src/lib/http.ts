@@ -1,4 +1,4 @@
-export const API_BASE: string = (import.meta as any)?.env?.VITE_API_URL ?? 'http://localhost:3000';
+export const API_BASE: string = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
@@ -19,5 +19,11 @@ export async function request<T>(path: string, options: RequestInit = {}, token?
   }
 
   if (res.status === 204) return undefined as unknown as T;
+  
+  const contentType = res.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    return undefined as unknown as T;
+  }
+  
   return (await res.json()) as T;
 }

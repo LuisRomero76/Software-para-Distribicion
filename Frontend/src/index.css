@@ -10,6 +10,12 @@
 	--danger: #ef4444;
 	--success: #22c55e;
 	--border: #1f2a44;
+	--success-bg-dark: #1e5631;
+	--success-text-dark: #90ee90;
+	--warning-bg-dark: #664d03;
+	--warning-text-dark: #ffc107;
+	--secondary-bg-dark: #495057;
+	--secondary-text-dark: #dee2e6;
 }
 
 /* Light theme */
@@ -24,6 +30,12 @@
 	--danger: #dc2626;
 	--success: #16a34a;
 	--border: #cbd5e1;
+	--success-bg: #d4edda;
+	--success-text: #155724;
+	--warning-bg: #fff3cd;
+	--warning-text: #856404;
+	--secondary-bg: #e2e3e5;
+	--secondary-text: #383d41;
 }
 
 * { box-sizing: border-box; }

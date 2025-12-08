@@ -7,6 +7,8 @@ import { DistributionModule } from './distribution/distribution.module';
 import { CollaboratorModule } from './collaborator/collaborator.module';
 import { CategoryModule } from './category/category.module';
 import { SubCategoryModule } from './sub-category/sub-category.module';
+import { VehicleModule } from './vehicle/vehicle.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -28,7 +30,9 @@ import { SubCategoryModule } from './sub-category/sub-category.module';
     DistributionModule,
     CollaboratorModule,
     CategoryModule,
-    SubCategoryModule
+    SubCategoryModule,
+    VehicleModule,
+    ProductModule,
   ],
   controllers: [],
   providers: [],

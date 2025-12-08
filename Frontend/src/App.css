@@ -1233,6 +1233,47 @@
   }
 }
 
+/* Badge styles */
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background-color: var(--success-bg, #d4edda);
+  color: var(--success-text, #155724);
+}
+
+.badge-warning {
+  background-color: var(--warning-bg, #fff3cd);
+  color: var(--warning-text, #856404);
+}
+
+.badge-secondary {
+  background-color: var(--secondary-bg, #e2e3e5);
+  color: var(--secondary-text, #383d41);
+}
+
+/* Dark mode badges */
+:root[data-theme="dark"] .badge-success {
+  background-color: var(--success-bg-dark, #1e5631);
+  color: var(--success-text-dark, #90ee90);
+}
+
+:root[data-theme="dark"] .badge-warning {
+  background-color: var(--warning-bg-dark, #664d03);
+  color: var(--warning-text-dark, #ffc107);
+}
+
+:root[data-theme="dark"] .badge-secondary {
+  background-color: var(--secondary-bg-dark, #495057);
+  color: var(--secondary-text-dark, #dee2e6);
+}
+
 @media (max-width: 640px) {
   .page-title {
     font-size: 1.35rem;

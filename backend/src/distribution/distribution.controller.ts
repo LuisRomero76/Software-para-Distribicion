@@ -1,34 +1,52 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { DistributionService } from './distribution.service';
-import { CreateDistributionDto } from './dto/create-distribution.dto';
-import { UpdateDistributionDto } from './dto/update-distribution.dto';
+import { CreateVehicleAssignmentDto } from './dto/vehicle-assignment.dto';
+import { UpdateVehicleAssignmentDto } from './dto/update-distribution.dto';
 
 @Controller('distribution')
 export class DistributionController {
   constructor(private readonly distributionService: DistributionService) {}
 
-  @Post()
-  create(@Body() createDistributionDto: CreateDistributionDto) {
-    return this.distributionService.create(createDistributionDto);
+  @Post('assignment')
+  createAssignment(@Body() createAssignmentDto: CreateVehicleAssignmentDto) {
+    return this.distributionService.createAssignment(createAssignmentDto);
   }
 
-  @Get()
-  findAll() {
-    return this.distributionService.findAll();
+  @Get('assignments')
+  findAllAssignments() {
+    return this.distributionService.findAllAssignments();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.distributionService.findOne(+id);
+  @Get('assignments/active')
+  getActiveAssignments() {
+    return this.distributionService.getActiveAssignments();
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDistributionDto: UpdateDistributionDto) {
-    return this.distributionService.update(+id, updateDistributionDto);
+  @Get('assignment/:id')
+  findAssignmentById(@Param('id') id: string) {
+    return this.distributionService.findAssignmentById(+id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.distributionService.remove(+id);
+  @Get('assignments/collaborator/:id')
+  findAssignmentsByCollaborator(@Param('id') id: string) {
+    return this.distributionService.findAssignmentsByCollaborator(+id);
+  }
+
+  @Get('assignments/vehicle/:id')
+  findAssignmentsByVehicle(@Param('id') id: string) {
+    return this.distributionService.findAssignmentsByVehicle(+id);
+  }
+
+  @Patch('assignment/:id')
+  updateAssignment(
+    @Param('id') id: string,
+    @Body() updateAssignmentDto: UpdateVehicleAssignmentDto,
+  ) {
+    return this.distributionService.updateAssignment(+id, updateAssignmentDto);
+  }
+
+  @Delete('assignment/:id')
+  removeAssignment(@Param('id') id: string) {
+    return this.distributionService.removeAssignment(+id);
   }
 }

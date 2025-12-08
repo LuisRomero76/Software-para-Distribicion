@@ -1,20 +1,31 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
     const { theme, toggleTheme } = useTheme();
     const { auth, logout } = useAuth();
+    const location = useLocation();
     const [showLogout, setShowLogout] = useState(false);
-    const [adminMenuOpen, setAdminMenuOpen] = useState(true);
-    const [productMenuOpen, setProductMenuOpen] = useState(true);
+    
+    // Determinar cuál menú debe estar abierto basado en la ruta actual
+    const isAdminRoute = location.pathname.startsWith('/admins');
+    const isCollaboratorRoute = location.pathname.startsWith('/colaboradores');
+    const isCategoryRoute = location.pathname.startsWith('/categories');
+    const isProductRoute = location.pathname.startsWith('/products');
+    const isDistributionRoute = location.pathname.startsWith('/distribution');
+    
+    const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
+    const [collaboratorMenuOpen, setCollaboratorMenuOpen] = useState(isCollaboratorRoute);
+    const [categoryMenuOpen, setCategoryMenuOpen] = useState(isCategoryRoute);
+    const [productMenuOpen, setProductMenuOpen] = useState(isProductRoute);
+    const [distributionMenuOpen, setDistributionMenuOpen] = useState(isDistributionRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const location = useLocation();
 
     return (
         <div className={`dashboard-layout ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
@@ -44,6 +55,41 @@ export default function DashboardLayout() {
                                 </Link>
                             </div>
                         )}
+                        <button className="sidebar-group" onClick={() => setCollaboratorMenuOpen(v => !v)} title="Colaboradores">
+                            <Users size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Colaboradores</span>
+                                    {collaboratorMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {collaboratorMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/colaboradores" className={location.pathname === '/colaboradores' ? 'active' : ''}>
+                                    <Users size={16} /> Ver colaboradores
+                                </Link>
+                                <Link to="/colaboradores/agregar" className={location.pathname === '/colaboradores/agregar' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Agregar colaborador
+                                </Link>
+                            </div>
+                        )}
+                        <button className="sidebar-group" onClick={() => setCategoryMenuOpen(v => !v)} title="Categorías">
+                            <List size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Categorías</span>
+                                    {categoryMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {categoryMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/categories" className={location.pathname === '/categories' ? 'active' : ''}>
+                                    <List size={16} /> Gestionar categorías
+                                </Link>
+                            </div>
+                        )}
                         <button className="sidebar-group" onClick={() => setProductMenuOpen(v => !v)} title="Productos">
                             <Package size={20} />
                             {!sidebarCollapsed && (
@@ -55,8 +101,33 @@ export default function DashboardLayout() {
                         </button>
                         {productMenuOpen && !sidebarCollapsed && (
                             <div className="sidebar-submenu">
-                                <Link to="/categories" className={location.pathname === '/categories' ? 'active' : ''}>
-                                    <List size={16} /> Registrar categoría
+                                <Link to="/products" className={location.pathname === '/products' ? 'active' : ''}>
+                                    <Package size={16} /> Ver productos
+                                </Link>
+                                <Link to="/products/add" className={location.pathname === '/products/add' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Registrar producto
+                                </Link>
+                                <Link to="/products/import" className={location.pathname === '/products/import' ? 'active' : ''}>
+                                    <Upload size={16} /> Importar productos
+                                </Link>
+                            </div>
+                        )}
+                        <button className="sidebar-group" onClick={() => setDistributionMenuOpen(v => !v)} title="Distribución">
+                            <Truck size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Distribución</span>
+                                    {distributionMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {distributionMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/distribution/vehicles" className={location.pathname === '/distribution/vehicles' ? 'active' : ''}>
+                                    <Truck size={16} /> Ver vehículos
+                                </Link>
+                                <Link to="/distribution/assignments" className={location.pathname === '/distribution/assignments' ? 'active' : ''}>
+                                    <Users size={16} /> Vincular vehículo
                                 </Link>
                             </div>
                         )}
