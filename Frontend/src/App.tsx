@@ -12,10 +12,15 @@ import DashboardAddAdmin from './pages/AddAdmin'
 import { CollaboratorsManagement, AddCollaboratorPage } from './pages/collaborator'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
-import CategoriesManagement from './pages/categories/CategoriesManagement'
+import CategoriesManagement from './pages/products/caregories/CategoriesManagement'
 import Vehicles from './pages/distribution/Vehicles'
 import VehicleAssignment from './pages/distribution/VehicleAssignment'
 import { ViewProducts, AddProduct, ImportProducts } from './pages/products'
+import CategoriasClientes from './pages/clientes/CategoriasClientes'
+import VerClientes from './pages/clientes/VerClientes'
+import NuevoCliente from './pages/clientes/NuevoCliente'
+import ClientDetails from './pages/clientes/ClientDetails'
+import ImportarClientes from './pages/clientes/ImportarClientes'
 
 function App() {
   return (
@@ -49,6 +54,11 @@ function App() {
               <Route path="categories" element={<CategoriesManagement />} />
               <Route path="products" element={<ViewProducts />} />
               <Route path="products/add" element={<AddProduct />} />
+              <Route path="clientes" element={<VerClientes />} />
+              <Route path="clientes/nuevo" element={<NuevoCliente />} />
+              <Route path="clientes/importar" element={<ImportarClientes />} />
+              <Route path="clientes/:id" element={<ClientDetails />} />
+              <Route path="clientes/categorias" element={<CategoriasClientes />} />
               <Route path="products/import" element={<ImportProducts />} />
               <Route path="distribution/vehicles" element={<Vehicles />} />
               <Route path="distribution/assignments" element={<VehicleAssignment />} />

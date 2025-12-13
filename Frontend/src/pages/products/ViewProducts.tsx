@@ -246,30 +246,29 @@ export default function ViewProducts() {
         </div>
       </div>
 
-      <div className="table-controls">
-        <div className="search-box">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por código, nombre o descripción..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
+      <div className="table-container">
+        <div className="table-controls">
+          <div className="search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Buscar por código, nombre o descripción..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="table-info">
+            {filteredProducts.length} de {products.length} producto(s)
+          </div>
         </div>
-        <span className="table-info">
-          {filteredProducts.length} de {products.length} productos
-        </span>
-      </div>
 
-      {loading && <div className="loading-state">Cargando productos...</div>}
-      {error && <div className="error-state">{error}</div>}
-
-      {!loading && !error && products.length === 0 && (
-        <div className="empty-state">No hay productos registrados.</div>
-      )}
-
-      {!loading && !error && products.length > 0 && (
-        <div className="table-wrapper">
+        {loading ? (
+          <div className="loading-state">Cargando productos...</div>
+        ) : error ? (
+          <div className="error-state">{error}</div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="empty-state">No hay productos registrados.</div>
+        ) : (
           <table className="data-table">
             <thead>
               <tr>
@@ -279,26 +278,26 @@ export default function ViewProducts() {
                 <th>Tamaño</th>
                 <th>Precio</th>
                 <th>Categoría</th>
-                <th>Acciones</th>
+                <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.map(product => (
                 <tr key={product.product_id}>
-                  <td>{product.product_id}</td>
+                  <td className="id-col">{product.product_id}</td>
                   <td>{product.cod_barra}</td>
-                  <td>{product.nombre}</td>
+                  <td className="name-col">{product.nombre}</td>
                   <td>{product.tamaño}</td>
                   <td>Bs/ {Number(product.precio_unitario).toFixed(2)}</td>
                   <td>{product.category?.nombre || ''}</td>
-                  <td className="actions-cell">
-                    <button className="icon-btn" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
+                  <td className="actions-col">
+                    <button className="action-btn view" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
                       <Eye size={16} />
                     </button>
-                    <button className="icon-btn" onClick={() => handleEdit(product)} title="Editar">
+                    <button className="action-btn edit" onClick={() => handleEdit(product)} title="Editar">
                       <Edit2 size={16} />
                     </button>
-                    <button className="icon-btn danger" onClick={() => setDeleteProduct(product)} title="Eliminar">
+                    <button className="action-btn delete" onClick={() => setDeleteProduct(product)} title="Eliminar">
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -306,17 +305,17 @@ export default function ViewProducts() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {selectedProduct && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal modal-large">
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setSelectedProduct(null); setEditMode(false); }}>
+          <div className="modal-large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{editMode ? 'Editar Producto' : 'Detalles del Producto'}</h3>
-              <button className="close-btn" onClick={() => { setSelectedProduct(null); setEditMode(false); }}>×</button>
+              <button className="modal-close" onClick={() => { setSelectedProduct(null); setEditMode(false); }}>×</button>
             </div>
-            <form onSubmit={handleSave}>
+            <form className="modal-form" onSubmit={handleSave}>
               <div className="modal-body">
                 <div className="form-grid">
                   <label className="form-field">
@@ -467,16 +466,12 @@ export default function ViewProducts() {
                   </>
                 )}
               </div>
-              <div className="modal-actions">
-                {editMode ? (
-                  <>
-                    <button type="button" className="btn outline" onClick={() => setEditMode(false)}>Cancelar</button>
-                    <button type="submit" className="btn" disabled={saving}>
-                      {saving ? 'Guardando...' : 'Guardar cambios'}
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="btn" onClick={() => setSelectedProduct(null)}>Cerrar</button>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => { setSelectedProduct(null); setEditMode(false); }} disabled={saving}>Cerrar</button>
+                {editMode && (
+                  <button type="submit" className="btn-primary" disabled={saving}>
+                    {saving ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
                 )}
               </div>
             </form>

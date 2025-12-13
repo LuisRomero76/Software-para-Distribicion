@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload } from 'lucide-react';
@@ -15,17 +15,28 @@ export default function DashboardLayout() {
     const isAdminRoute = location.pathname.startsWith('/admins');
     const isCollaboratorRoute = location.pathname.startsWith('/colaboradores');
     const isCategoryRoute = location.pathname.startsWith('/categories');
-    const isProductRoute = location.pathname.startsWith('/products');
+    const isProductRoute = location.pathname.startsWith('/products') || location.pathname.startsWith('/categories');
+    const isClientesRoute = location.pathname.startsWith('/clientes');
     const isDistributionRoute = location.pathname.startsWith('/distribution');
     
     const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
     const [collaboratorMenuOpen, setCollaboratorMenuOpen] = useState(isCollaboratorRoute);
-    const [categoryMenuOpen, setCategoryMenuOpen] = useState(isCategoryRoute);
+    const [, setCategoryMenuOpen] = useState(isCategoryRoute);
     const [productMenuOpen, setProductMenuOpen] = useState(isProductRoute);
     const [distributionMenuOpen, setDistributionMenuOpen] = useState(isDistributionRoute);
+    const [clientesMenuOpen, setClientesMenuOpen] = useState(isClientesRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    useEffect(() => {
+        setAdminMenuOpen(isAdminRoute);
+        setCollaboratorMenuOpen(isCollaboratorRoute);
+        setCategoryMenuOpen(isCategoryRoute);
+        setProductMenuOpen(isProductRoute);
+        setDistributionMenuOpen(isDistributionRoute);
+        setClientesMenuOpen(isClientesRoute);
+    }, [location.pathname]);
 
     return (
         <div className={`dashboard-layout ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
@@ -74,22 +85,6 @@ export default function DashboardLayout() {
                                 </Link>
                             </div>
                         )}
-                        <button className="sidebar-group" onClick={() => setCategoryMenuOpen(v => !v)} title="Categorías">
-                            <List size={20} />
-                            {!sidebarCollapsed && (
-                                <>
-                                    <span>Categorías</span>
-                                    {categoryMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </>
-                            )}
-                        </button>
-                        {categoryMenuOpen && !sidebarCollapsed && (
-                            <div className="sidebar-submenu">
-                                <Link to="/categories" className={location.pathname === '/categories' ? 'active' : ''}>
-                                    <List size={16} /> Gestionar categorías
-                                </Link>
-                            </div>
-                        )}
                         <button className="sidebar-group" onClick={() => setProductMenuOpen(v => !v)} title="Productos">
                             <Package size={20} />
                             {!sidebarCollapsed && (
@@ -101,6 +96,9 @@ export default function DashboardLayout() {
                         </button>
                         {productMenuOpen && !sidebarCollapsed && (
                             <div className="sidebar-submenu">
+                                <Link to="/categories" className={location.pathname === '/categories' ? 'active' : ''}>
+                                    <List size={16} /> Gestionar categorías
+                                </Link>
                                 <Link to="/products" className={location.pathname === '/products' ? 'active' : ''}>
                                     <Package size={16} /> Ver productos
                                 </Link>
@@ -128,6 +126,31 @@ export default function DashboardLayout() {
                                 </Link>
                                 <Link to="/distribution/assignments" className={location.pathname === '/distribution/assignments' ? 'active' : ''}>
                                     <Users size={16} /> Vincular vehículo
+                                </Link>
+                            </div>
+                        )}
+                        <button className="sidebar-group" onClick={() => setClientesMenuOpen(v => !v)} title="Mis Clientes">
+                            <User size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Mis Clientes</span>
+                                    {clientesMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {clientesMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/clientes/categorias" className={location.pathname === '/clientes/categorias' ? 'active' : ''}>
+                                    <List size={16} /> Gestionar categorías
+                                </Link>
+                                <Link to="/clientes" className={location.pathname === '/clientes' ? 'active' : ''}>
+                                    <Users size={16} /> Ver clientes
+                                </Link>
+                                <Link to="/clientes/nuevo" className={location.pathname === '/clientes/nuevo' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Agregar cliente
+                                </Link>
+                                <Link to="/clientes/importar" className={location.pathname === '/clientes/importar' ? 'active' : ''}>
+                                    <Upload size={16} /> Importar clientes
                                 </Link>
                             </div>
                         )}

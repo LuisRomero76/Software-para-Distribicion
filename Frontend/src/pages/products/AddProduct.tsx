@@ -189,7 +189,7 @@ export default function AddProduct() {
             </label>
 
             <label className="form-field">
-              <span className="label-text">Precio Unitario (S/) *</span>
+              <span className="label-text">Precio Unitario (Bs/) *</span>
               <input
                 type="number"
                 step="0.01"

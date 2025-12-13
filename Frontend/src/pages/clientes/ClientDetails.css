@@ -1,0 +1,257 @@
+/* Cliente Details - Administrative Layout */
+
+.client-details-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.5rem 2rem;
+}
+
+.client-details-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.client-details-title-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.client-details-title-section h1 {
+    font-size: 2rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.client-badge {
+    background-color: var(--card);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.client-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: var(--bg-2);
+    transform: translateY(-1px);
+}
+
+.btn-edit-client {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid #10b981;
+    background: #10b981;
+    color: #0b1f15;
+    height: fit-content;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-edit-client:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+/* Main Grid Layout */
+.client-details-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .client-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Section Cards */
+.detail-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-section-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.detail-section-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-2);
+    border-radius: 8px;
+    color: #10b981;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+}
+
+.info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.info-field-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-field-value {
+    font-size: 1rem;
+    color: var(--text);
+    font-weight: 400;
+}
+
+.info-field-value.empty {
+    font-style: italic;
+    opacity: 0.5;
+}
+
+/* Categories Tags */
+.categories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+    border: 1px solid #667eea44;
+    color: #667eea;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Phone References Table */
+.phones-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.phones-table thead {
+    background: var(--bg-2);
+}
+
+.phones-table th,
+.phones-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.phones-table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.phones-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text);
+    opacity: 0.5;
+    font-style: italic;
+}
+
+/* ID Badge */
+.client-id-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-indicator.active {
+    background: #10b98122;
+    color: #10b981;
+    border: 1px solid #10b98144;
+}
+
+.status-indicator.inactive {
+    background: #ef444422;
+    color: #ef4444;
+    border: 1px solid #ef444444;
+}
+
+/* Full width sections */
+.full-width-section {
+    grid-column: 1 / -1;
+}

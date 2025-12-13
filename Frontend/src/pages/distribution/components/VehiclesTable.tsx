@@ -52,7 +52,7 @@ export const VehiclesTable: React.FC<VehiclesTableProps> = ({
             <td>{vehicle.marca}</td>
             <td>{vehicle.modelo}</td>
             <td>{vehicle.año}</td>
-            <td>{vehicle.capacidad_carga}</td>
+            <td>{vehicle.capacidad_carga} Kg.</td>
             <td>
               <span className={`badge ${vehicle.disponible ? 'badge-success' : 'badge-secondary'}`}>
                 {vehicle.disponible ? 'Disponible' : 'No disponible'}

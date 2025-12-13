@@ -1,5 +1,5 @@
 import { Pencil, Trash2, Save, X } from 'lucide-react';
-import type { Category, SubCategory } from '../../../services/categoryService';
+import type { Category, SubCategory } from '../../../../services/categoryService';
 
 interface Props {
   categories: Category[];

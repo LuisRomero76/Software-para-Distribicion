@@ -1,0 +1,42 @@
+/* Scoped styles for Client Categories Management page */
+.client-category-page {
+  max-width: 100%;
+}
+
+.client-category-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Solo una columna ya que no hay subcategorías por ahora */
+  gap: 1.5rem;
+  align-items: start;
+  max-width: 800px; /* Limitar ancho para que no se vea tan estirado al ser solo uno */
+  margin: 0 auto;
+}
+
+.client-category-page .card { height: fit-content; width: 100%; }
+.client-category-page .alert { grid-column: 1 / -1; margin-bottom: 1rem; }
+
+/* Tables styling */
+.client-category-page .table-container { overflow: hidden; border-radius: 12px; }
+.client-category-page table.table { width: 100%; border-collapse: collapse; }
+.client-category-page table thead { background: var(--bg-2); }
+.client-category-page table th, .client-category-page table td {
+  padding: 0.75rem 1rem; 
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.client-category-page table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.client-category-page .col-id { width: 84px; text-align: center; opacity: 0.9; }
+.client-category-page .col-actions { width: 160px; }
+
+/* Action buttons */
+.client-category-page .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.client-category-page .btn-icon { border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 0.4rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+.client-category-page .btn-icon:hover { transform: translateY(-1px); }
+.client-category-page .btn-icon-warning { border-color: #f59e0b33; color: #f59e0b; }
+.client-category-page .btn-icon-warning:hover { background: #f59e0b22; }
+.client-category-page .btn-icon-danger { border-color: #ef444433; color: #ef4444; }
+.client-category-page .btn-icon-danger:hover { background: #ef444422; }
+.client-category-page .btn-icon-success { border-color: #10b98133; color: #10b981; }
+.client-category-page .btn-icon-success:hover { background: #10b98122; }
+.client-category-page .btn-icon-secondary { border-color: #6b728033; color: #6b7280; }
+.client-category-page .btn-icon-secondary:hover { background: #6b728022; }

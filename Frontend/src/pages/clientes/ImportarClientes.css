@@ -1,0 +1,405 @@
+/* Import Clientes Page */
+
+.import-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 1.5rem 2rem;
+}
+
+.import-header {
+  margin-bottom: 2rem;
+}
+
+.import-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.import-header p {
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Upload Section */
+.upload-section {
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.upload-zone-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--bg-2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+}
+
+.upload-zone-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.upload-zone-subtitle {
+  opacity: 0.7;
+}
+
+.upload-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  background: #10b981;
+  color: #0b1f15;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-upload:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-template {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  background: transparent;
+  color: #667eea;
+  border: 1px solid #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-template:hover {
+  background: #667eea11;
+}
+
+#excel-file {
+  display: none;
+}
+
+/* Instructions */
+.instructions-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.instructions-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.instructions-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.instruction-item {
+  display: flex;
+  gap: 1rem;
+}
+
+.instruction-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.instruction-text {
+  flex: 1;
+}
+
+.instruction-text p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+
+.instruction-text ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.instruction-text li {
+  margin: 0.25rem 0;
+  opacity: 0.8;
+}
+
+/* Sheets Selector */
+.sheets-selector {
+  margin-bottom: 2rem;
+}
+
+.sheets-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.sheet-tab {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.sheet-tab:hover {
+  opacity: 1;
+}
+
+.sheet-tab.active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+  opacity: 1;
+}
+
+.sheet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--bg-2);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* Preview Table */
+.preview-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.preview-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table thead {
+  background: var(--bg-2);
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.preview-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cell-input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.cell-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.cell-error {
+  border-color: #ef4444;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.row-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.status-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.status-valid {
+  background: #10b98122;
+  color: #10b981;
+}
+
+.status-invalid {
+  background: #ef444422;
+  color: #ef4444;
+}
+
+/* Actions */
+.import-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: #0b1f15;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-2);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  opacity: 0.5;
+}
+
+.success-message {
+  background: #10b98122;
+  border: 1px solid #10b981;
+  color: #10b981;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.error-state {
+  background: #ef444422;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .import-page {
+    padding: 1rem;
+  }
+
+  .upload-section {
+    padding: 1.5rem;
+  }
+
+  .upload-buttons {
+    flex-direction: column;
+  }
+
+  .btn-upload,
+  .btn-template {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sheets-tabs {
+    flex-wrap: wrap;
+  }
+
+  .sheet-tab {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}

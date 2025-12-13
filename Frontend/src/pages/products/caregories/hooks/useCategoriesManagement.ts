@@ -10,7 +10,7 @@ import {
   deleteSubCategory,
   type Category,
   type SubCategory,
-} from '../../../services/categoryService';
+} from '../../../../services/categoryService';
 
 export function useCategoriesManagement() {
   const [categories, setCategories] = useState<Category[]>([]);

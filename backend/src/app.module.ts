@@ -9,6 +9,8 @@ import { CategoryModule } from './category/category.module';
 import { SubCategoryModule } from './sub-category/sub-category.module';
 import { VehicleModule } from './vehicle/vehicle.module';
 import { ProductModule } from './product/product.module';
+import { CategoriaClientesModule } from './categoria_clientes/categoria_clientes.module';
+import { ClientesModule } from './clientes/clientes.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { ProductModule } from './product/product.module';
     SubCategoryModule,
     VehicleModule,
     ProductModule,
+    CategoriaClientesModule,
+    ClientesModule,
   ],
   controllers: [],
   providers: [],
