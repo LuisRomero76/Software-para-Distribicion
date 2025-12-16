@@ -19,7 +19,7 @@ export class CollaboratorService {
 
   async findAll(): Promise<Collaborator[]> {
     return this.collaboratorRepository.find({
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
       relations: ['assignments'],
     });
   }

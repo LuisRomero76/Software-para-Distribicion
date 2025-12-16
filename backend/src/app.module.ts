@@ -11,6 +11,7 @@ import { VehicleModule } from './vehicle/vehicle.module';
 import { ProductModule } from './product/product.module';
 import { CategoriaClientesModule } from './categoria_clientes/categoria_clientes.module';
 import { ClientesModule } from './clientes/clientes.module';
+import { RutaModule } from './ruta/ruta.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ClientesModule } from './clientes/clientes.module';
     ProductModule,
     CategoriaClientesModule,
     ClientesModule,
+    RutaModule,
   ],
   controllers: [],
   providers: [],

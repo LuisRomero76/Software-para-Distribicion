@@ -10,6 +10,7 @@ import {
   AssignmentAddModal,
   AssignmentDeleteModal
 } from './components';
+import Pagination from '../../components/Pagination';
 
 export default function VehicleAssignmentPage() {
   const { auth } = useAuth();
@@ -27,6 +28,8 @@ export default function VehicleAssignmentPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ vehicle_id: 0, collaborator_id: 0, fecha_inicio: '', fecha_fin: '', estado: 'activo' });
   const [addingAssignment, setAddingAssignment] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Initialize
   useEffect(() => {
@@ -44,6 +47,10 @@ export default function VehicleAssignmentPage() {
     return vehicleInfo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       collaboratorInfo.toLowerCase().includes(searchTerm.toLowerCase());
   });
+  const totalPages = Math.max(1, Math.ceil(filteredAssignments.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedAssignments = filteredAssignments.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   // Status Badge Class
   const getStatusBadgeClass = (estado: string) => {
@@ -163,13 +170,19 @@ export default function VehicleAssignmentPage() {
         />
 
         <AssignmentsTable
-          assignments={filteredAssignments}
+          assignments={paginatedAssignments}
           isLoading={loading}
           hasError={!!error}
           onView={assignment => { setSelectedAssignment(assignment); setEditMode(false); }}
           onEdit={handleEdit}
           onDelete={setDeleteTarget}
           getStatusBadgeClass={getStatusBadgeClass}
+        />
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredAssignments.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
         />
       </div>
 

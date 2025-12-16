@@ -2,29 +2,21 @@ import { useEffect, useState } from 'react';
 import { request } from '../../lib/http';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 
 interface Product {
   product_id: number;
-  cod_barra: string;
+  cod_barra?: string;
   nombre: string;
-  descripcion: string;
-  tamaño: string;
-  precio_unitario: number;
-  fecha_vencimiento: string;
+  descripcion?: string;
+  tamaño?: string;
   category_id: number;
   sub_category_id: number;
   fecha_creacion: string;
   createdAt: string;
   category?: { category_id: number; nombre: string };
   subCategory?: { sub_category_id: number; nombre: string };
-  shippingInfo?: Array<{
-    shipping_id: number;
-    unidades_caja: number;
-    precio_unidad_envio: number;
-    precio_caja_envio: number;
-    flete: number;
-  }>;
 }
 
 export default function ViewProducts() {
@@ -35,6 +27,8 @@ export default function ViewProducts() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -44,14 +38,8 @@ export default function ViewProducts() {
     nombre: '',
     descripcion: '',
     tamaño: '',
-    precio_unitario: '',
-    fecha_vencimiento: '',
     category_id: '',
-    sub_category_id: '',
-    unidades_caja: '',
-    precio_unidad_envio: '',
-    precio_caja_envio: '',
-    flete: ''
+    sub_category_id: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -97,10 +85,13 @@ export default function ViewProducts() {
   }, [auth?.token]);
 
   const filteredProducts = products.filter(product => 
-    product.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.cod_barra.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+    product.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Paginación
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
     if (!deleteProduct) return;
@@ -119,20 +110,13 @@ export default function ViewProducts() {
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
     setEditMode(true);
-    const shipping = product.shippingInfo?.[0];
     setEditForm({
-      cod_barra: product.cod_barra,
+      cod_barra: product.cod_barra || '',
       nombre: product.nombre,
-      descripcion: product.descripcion,
-      tamaño: product.tamaño,
-      precio_unitario: product.precio_unitario.toString(),
-      fecha_vencimiento: product.fecha_vencimiento.split('T')[0],
+      descripcion: product.descripcion || '',
+      tamaño: product.tamaño || '',
       category_id: product.category_id.toString(),
-      sub_category_id: product.sub_category_id.toString(),
-      unidades_caja: shipping?.unidades_caja?.toString() || '',
-      precio_unidad_envio: shipping?.precio_unidad_envio?.toString() || '',
-      precio_caja_envio: shipping?.precio_caja_envio?.toString() || '',
-      flete: shipping?.flete?.toString() || ''
+      sub_category_id: product.sub_category_id.toString()
     });
   };
 
@@ -143,24 +127,14 @@ export default function ViewProducts() {
     setSaving(true);
     try {
       const payload: any = {
-        cod_barra: editForm.cod_barra,
         nombre: editForm.nombre,
-        descripcion: editForm.descripcion,
-        tamaño: editForm.tamaño,
-        precio_unitario: parseFloat(editForm.precio_unitario),
-        fecha_vencimiento: editForm.fecha_vencimiento,
         category_id: parseInt(editForm.category_id),
         sub_category_id: parseInt(editForm.sub_category_id)
       };
 
-      if (editForm.unidades_caja) {
-        payload.shipping = {
-          unidades_caja: parseInt(editForm.unidades_caja),
-          precio_unidad_envio: parseFloat(editForm.precio_unidad_envio),
-          precio_caja_envio: parseFloat(editForm.precio_caja_envio),
-          flete: parseFloat(editForm.flete)
-        };
-      }
+      if (editForm.cod_barra?.trim()) payload.cod_barra = editForm.cod_barra.trim();
+      if (editForm.descripcion?.trim()) payload.descripcion = editForm.descripcion.trim();
+      if (editForm.tamaño?.trim()) payload.tamaño = editForm.tamaño.trim();
 
       const updated = await request<Product>(
         `/product/${selectedProduct.product_id}`,
@@ -184,21 +158,14 @@ export default function ViewProducts() {
 
   const exportToExcel = () => {
     const dataToExport = products.map(product => {
-      const shipping = product.shippingInfo?.[0];
       return {
         'ID': product.product_id,
-        'Código de Barras': product.cod_barra,
+        'Código de Barras': product.cod_barra || '',
         'Nombre': product.nombre,
-        'Descripción': product.descripcion,
-        'Tamaño': product.tamaño,
-        'Precio Unitario': product.precio_unitario,
-        'Fecha Vencimiento': new Date(product.fecha_vencimiento).toLocaleDateString('es-ES'),
+        'Descripción': product.descripcion || '',
+        'Tamaño': product.tamaño || '',
         'Categoría': product.category?.nombre || '',
         'Subcategoría': product.subCategory?.nombre || '',
-        'Unidades por Caja': shipping?.unidades_caja || '',
-        'Precio Unidad Envío': shipping?.precio_unidad_envio || '',
-        'Precio Caja Envío': shipping?.precio_caja_envio || '',
-        'Flete': shipping?.flete || '',
         'Fecha de Creación': new Date(product.createdAt).toLocaleString('es-ES', {
           day: '2-digit',
           month: '2-digit',
@@ -214,10 +181,14 @@ export default function ViewProducts() {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
 
     const columnWidths = [
-      { wch: 8 }, { wch: 18 }, { wch: 25 }, { wch: 30 }, 
-      { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 20 },
-      { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 18 },
-      { wch: 10 }, { wch: 20 }
+      { wch: 8 }, // ID
+      { wch: 20 }, // Código de Barras
+      { wch: 30 }, // Nombre
+      { wch: 40 }, // Descripción
+      { wch: 15 }, // Tamaño
+      { wch: 20 }, // Categoría
+      { wch: 20 }, // Subcategoría
+      { wch: 20 }  // Fecha de Creación
     ];
     worksheet['!cols'] = columnWidths;
 
@@ -275,20 +246,20 @@ export default function ViewProducts() {
                 <th>ID</th>
                 <th>Código</th>
                 <th>Nombre</th>
+                <th>Descripción</th>
                 <th>Tamaño</th>
-                <th>Precio</th>
                 <th>Categoría</th>
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map(product => (
+              {paginatedProducts.map(product => (
                 <tr key={product.product_id}>
                   <td className="id-col">{product.product_id}</td>
-                  <td>{product.cod_barra}</td>
+                  <td>{product.cod_barra || '-'}</td>
                   <td className="name-col">{product.nombre}</td>
-                  <td>{product.tamaño}</td>
-                  <td>Bs/ {Number(product.precio_unitario).toFixed(2)}</td>
+                  <td>{product.descripcion || '-'}</td>
+                  <td>{product.tamaño || '-'}</td>
                   <td>{product.category?.nombre || ''}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
@@ -306,6 +277,12 @@ export default function ViewProducts() {
             </tbody>
           </table>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredProducts.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {selectedProduct && (
@@ -353,29 +330,8 @@ export default function ViewProducts() {
                     <input
                       type="text"
                       className="form-input"
-                      value={editMode ? editForm.tamaño : selectedProduct.tamaño}
+                      value={editMode ? editForm.tamaño : (selectedProduct.tamaño || '')}
                       onChange={e => setEditForm({ ...editForm, tamaño: e.target.value })}
-                      disabled={!editMode}
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span className="label-text">Precio Unitario</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      value={editMode ? editForm.precio_unitario : selectedProduct.precio_unitario}
-                      onChange={e => setEditForm({ ...editForm, precio_unitario: e.target.value })}
-                      disabled={!editMode}
-                    />
-                  </label>
-                  <label className="form-field">
-                    <span className="label-text">Fecha de Vencimiento</span>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={editMode ? editForm.fecha_vencimiento : selectedProduct.fecha_vencimiento.split('T')[0]}
-                      onChange={e => setEditForm({ ...editForm, fecha_vencimiento: e.target.value })}
                       disabled={!editMode}
                     />
                   </label>
@@ -414,57 +370,6 @@ export default function ViewProducts() {
                     )}
                   </label>
                 </div>
-
-                {(selectedProduct.shippingInfo?.[0] || editMode) && (
-                  <>
-                    <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>Información de Envío</h4>
-                    <div className="form-grid">
-                      <label className="form-field">
-                        <span className="label-text">Unidades por Caja</span>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editMode ? editForm.unidades_caja : selectedProduct.shippingInfo?.[0]?.unidades_caja || ''}
-                          onChange={e => setEditForm({ ...editForm, unidades_caja: e.target.value })}
-                          disabled={!editMode}
-                        />
-                      </label>
-                      <label className="form-field">
-                        <span className="label-text">Precio Unidad Envío</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          value={editMode ? editForm.precio_unidad_envio : selectedProduct.shippingInfo?.[0]?.precio_unidad_envio || ''}
-                          onChange={e => setEditForm({ ...editForm, precio_unidad_envio: e.target.value })}
-                          disabled={!editMode}
-                        />
-                      </label>
-                      <label className="form-field">
-                        <span className="label-text">Precio Caja Envío</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          value={editMode ? editForm.precio_caja_envio : selectedProduct.shippingInfo?.[0]?.precio_caja_envio || ''}
-                          onChange={e => setEditForm({ ...editForm, precio_caja_envio: e.target.value })}
-                          disabled={!editMode}
-                        />
-                      </label>
-                      <label className="form-field">
-                        <span className="label-text">Flete</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="form-input"
-                          value={editMode ? editForm.flete : selectedProduct.shippingInfo?.[0]?.flete || ''}
-                          onChange={e => setEditForm({ ...editForm, flete: e.target.value })}
-                          disabled={!editMode}
-                        />
-                      </label>
-                    </div>
-                  </>
-                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn-secondary" onClick={() => { setSelectedProduct(null); setEditMode(false); }} disabled={saving}>Cerrar</button>

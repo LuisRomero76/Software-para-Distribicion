@@ -10,6 +10,7 @@ import {
   VehicleAddModal,
   VehicleDeleteModal
 } from './components';
+import Pagination from '../../components/Pagination';
 
 export default function Vehicles() {
   const { auth } = useAuth();
@@ -27,6 +28,8 @@ export default function Vehicles() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newVehicle, setNewVehicle] = useState({ placa: '', marca: '', modelo: '', año: new Date().getFullYear(), capacidad_carga: 0, disponible: true });
   const [addingVehicle, setAddingVehicle] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Initialize
   useEffect(() => {
@@ -44,6 +47,10 @@ export default function Vehicles() {
     vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const totalPages = Math.max(1, Math.ceil(filteredVehicles.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedVehicles = filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   // Handlers
   const handleEdit = (vehicle: any) => {
@@ -128,12 +135,18 @@ export default function Vehicles() {
         />
 
         <VehiclesTable
-          vehicles={filteredVehicles}
+          vehicles={paginatedVehicles}
           isLoading={loading}
           hasError={!!error}
           onView={vehicle => { setSelectedVehicle(vehicle); setEditMode(false); }}
           onEdit={handleEdit}
           onDelete={setDeleteTarget}
+        />
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredVehicles.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
         />
       </div>
 

@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductShipping } from './entities/product-shipping.entity';
-import { CreateProductWithShippingDto, CreateProductShippingDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductDto } from './dto/create-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -15,27 +15,20 @@ export class ProductService {
     private shippingRepository: Repository<ProductShipping>,
   ) {}
 
-  async create(createProductDto: CreateProductWithShippingDto): Promise<Product> {
-    // Validar que el código de barras sea único
-    const existingProduct = await this.productRepository.findOne({
-      where: { cod_barra: createProductDto.cod_barra },
-    });
+  async create(createProductDto: CreateProductDto): Promise<Product> {
+    // Validar que el código de barras sea único si se proporciona
+    if (createProductDto.cod_barra) {
+      const existingProduct = await this.productRepository.findOne({
+        where: { cod_barra: createProductDto.cod_barra },
+      });
 
-    if (existingProduct) {
-      throw new ConflictException(`El código de barras ${createProductDto.cod_barra} ya existe`);
+      if (existingProduct) {
+        throw new ConflictException(`El código de barras ${createProductDto.cod_barra} ya existe`);
+      }
     }
 
     const product = this.productRepository.create(createProductDto);
     const savedProduct = await this.productRepository.save(product);
-
-    // Crear información de envío si se proporciona
-    if (createProductDto.shipping) {
-      const shipping = this.shippingRepository.create({
-        ...createProductDto.shipping,
-        product_id: savedProduct.product_id,
-      });
-      await this.shippingRepository.save(shipping);
-    }
 
     return this.findOne(savedProduct.product_id);
   }
@@ -61,6 +54,10 @@ export class ProductService {
   }
 
   async findByBarcode(cod_barra: string): Promise<Product> {
+    if (!cod_barra || cod_barra.trim() === '') {
+      throw new BadRequestException('Código de barras no puede estar vacío');
+    }
+
     const product = await this.productRepository.findOne({
       where: { cod_barra },
       relations: ['category', 'subCategory', 'shippingInfo'],
@@ -96,24 +93,6 @@ export class ProductService {
     Object.assign(product, updateProductDto);
     await this.productRepository.save(product);
 
-    // Actualizar información de envío si se proporciona
-    if (updateProductDto.shipping) {
-      let shipping = await this.shippingRepository.findOne({
-        where: { product_id: id },
-      });
-
-      if (shipping) {
-        Object.assign(shipping, updateProductDto.shipping);
-        await this.shippingRepository.save(shipping);
-      } else {
-        shipping = this.shippingRepository.create({
-          ...updateProductDto.shipping,
-          product_id: id,
-        });
-        await this.shippingRepository.save(shipping);
-      }
-    }
-
     return this.findOne(id);
   }
 
@@ -122,8 +101,8 @@ export class ProductService {
     await this.productRepository.remove(product);
   }
 
-  async importProducts(productsData: CreateProductWithShippingDto[]): Promise<{ success: number; failed: number; errors: any[] }> {
-    const errors: Array<{ row: number; error: string; data: CreateProductWithShippingDto }> = [];
+  async importProducts(productsData: CreateProductDto[]): Promise<{ success: number; failed: number; errors: any[] }> {
+    const errors: Array<{ row: number; error: string; data: CreateProductDto }> = [];
     let successCount = 0;
 
     for (let i = 0; i < productsData.length; i++) {

@@ -30,8 +30,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login({ email, password });
-      const from = location.state?.from?.pathname ?? '/';
-      navigate(from, { replace: true });
+      navigate('/', { replace: true });
     } catch (err: any) {
       setError(err?.message ?? 'Error al iniciar sesión');
     } finally {

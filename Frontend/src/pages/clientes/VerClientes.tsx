@@ -4,12 +4,15 @@ import { useCategoriasClientes } from './hooks/useCategoriasClientes';
 import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import Pagination from '../../components/Pagination';
 import './VerClientes.css';
 
 export default function VerClientes() {
   const { clientes, loading, error, deleteCliente, updateCliente, fetchClientes } = useClientes();
   const { categorias } = useCategoriasClientes();
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
@@ -27,6 +30,14 @@ export default function VerClientes() {
     (c.ciudad && c.ciudad.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (c.telefono && c.telefono.includes(searchTerm))
   );
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedClientes = filteredClientes.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleAskDelete = (id: number) => {
     setDeleteId(id);
@@ -191,7 +202,7 @@ export default function VerClientes() {
               </tr>
             </thead>
             <tbody>
-              {filteredClientes.map(c => (
+              {paginatedClientes.map(c => (
                 <tr key={c.cliente_id}>
                   <td>{c.cliente_id}</td>
                   <td>{c.sub_canal}</td>
@@ -223,7 +234,7 @@ export default function VerClientes() {
                   </td>
                 </tr>
               ))}
-              {filteredClientes.length === 0 && (
+              {paginatedClientes.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-8">
                     No se encontraron clientes
@@ -232,6 +243,12 @@ export default function VerClientes() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredClientes.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 

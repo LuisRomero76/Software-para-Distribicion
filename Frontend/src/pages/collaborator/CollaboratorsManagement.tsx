@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { request } from '../../lib/http';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 
 export default function CollaboratorsManagement() {
@@ -12,6 +13,8 @@ export default function CollaboratorsManagement() {
   const [selectedCollaborator, setSelectedCollaborator] = useState<any | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [deleteCollaborator, setDeleteCollaborator] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '' });
@@ -43,6 +46,11 @@ export default function CollaboratorsManagement() {
     collaborator.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     collaborator.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Paginación
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCollaborators = filteredCollaborators.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
     if (!deleteCollaborator) return;
@@ -176,7 +184,7 @@ export default function CollaboratorsManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredCollaborators.map(collaborator => (
+              {paginatedCollaborators.map(collaborator => (
                 <tr key={collaborator.collaborator_id}>
                   <td className="id-col">{collaborator.collaborator_id}</td>
                   <td className="name-col">{collaborator.nombre} {collaborator.apellido}</td>
@@ -199,6 +207,12 @@ export default function CollaboratorsManagement() {
             </tbody>
           </table>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredCollaborators.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Modal de Vista/Edición */}

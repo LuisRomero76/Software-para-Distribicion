@@ -120,66 +120,6 @@ export function generateExcelTemplate(): void {
     { wch: 15 },
   ];
   XLSX.utils.book_append_sheet(wb, ws2, 'Categoría_A');
-  
-  // Hoja 3: Instrucciones
-  const instrucciones = [
-    [
-      'INSTRUCCIONES PARA IMPORTAR CLIENTES',
-    ],
-    [],
-    [
-      'Columnas requeridas:',
-    ],
-    [
-      'sub_canal: Nombre del canal de distribución (Requerido)',
-    ],
-    [
-      'nombre: Nombre del cliente (Requerido)',
-    ],
-    [
-      'direccion: Dirección del cliente (Requerido)',
-    ],
-    [
-      'nit_ci: NIT o Cédula del cliente (Opcional, solo números)',
-    ],
-    [
-      'visita: Tipo de visita - Día o Noche (Opcional)',
-    ],
-    [
-      'ciudad: Ciudad del cliente (Opcional)',
-    ],
-    [
-      'coordenadas: Coordenadas GPS (Opcional)',
-    ],
-    [
-      'telefono: Teléfono del cliente (Opcional)',
-    ],
-    [
-      'ruta: Ruta asignada (Opcional)',
-    ],
-    [
-      'dia_visita: Fecha de visita en formato YYYY-MM-DD (Opcional)',
-    ],
-    [],
-    [
-      'NOTAS:',
-    ],
-    [
-      '- El nombre de cada hoja será tratado como una categoría (Ej: "Categoría_A" = Categoría A)',
-    ],
-    [
-      '- Si la hoja se llama "Clientes", se importarán sin categoría específica',
-    ],
-    [
-      '- No dejes filas vacías en el medio de los datos',
-    ],
-    [
-      '- Todos los campos de fecha deben estar en formato YYYY-MM-DD',
-    ],
-  ];
-  const ws3 = XLSX.utils.aoa_to_sheet(instrucciones);
-  ws3['!cols'] = [{ wch: 80 }];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Instrucciones');
-  
+    
   XLSX.writeFile(wb, 'Plantilla_Importar_Clientes.xlsx');
 }

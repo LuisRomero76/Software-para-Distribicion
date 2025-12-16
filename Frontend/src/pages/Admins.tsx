@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { request } from '../lib/http';
 import { useAuth } from '../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
+import Pagination from '../components/Pagination';
 import * as XLSX from 'xlsx';
 
 export default function DashboardAdmins() {
@@ -12,6 +13,8 @@ export default function DashboardAdmins() {
   const [selectedAdmin, setSelectedAdmin] = useState<any | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [deleteAdmin, setDeleteAdmin] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '' });
@@ -38,11 +41,15 @@ export default function DashboardAdmins() {
     loadAdmins();
   }, [auth?.token]);
 
-  const filteredAdmins = admins.filter(admin => 
+  const filteredAdmins = admins.filter(admin =>
     admin.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     admin.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     admin.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedAdmins = filteredAdmins.slice(startIndex, startIndex + itemsPerPage);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
     if (!deleteAdmin) return;
@@ -72,7 +79,7 @@ export default function DashboardAdmins() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAdmin) return;
-    
+
     setSaving(true);
     try {
       const updated = await request(
@@ -84,7 +91,7 @@ export default function DashboardAdmins() {
         },
         auth?.token
       );
-      
+
       setAdmins(admins.map(a => a.admin_id === selectedAdmin.admin_id ? updated : a));
       setSelectedAdmin(null);
       setEditMode(false);
@@ -116,11 +123,11 @@ export default function DashboardAdmins() {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Administradores');
 
     const columnWidths = [
-      { wch: 8 },  
-      { wch: 20 }, 
-      { wch: 20 }, 
-      { wch: 30 }, 
-      { wch: 15 }, 
+      { wch: 8 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 15 },
       { wch: 20 }
     ];
     worksheet['!cols'] = columnWidths;
@@ -155,8 +162,8 @@ export default function DashboardAdmins() {
         <div className="table-controls">
           <div className="search-box">
             <Search size={18} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar por nombre, apellido o email..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -186,7 +193,7 @@ export default function DashboardAdmins() {
               </tr>
             </thead>
             <tbody>
-              {filteredAdmins.map(admin => (
+              {paginatedAdmins.map(admin => (
                 <tr key={admin.admin_id}>
                   <td className="id-col">{admin.admin_id}</td>
                   <td className="name-col">{admin.nombre} {admin.apellido}</td>
@@ -195,14 +202,14 @@ export default function DashboardAdmins() {
                   <td>{new Date(admin.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => { setSelectedAdmin(admin); setEditMode(false); }} title="Ver información">
-                      <Eye size={16}/>
+                      <Eye size={16} />
                     </button>
                     <button className="action-btn edit" onClick={() => handleEdit(admin)} title="Editar">
-                      <Edit2 size={16}/>
+                      <Edit2 size={16} />
                     </button>
                     {admin.email !== auth?.email && (
                       <button className="action-btn delete" onClick={() => setDeleteAdmin(admin)} title="Eliminar">
-                        <Trash2 size={16}/>
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </td>
@@ -211,96 +218,106 @@ export default function DashboardAdmins() {
             </tbody>
           </table>
         )}
-      </div>
-      {selectedAdmin && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setSelectedAdmin(null)}>
-          <div className="modal-large" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editMode ? 'Editar administrador' : 'Información del administrador'}</h3>
-              <button className="modal-close" onClick={() => setSelectedAdmin(null)}>×</button>
-            </div>
-            <form className="modal-form" onSubmit={handleSave}>
-              <div className="form-grid">
-                <label>
-                  <span className="label-text">Nombre</span>
-                  <input 
-                    type="text" 
-                    value={editMode ? editForm.nombre : selectedAdmin.nombre} 
-                    onChange={e => setEditForm({...editForm, nombre: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
-                    className="form-input" 
-                    required
-                  />
-                </label>
-                <label>
-                  <span className="label-text">Apellido</span>
-                  <input 
-                    type="text" 
-                    value={editMode ? editForm.apellido : selectedAdmin.apellido} 
-                    onChange={e => setEditForm({...editForm, apellido: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
-                    className="form-input" 
-                    required
-                  />
-                </label>
-                <label>
-                  <span className="label-text">Teléfono</span>
-                  <input 
-                    type="text" 
-                    value={editMode ? editForm.telefono : selectedAdmin.telefono} 
-                    onChange={e => setEditForm({...editForm, telefono: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
-                    className="form-input" 
-                    required
-                  />
-                </label>
-                <label>
-                  <span className="label-text">Email</span>
-                  <input 
-                    type="email" 
-                    value={editMode ? editForm.email : selectedAdmin.email} 
-                    onChange={e => setEditForm({...editForm, email: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
-                    className="form-input" 
-                    required
-                  />
-                </label>
-                <label>
-                  <span className="label-text">ID</span>
-                  <input type="text" value={`#${selectedAdmin.admin_id}`} disabled readOnly className="form-input" />
-                </label>
-                <label>
-                  <span className="label-text">Fecha de Creación</span>
-                  <input type="text" value={new Date(selectedAdmin.createdAt).toLocaleString('es-ES')} disabled readOnly className="form-input" />
-                </label>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" type="button" onClick={() => setSelectedAdmin(null)} disabled={saving}>Cerrar</button>
-                {editMode && <button className="btn-primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</button>}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {deleteAdmin && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => !deleting && setDeleteAdmin(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>¿Eliminar administrador?</h3>
-            <p>Estás a punto de eliminar a <strong>{deleteAdmin.nombre} {deleteAdmin.apellido}</strong> ({deleteAdmin.email}).</p>
-            <p className="warning-text">Esta acción no se puede deshacer.</p>
-            <div className="modal-actions">
-              <button className="btn outline" onClick={() => setDeleteAdmin(null)} disabled={deleting}>Cancelar</button>
-              <button className="btn danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredAdmins.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+      />
     </div>
+
+    {selectedAdmin && (
+      <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setSelectedAdmin(null)}>
+        <div className="modal-large" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>{editMode ? 'Editar administrador' : 'Información del administrador'}</h3>
+            <button className="modal-close" onClick={() => setSelectedAdmin(null)}>×</button>
+          </div>
+          <form className="modal-form" onSubmit={handleSave}>
+            <div className="form-grid">
+              <label>
+                <span className="label-text">Nombre</span>
+                <input
+                  type="text"
+                  value={editMode ? editForm.nombre : selectedAdmin.nombre}
+                  onChange={e => setEditForm({ ...editForm, nombre: e.target.value })}
+                  disabled={!editMode}
+                  readOnly={!editMode}
+                  className="form-input"
+                  required
+                />
+              </label>
+              <label>
+                <span className="label-text">Apellido</span>
+                <input
+                  type="text"
+                  value={editMode ? editForm.apellido : selectedAdmin.apellido}
+                  onChange={e => setEditForm({ ...editForm, apellido: e.target.value })}
+                  disabled={!editMode}
+                  readOnly={!editMode}
+                  className="form-input"
+                  required
+                />
+              </label>
+              <label>
+                <span className="label-text">Teléfono</span>
+                <input
+                  type="text"
+                  value={editMode ? editForm.telefono : selectedAdmin.telefono}
+                  onChange={e => setEditForm({ ...editForm, telefono: e.target.value })}
+                  disabled={!editMode}
+                  readOnly={!editMode}
+                  className="form-input"
+                  required
+                />
+              </label>
+              <label>
+                <span className="label-text">Email</span>
+                <input
+                  type="email"
+                  value={editMode ? editForm.email : selectedAdmin.email}
+                  onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                  disabled={!editMode}
+                  readOnly={!editMode}
+                  className="form-input"
+                  required
+                />
+              </label>
+              <label>
+                <span className="label-text">ID</span>
+                <input type="text" value={`#${selectedAdmin.admin_id}`} disabled readOnly className="form-input" />
+              </label>
+              <label>
+                <span className="label-text">Fecha de Creación</span>
+                <input type="text" value={new Date(selectedAdmin.createdAt).toLocaleString('es-ES')} disabled readOnly className="form-input" />
+              </label>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" type="button" onClick={() => setSelectedAdmin(null)} disabled={saving}>Cerrar</button>
+              {editMode && <button className="btn-primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</button>}
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+  {
+    deleteAdmin && (
+      <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => !deleting && setDeleteAdmin(null)}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <h3>¿Eliminar administrador?</h3>
+          <p>Estás a punto de eliminar a <strong>{deleteAdmin.nombre} {deleteAdmin.apellido}</strong> ({deleteAdmin.email}).</p>
+          <p className="warning-text">Esta acción no se puede deshacer.</p>
+          <div className="modal-actions">
+            <button className="btn outline" onClick={() => setDeleteAdmin(null)} disabled={deleting}>Cancelar</button>
+            <button className="btn danger" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+    </div >
   );
 }

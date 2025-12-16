@@ -1,343 +1,380 @@
-import { useEffect, useState } from 'react';
-import { request } from '../../lib/http';
+import { useEffect, useRef, useState } from 'react';
+import { Upload, Download, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Upload, Download, CheckCircle, AlertCircle, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
-
-interface ProductParsed {
-  cod_barra: string;
-  nombre: string;
-  descripcion: string;
-  tamaño: string;
-  precio_unitario: number;
-  fecha_vencimiento: string;
-  category_id: number;
-  sub_category_id: number;
-  unidades_caja?: number;
-  precio_unidad_envio?: number;
-  precio_caja_envio?: number;
-  flete?: number;
-}
+import { request } from '../../lib/http';
+import { readProductExcelFile, generateProductTemplate, type SheetData, type ProductImportRow } from './utils/excelImporter';
+import { useProductImport } from './hooks/useProductImport';
+import '../clientes/ImportarClientes.css';
 
 export default function ImportProducts() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { auth } = useAuth();
-  const [file, setFile] = useState<File | null>(null);
-  const [products, setProducts] = useState<ProductParsed[]>([]);
+
+  const [sheets, setSheets] = useState<SheetData[]>([]);
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
+  const [editedData, setEditedData] = useState<ProductImportRow[]>([]);
+  const [rowValidation, setRowValidation] = useState<{ [key: number]: { valid: boolean; errors: string[] } }>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<number | ''>('');
+
+  const { mapRowToPayload, validateRow } = useProductImport();
 
   useEffect(() => {
     document.title = 'Grupo Vicorsa | Importar Productos';
   }, []);
 
-  const downloadTemplate = () => {
-    const template = [
-      {
-        'Código de Barras': '7772107000308',
-        'Nombre': 'Vino Tinto',
-        'Descripción': 'Vino tinto premium',
-        'Tamaño': '750ml',
-        'Precio Unitario': 12.99,
-        'Fecha Vencimiento': '2025-12-31',
-        'ID Categoría': 1,
-        'ID Subcategoría': 5,
-        'Unidades Caja': 6,
-        'Precio Unidad Envío': 432,
-        'Precio Caja Envío': 2052,
-        'Flete': 5
-      },
-      {
-        'Código de Barras': '7772107000309',
-        'Nombre': 'Vino Blanco',
-        'Descripción': 'Vino blanco seco',
-        'Tamaño': '750ml',
-        'Precio Unitario': 10.50,
-        'Fecha Vencimiento': '2025-12-31',
-        'ID Categoría': 1,
-        'ID Subcategoría': 5,
-        'Unidades Caja': 6,
-        'Precio Unidad Envío': 432,
-        'Precio Caja Envío': 2052,
-        'Flete': 5
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [cats, subs] = await Promise.all([
+          request<any[]>('/category', {}, auth?.token),
+          request<any[]>('/sub-category', {}, auth?.token),
+        ]);
+        setCategories(cats);
+        setSubCategories(subs);
+      } catch (e) {
+        console.error('No se pudo cargar categorías/subcategorías', e);
       }
-    ];
+    };
+    load();
+  }, [auth?.token]);
 
-    const worksheet = XLSX.utils.json_to_sheet(template);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const columnWidths = [
-      { wch: 18 }, { wch: 20 }, { wch: 30 }, { wch: 12 },
-      { wch: 15 }, { wch: 18 }, { wch: 15 }, { wch: 18 },
-      { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 10 }
-    ];
-    worksheet['!cols'] = columnWidths;
-
-    XLSX.writeFile(workbook, 'plantilla_productos.xlsx');
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    setFile(selectedFile);
     setError(null);
     setSuccess(null);
-    setImportErrors([]);
 
     try {
-      const data = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[];
+      setLoading(true);
+      const data = await readProductExcelFile(file);
+      setSheets(data);
+      setSelectedSheetIndex(0);
 
-      if (jsonData.length < 2) {
-        setError('El archivo debe contener al menos una fila de datos.');
-        setProducts([]);
-        return;
-      }
-
-      const headers = jsonData[0];
-      const expectedHeaders = [
-        'Código de Barras', 'Nombre', 'Descripción', 'Tamaño',
-        'Precio Unitario', 'Fecha Vencimiento', 'ID Categoría', 'ID Subcategoría',
-        'Unidades Caja', 'Precio Unidad Envío', 'Precio Caja Envío', 'Flete'
-      ];
-
-      const headersMatch = expectedHeaders.every((h, i) => headers[i] === h);
-      if (!headersMatch) {
-        setError('El formato del archivo no es correcto. Descarga la plantilla para ver el formato esperado.');
-        setProducts([]);
-        return;
-      }
-
-      const parsedProducts: ProductParsed[] = [];
-      const errors: string[] = [];
-
-      for (let i = 1; i < jsonData.length; i++) {
-        const row = jsonData[i];
-        
-        if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4] || !row[5] || !row[6] || !row[7]) {
-          errors.push(`Fila ${i + 1}: Campos obligatorios vacíos`);
-          continue;
-        }
-
-        const product: ProductParsed = {
-          cod_barra: String(row[0]),
-          nombre: String(row[1]),
-          descripcion: String(row[2]),
-          tamaño: String(row[3]),
-          precio_unitario: parseFloat(row[4]),
-          fecha_vencimiento: row[5],
-          category_id: parseInt(row[6]),
-          sub_category_id: parseInt(row[7])
-        };
-
-        if (row[8] && row[9] && row[10] && row[11]) {
-          product.unidades_caja = parseInt(row[8]);
-          product.precio_unidad_envio = parseFloat(row[9]);
-          product.precio_caja_envio = parseFloat(row[10]);
-          product.flete = parseFloat(row[11]);
-        }
-
-        parsedProducts.push(product);
-      }
-
-      if (errors.length > 0) {
-        setImportErrors(errors);
-      }
-
-      setProducts(parsedProducts);
-    } catch (err) {
-      setError('Error al leer el archivo. Asegúrate de que sea un archivo Excel válido.');
-      setProducts([]);
+      const firstSheet = data[0];
+      const validation: { [key: number]: { valid: boolean; errors: string[] } } = {};
+      firstSheet.datos.forEach((row, idx) => {
+        validation[idx] = validateRow(row);
+      });
+      setRowValidation(validation);
+      setEditedData([...firstSheet.datos]);
+    } catch (err: any) {
+      setError(err.message || 'Error al leer el archivo');
+    } finally {
+      setLoading(false);
     }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSheetChange = (index: number) => {
+    setSelectedSheetIndex(index);
+    const sheet = sheets[index];
+    const validation: { [key: number]: { valid: boolean; errors: string[] } } = {};
+    sheet.datos.forEach((row, idx) => {
+      validation[idx] = validateRow(row);
+    });
+    setRowValidation(validation);
+    setEditedData([...sheet.datos]);
+    setSuccess(null);
+    setError(null);
+  };
+
+  const handleCellChange = (rowIdx: number, field: keyof ProductImportRow, value: any) => {
+    const updated = [...editedData];
+    updated[rowIdx] = { ...updated[rowIdx], [field]: value === '' ? undefined : value };
+    setEditedData(updated);
+    const validation = validateRow(updated[rowIdx]);
+    setRowValidation(prev => ({ ...prev, [rowIdx]: validation }));
   };
 
   const handleImport = async () => {
-    if (products.length === 0) {
-      setError('No hay productos para importar.');
+    if (!selectedCategoryId) {
+      setError('Selecciona una categoría para los productos');
       return;
     }
 
     setLoading(true);
     setError(null);
     setSuccess(null);
-    setImportErrors([]);
 
     try {
-      const payload = {
-        products: products.map(p => {
-          const item: any = {
-            cod_barra: p.cod_barra,
-            nombre: p.nombre,
-            descripcion: p.descripcion,
-            tamaño: p.tamaño,
-            precio_unitario: p.precio_unitario,
-            fecha_vencimiento: p.fecha_vencimiento,
-            category_id: p.category_id,
-            sub_category_id: p.sub_category_id
-          };
+      let ok = 0;
+      let fail = 0;
+      const errors: string[] = [];
 
-          if (p.unidades_caja) {
-            item.shipping = {
-              unidades_caja: p.unidades_caja,
-              precio_unidad_envio: p.precio_unidad_envio,
-              precio_caja_envio: p.precio_caja_envio,
-              flete: p.flete
-            };
-          }
+      for (let i = 0; i < editedData.length; i++) {
+        const validation = rowValidation[i];
+        if (!validation?.valid) {
+          fail++;
+          continue;
+        }
 
-          return item;
-        })
-      };
+        const payload = mapRowToPayload(
+          editedData[i],
+          Number(selectedCategoryId),
+          selectedSubCategoryId ? Number(selectedSubCategoryId) : undefined
+        );
 
-      const result = await request<any>('/product/import/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, auth?.token);
-
-      if (result.failed > 0) {
-        setImportErrors(result.errors || []);
-        setSuccess(`Se importaron ${result.success} productos. ${result.failed} fallaron.`);
-      } else {
-        setSuccess(`Se importaron ${result.success} productos correctamente.`);
+        try {
+          await request('/product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }, auth?.token);
+          ok++;
+        } catch (err: any) {
+          console.error('Error importando producto fila', i + 1, err);
+          errors.push(`Fila ${i + 1}: ${err.message || 'Error desconocido'}`);
+          fail++;
+        }
       }
 
-      setFile(null);
-      setProducts([]);
-      const fileInput = document.getElementById('file-input') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
+      if (ok > 0) {
+        let msg = `✓ ${ok} producto${ok !== 1 ? 's' : ''} importado${ok !== 1 ? 's' : ''} correctamente`;
+        if (fail > 0) {
+          msg += ` (${fail} con error${fail !== 1 ? 's' : ''})`;
+        }
+        msg += '.';
+        setSuccess(msg);
+        // Limpiar tabla después de importación exitosa
+        setTimeout(() => setSheets([]), 2000);
+      }
+      if (ok === 0 && fail > 0) {
+        setError(`✗ No se pudo importar ningún producto. ${fail} fila${fail !== 1 ? 's' : ''} con error${fail !== 1 ? 's' : ''}.`);
+      }
     } catch (err: any) {
-      setError(err?.message ?? 'Error al importar productos');
+      setError(err.message || 'Error al importar productos');
     } finally {
       setLoading(false);
     }
   };
 
+  const validRowsCount = Object.values(rowValidation).filter(v => v.valid).length;
+  const totalRows = editedData.length;
+
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h2 className="page-title"><Upload size={28} /> Importar Productos</h2>
-          <p className="page-subtitle">Carga masiva de productos desde archivo Excel</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-export" onClick={downloadTemplate} title="Descargar plantilla">
-            <Download size={18} /> Descargar Plantilla
-          </button>
-        </div>
+    <div className="import-page">
+      <div className="import-header">
+        <h1>Importar Productos</h1>
+        <p>Carga productos desde un archivo Excel con vista previa y validación</p>
       </div>
 
-      <div className="form-container">
-        <div className="admin-form">
-          <div className="info-box" style={{ marginBottom: '20px' }}>
-            <FileSpreadsheet size={20} />
-            <div>
-              <strong>Formato del archivo Excel:</strong>
-              <p style={{ marginTop: '5px', fontSize: '0.9em' }}>
-                El archivo debe contener las siguientes columnas en este orden:
-                Código de Barras, Nombre, Descripción, Tamaño, Precio Unitario, Fecha Vencimiento,
-                ID Categoría, ID Subcategoría, Unidades Caja, Precio Unidad Envío, Precio Caja Envío, Flete.
-              </p>
-              <p style={{ marginTop: '5px', fontSize: '0.9em' }}>
-                Las últimas 4 columnas (información de envío) son opcionales.
-              </p>
-            </div>
-          </div>
-
-          <label className="form-field">
-            <span className="label-text">Seleccionar archivo Excel *</span>
-            <input
-              id="file-input"
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              className="form-input"
-              onChange={handleFileSelect}
-            />
-          </label>
-
-          {products.length > 0 && (
-            <div style={{ marginTop: '20px' }}>
-              <h4>Vista previa ({products.length} productos)</h4>
-              <div className="table-wrapper" style={{ maxHeight: '400px', overflow: 'auto', marginTop: '10px' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Nombre</th>
-                      <th>Tamaño</th>
-                      <th>Precio</th>
-                      <th>Categoría ID</th>
-                      <th>Subcategoría ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.slice(0, 10).map((product, index) => (
-                      <tr key={index}>
-                        <td>{product.cod_barra}</td>
-                        <td>{product.nombre}</td>
-                        <td>{product.tamaño}</td>
-                        <td>S/ {product.precio_unitario.toFixed(2)}</td>
-                        <td>{product.category_id}</td>
-                        <td>{product.sub_category_id}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {products.length > 10 && (
-                  <p style={{ textAlign: 'center', marginTop: '10px', color: '#666' }}>
-                    ... y {products.length - 10} productos más
-                  </p>
-                )}
+      {sheets.length === 0 ? (
+        <>
+          <div className="upload-section">
+            <div className="upload-zone">
+              <div className="upload-zone-icon">
+                <Upload size={36} />
               </div>
-            </div>
-          )}
-
-          {importErrors.length > 0 && (
-            <div className="alert alert-error" style={{ marginTop: '20px' }}>
-              <AlertCircle size={18} />
               <div>
-                <strong>Errores encontrados:</strong>
-                <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
-                  {importErrors.slice(0, 5).map((err, i) => (
-                    <li key={i}>{err}</li>
-                  ))}
-                  {importErrors.length > 5 && (
-                    <li>... y {importErrors.length - 5} errores más</li>
-                  )}
-                </ul>
+                <div className="upload-zone-title">Selecciona un archivo Excel</div>
+                <div className="upload-zone-subtitle">Arrastra o haz clic para cargar</div>
+              </div>
+              <div className="upload-buttons">
+                <button
+                  className="btn-upload"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                >
+                  <Upload size={18} /> Cargar Archivo
+                </button>
+                <button className="btn-template" onClick={generateProductTemplate}>
+                  <Download size={18} /> Descargar Plantilla
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="excel-file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileUpload}
+              />
+            </div>
+          </div>
+
+          <div className="instructions-section">
+            <h3 className="instructions-title">📋 Cómo funciona</h3>
+            <div className="instructions-content">
+              <div className="instruction-item">
+                <div className="instruction-icon">1</div>
+                <div className="instruction-text">
+                  <p>Descarga la plantilla Excel</p>
+                  <p style={{ fontSize: '.9rem', opacity: .7 }}>Usa el botón "Descargar Plantilla"</p>
+                </div>
+              </div>
+              <div className="instruction-item">
+                <div className="instruction-icon">2</div>
+                <div className="instruction-text">
+                  <p>Completa los datos en Excel</p>
+                  <ul>
+                    <li><b>Obligatorio:</b> Nombre</li>
+                    <li><b>Opcionales:</b> Código de barras, Descripción, Tamaño</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="instruction-item">
+                <div className="instruction-icon">3</div>
+                <div className="instruction-text">
+                  <p>Carga el archivo aquí</p>
+                  <p style={{ fontSize: '.9rem', opacity: .7 }}>Detectamos automáticamente las hojas</p>
+                </div>
+              </div>
+              <div className="instruction-item">
+                <div className="instruction-icon">4</div>
+                <div className="instruction-text">
+                  <p>Selecciona categoría (subcategoría opcional)</p>
+                  <p style={{ fontSize: '.9rem', opacity: .7 }}>Se aplican a todos los productos</p>
+                </div>
+              </div>
+              <div className="instruction-item">
+                <div className="instruction-icon">5</div>
+                <div className="instruction-text">
+                  <p>Revisa, edita e importa</p>
+                  <p style={{ fontSize: '.9rem', opacity: .7 }}>Solo se importan filas válidas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Mensajes de éxito y error */}
+          {success && <div className="success-message">{success}</div>}
+          {error && <div className="error-state">{error}</div>}
+
+          {/* Selector de hojas si hay varias */}
+          {sheets.length > 1 && (
+            <div className="sheets-selector">
+              <div className="sheets-tabs">
+                {sheets.map((s, idx) => (
+                  <button key={idx} className={`sheet-tab ${idx === selectedSheetIndex ? 'active' : ''}`} onClick={() => handleSheetChange(idx)}>
+                    <FileText size={16} style={{ display: 'inline' }} /> {s.nombre}
+                    <span className="sheet-badge">{s.datos.length} filas</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {error && (
-            <div className="alert alert-error" style={{ marginTop: '20px' }}>
-              <AlertCircle size={18} /> {error}
-            </div>
-          )}
+          <div className="preview-section">
+            <h3 className="preview-title">
+              Vista previa de datos
+              {validRowsCount < totalRows && (
+                <span style={{ fontSize: '.9rem', opacity: .7, marginLeft: '1rem' }}>({validRowsCount}/{totalRows} filas válidas)</span>
+              )}
+            </h3>
 
-          {success && (
-            <div className="alert alert-success" style={{ marginTop: '20px' }}>
-              <CheckCircle size={18} /> {success}
+            {/* Selectores globales */}
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-2)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Categoría *</label>
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => {
+                      const catId = e.target.value ? Number(e.target.value) : '';
+                      setSelectedCategoryId(catId);
+                      setSelectedSubCategoryId(''); // Limpiar subcategoría al cambiar categoría
+                    }}
+                    style={{ width: '100%', padding: '.6rem .75rem', background: 'var(--card)', color: 'var(--text)', border: `1px solid ${selectedCategoryId ? '#10b981' : 'var(--border)'}`, borderRadius: 8 }}
+                  >
+                    <option value="">-- Selecciona --</option>
+                    {categories.map((c: any) => (
+                      <option key={c.category_id} value={c.category_id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>
+                    Subcategoría
+                    {subCategories.filter((s: any) => s.category_id === selectedCategoryId).length === 0 && selectedCategoryId ? '' : ' (Opcional)'}
+                  </label>
+                  {subCategories.filter((s: any) => s.category_id === selectedCategoryId).length > 0 && selectedCategoryId ? (
+                    <select
+                      value={selectedSubCategoryId}
+                      onChange={(e) => setSelectedSubCategoryId(e.target.value ? Number(e.target.value) : '')}
+                      style={{ width: '100%', padding: '.6rem .75rem', background: 'var(--card)', color: 'var(--text)', border: `1px solid ${selectedSubCategoryId ? '#10b981' : 'var(--border)'}`, borderRadius: 8 }}
+                    >
+                      <option value="">-- Selecciona (opcional) --</option>
+                      {subCategories
+                        .filter((s: any) => s.category_id === selectedCategoryId)
+                        .map((s: any) => (
+                          <option key={s.sub_category_id} value={s.sub_category_id}>{s.nombre}</option>
+                        ))
+                      }
+                    </select>
+                  ) : (
+                    <div style={{ padding: '.6rem .75rem', background: 'var(--card)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                      Esta categoría no tiene subcategorías
+                    </div>
+                  )}
+                </div>
+              </div>
+              {!selectedCategoryId && (
+                <p style={{ marginTop: '.5rem', fontSize: '.85rem', color: '#ef4444' }}>⚠ Debes seleccionar una categoría.</p>
+              )}
             </div>
-          )}
 
-          <div className="form-actions" style={{ marginTop: '20px' }}>
-            <button
-              type="button"
-              className="btn"
-              onClick={handleImport}
-              disabled={loading || products.length === 0}
-            >
-              {loading ? 'Importando...' : `Importar ${products.length} productos`}
-            </button>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="preview-table">
+                <thead>
+                  <tr>
+                    <th>Estado</th>
+                    <th>Código de Barras</th>
+                    <th>Nombre *</th>
+                    <th>Descripción</th>
+                    <th>Tamaño</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {editedData.map((row, idx) => {
+                    const v = rowValidation[idx];
+                    const has = (s: string) => v?.errors.some(e => e.includes(s));
+                    return (
+                      <tr key={idx}>
+                        <td>
+                          <div className="row-status">
+                            <div className={`status-icon ${v?.valid ? 'status-valid' : 'status-invalid'}`}>
+                              {v?.valid ? '✓' : '!'}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.cod_barra || ''} onChange={(e) => handleCellChange(idx, 'cod_barra', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className={`cell-input ${has('Nombre') ? 'cell-error' : ''}`} value={row.nombre || ''} onChange={(e) => handleCellChange(idx, 'nombre', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.descripcion || ''} onChange={(e) => handleCellChange(idx, 'descripcion', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.tamaño || ''} onChange={(e) => handleCellChange(idx, 'tamaño', e.target.value)} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="import-actions">
+              <button className="btn-secondary" onClick={() => setSheets([])}>Cancelar</button>
+              <button className="btn-primary" onClick={handleImport} disabled={loading || validRowsCount === 0 || !selectedCategoryId}>
+                Importar {validRowsCount} Producto{validRowsCount !== 1 ? 's' : ''}
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

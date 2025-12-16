@@ -8,7 +8,7 @@ export class Product {
   @PrimaryGeneratedColumn()
   product_id: number;
 
-  @Column({ type: 'varchar', length: 50, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
   cod_barra: string;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
@@ -17,19 +17,13 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   descripcion: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false })
-  tamaño: string; // Ejemplo: 750ml, 1L, etc.
-
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
-  precio_unitario: number;
-
-  @Column({ type: 'date', nullable: true })
-  fecha_vencimiento: Date;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  tamaño: string;
 
   @Column()
   category_id: number;
 
-  @Column()
+  @Column({ nullable: true })
   sub_category_id: number;
 
   @CreateDateColumn({ type: 'timestamp' })

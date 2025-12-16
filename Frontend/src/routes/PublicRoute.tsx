@@ -5,7 +5,7 @@ export default function PublicRoute({ children }: { children: React.ReactNode })
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   if (isAuthenticated) {
-    return <Navigate to={location.state?.from?.pathname ?? '/'} replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }

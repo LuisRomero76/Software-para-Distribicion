@@ -6,28 +6,19 @@ import { Package, CheckCircle } from 'lucide-react';
 export default function AddProduct() {
   const { auth } = useAuth();
   const [categories, setCategories] = useState<any[]>([]);
-  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [allSubCategories, setAllSubCategories] = useState<any[]>([]);
+  const [filteredSubCategories, setFilteredSubCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showShipping, setShowShipping] = useState(false);
   
   const [formData, setFormData] = useState({
     cod_barra: '',
     nombre: '',
     descripcion: '',
     tamaño: '',
-    precio_unitario: '',
-    fecha_vencimiento: '',
     category_id: '',
     sub_category_id: ''
-  });
-
-  const [shippingData, setShippingData] = useState({
-    unidades_caja: '',
-    precio_unidad_envio: '',
-    precio_caja_envio: '',
-    flete: ''
   });
 
   useEffect(() => {
@@ -47,7 +38,7 @@ export default function AddProduct() {
     const loadSubCategories = async () => {
       try {
         const data = await request<any[]>('/sub-category', {}, auth?.token);
-        setSubCategories(data);
+        setAllSubCategories(data);
       } catch (e) {
         console.error('Error al cargar subcategorías:', e);
       }
@@ -57,45 +48,40 @@ export default function AddProduct() {
     loadSubCategories();
   }, [auth?.token]);
 
+  // Cuando cambia la categoría, filtrar subcategorías
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const categoryId = e.target.value;
+    setFormData({ ...formData, category_id: categoryId, sub_category_id: '' });
+    
+    if (categoryId) {
+      const filtered = allSubCategories.filter(sub => sub.category_id === parseInt(categoryId));
+      setFilteredSubCategories(filtered);
+    } else {
+      setFilteredSubCategories([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!formData.cod_barra || !formData.nombre || !formData.descripcion || 
-        !formData.tamaño || !formData.precio_unitario || !formData.fecha_vencimiento ||
-        !formData.category_id || !formData.sub_category_id) {
-      setError('Completa todos los campos obligatorios.');
-      return;
-    }
-
-    if (showShipping && (!shippingData.unidades_caja || !shippingData.precio_unidad_envio || 
-        !shippingData.precio_caja_envio || !shippingData.flete)) {
-      setError('Si agregas información de envío, completa todos los campos de envío.');
+    if (!formData.nombre || !formData.category_id) {
+      setError('Completa el nombre y categoría.');
       return;
     }
 
     setLoading(true);
     try {
       const payload: any = {
-        cod_barra: formData.cod_barra,
         nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        tamaño: formData.tamaño,
-        precio_unitario: parseFloat(formData.precio_unitario),
-        fecha_vencimiento: formData.fecha_vencimiento,
-        category_id: parseInt(formData.category_id),
-        sub_category_id: parseInt(formData.sub_category_id)
+        category_id: parseInt(formData.category_id)
       };
 
-      if (showShipping) {
-        payload.shipping = {
-          unidades_caja: parseInt(shippingData.unidades_caja),
-          precio_unidad_envio: parseFloat(shippingData.precio_unidad_envio),
-          precio_caja_envio: parseFloat(shippingData.precio_caja_envio),
-          flete: parseFloat(shippingData.flete)
-        };
-      }
+      if (formData.cod_barra?.trim()) payload.cod_barra = formData.cod_barra.trim();
+      if (formData.descripcion?.trim()) payload.descripcion = formData.descripcion.trim();
+      if (formData.tamaño?.trim()) payload.tamaño = formData.tamaño.trim();
+      if (formData.sub_category_id) payload.sub_category_id = parseInt(formData.sub_category_id);
 
       await request('/product', {
         method: 'POST',
@@ -109,18 +95,10 @@ export default function AddProduct() {
         nombre: '',
         descripcion: '',
         tamaño: '',
-        precio_unitario: '',
-        fecha_vencimiento: '',
         category_id: '',
         sub_category_id: ''
       });
-      setShippingData({
-        unidades_caja: '',
-        precio_unidad_envio: '',
-        precio_caja_envio: '',
-        flete: ''
-      });
-      setShowShipping(false);
+      setFilteredSubCategories([]);
     } catch (err: any) {
       setError(err?.message ?? 'Error al registrar producto');
     } finally {
@@ -141,14 +119,13 @@ export default function AddProduct() {
         <form className="admin-form" onSubmit={handleSubmit}>
           <div className="form-grid">
             <label className="form-field">
-              <span className="label-text">Código de Barras *</span>
+              <span className="label-text">Código de Barras</span>
               <input
                 type="text"
                 className="form-input"
                 value={formData.cod_barra}
                 onChange={e => setFormData({ ...formData, cod_barra: e.target.value })}
                 placeholder="7772107000308"
-                required
               />
             </label>
 
@@ -165,50 +142,24 @@ export default function AddProduct() {
             </label>
 
             <label className="form-field full-width">
-              <span className="label-text">Descripción *</span>
+              <span className="label-text">Descripción</span>
               <input
                 type="text"
                 className="form-input"
                 value={formData.descripcion}
                 onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
                 placeholder="Vino tinto premium de la casa"
-                required
               />
             </label>
 
             <label className="form-field">
-              <span className="label-text">Tamaño *</span>
+              <span className="label-text">Tamaño</span>
               <input
                 type="text"
                 className="form-input"
                 value={formData.tamaño}
                 onChange={e => setFormData({ ...formData, tamaño: e.target.value })}
                 placeholder="750ml"
-                required
-              />
-            </label>
-
-            <label className="form-field">
-              <span className="label-text">Precio Unitario (Bs/) *</span>
-              <input
-                type="number"
-                step="0.01"
-                className="form-input"
-                value={formData.precio_unitario}
-                onChange={e => setFormData({ ...formData, precio_unitario: e.target.value })}
-                placeholder="12.99"
-                required
-              />
-            </label>
-
-            <label className="form-field">
-              <span className="label-text">Fecha de Vencimiento *</span>
-              <input
-                type="date"
-                className="form-input"
-                value={formData.fecha_vencimiento}
-                onChange={e => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
-                required
               />
             </label>
 
@@ -217,7 +168,7 @@ export default function AddProduct() {
               <select
                 className="form-input"
                 value={formData.category_id}
-                onChange={e => setFormData({ ...formData, category_id: e.target.value })}
+                onChange={handleCategoryChange}
                 required
               >
                 <option value="">Seleccionar categoría...</option>
@@ -229,87 +180,24 @@ export default function AddProduct() {
               </select>
             </label>
 
-            <label className="form-field">
-              <span className="label-text">Subcategoría *</span>
-              <select
-                className="form-input"
-                value={formData.sub_category_id}
-                onChange={e => setFormData({ ...formData, sub_category_id: e.target.value })}
-                required
-              >
-                <option value="">Seleccionar subcategoría...</option>
-                {subCategories.map(sub => (
-                  <option key={sub.sub_category_id} value={sub.sub_category_id}>
-                    {sub.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {filteredSubCategories.length > 0 && (
+              <label className="form-field">
+                <span className="label-text">Subcategoría</span>
+                <select
+                  className="form-input"
+                  value={formData.sub_category_id}
+                  onChange={e => setFormData({ ...formData, sub_category_id: e.target.value })}
+                >
+                  <option value="">Seleccionar subcategoría...</option>
+                  {filteredSubCategories.map(sub => (
+                    <option key={sub.sub_category_id} value={sub.sub_category_id}>
+                      {sub.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
-
-          <div style={{ marginTop: '20px', marginBottom: '15px' }}>
-            <button
-              type="button"
-              className="btn outline"
-              onClick={() => setShowShipping(!showShipping)}
-            >
-              {showShipping ? 'Ocultar información de envío' : 'Agregar información de envío'}
-            </button>
-          </div>
-
-          {showShipping && (
-            <>
-              <h4 style={{ marginBottom: '10px' }}>Información de Envío</h4>
-              <div className="form-grid">
-                <label className="form-field">
-                  <span className="label-text">Unidades por Caja *</span>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={shippingData.unidades_caja}
-                    onChange={e => setShippingData({ ...shippingData, unidades_caja: e.target.value })}
-                    placeholder="6"
-                  />
-                </label>
-
-                <label className="form-field">
-                  <span className="label-text">Precio Unidad Envío (S/) *</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    value={shippingData.precio_unidad_envio}
-                    onChange={e => setShippingData({ ...shippingData, precio_unidad_envio: e.target.value })}
-                    placeholder="432.00"
-                  />
-                </label>
-
-                <label className="form-field">
-                  <span className="label-text">Precio Caja Envío (S/) *</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    value={shippingData.precio_caja_envio}
-                    onChange={e => setShippingData({ ...shippingData, precio_caja_envio: e.target.value })}
-                    placeholder="2052.00"
-                  />
-                </label>
-
-                <label className="form-field">
-                  <span className="label-text">Flete (S/) *</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    value={shippingData.flete}
-                    onChange={e => setShippingData({ ...shippingData, flete: e.target.value })}
-                    placeholder="5.00"
-                  />
-                </label>
-              </div>
-            </>
-          )}
 
           {error && (
             <div className="alert alert-error">
