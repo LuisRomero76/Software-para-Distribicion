@@ -88,6 +88,13 @@ export default function ViewProducts() {
     product.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getCategoryDisplay = (product: Product) => {
+    const categoryName = product.category?.nombre?.trim();
+    const subCategoryName = product.subCategory?.nombre?.trim();
+    if (categoryName && subCategoryName) return `${categoryName} - ${subCategoryName}`;
+    return categoryName || '';
+  };
+
   // Paginación
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
@@ -260,7 +267,7 @@ export default function ViewProducts() {
                   <td className="name-col">{product.nombre}</td>
                   <td>{product.descripcion || '-'}</td>
                   <td>{product.tamaño || '-'}</td>
-                  <td>{product.category?.nombre || ''}</td>
+                  <td>{getCategoryDisplay(product) || '-'}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
                       <Eye size={16} />
