@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,6 +18,7 @@ export default function DashboardLayout() {
     const isProductRoute = location.pathname.startsWith('/products') || location.pathname.startsWith('/categories');
     const isClientesRoute = location.pathname.startsWith('/clientes');
     const isDistributionRoute = location.pathname.startsWith('/distribution');
+    const isComprasRoute = location.pathname.startsWith('/compras');
     
     const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
     const [collaboratorMenuOpen, setCollaboratorMenuOpen] = useState(isCollaboratorRoute);
@@ -25,6 +26,7 @@ export default function DashboardLayout() {
     const [productMenuOpen, setProductMenuOpen] = useState(isProductRoute);
     const [distributionMenuOpen, setDistributionMenuOpen] = useState(isDistributionRoute);
     const [clientesMenuOpen, setClientesMenuOpen] = useState(isClientesRoute);
+    const [comprasMenuOpen, setComprasMenuOpen] = useState(isComprasRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -36,6 +38,7 @@ export default function DashboardLayout() {
         setProductMenuOpen(isProductRoute);
         setDistributionMenuOpen(isDistributionRoute);
         setClientesMenuOpen(isClientesRoute);
+        setComprasMenuOpen(isComprasRoute);
     }, [location.pathname]);
 
     return (
@@ -151,6 +154,25 @@ export default function DashboardLayout() {
                                 </Link>
                                 <Link to="/clientes/importar" className={location.pathname === '/clientes/importar' ? 'active' : ''}>
                                     <Upload size={16} /> Importar clientes
+                                </Link>
+                            </div>
+                        )}
+                        <button className="sidebar-group" onClick={() => setComprasMenuOpen(v => !v)} title="Compras">
+                            <ShoppingCart size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Compras</span>
+                                    {comprasMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {comprasMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/compras" className={location.pathname === '/compras' ? 'active' : ''}>
+                                    <ShoppingCart size={16} /> Ver compras
+                                </Link>
+                                <Link to="/compras/realizar" className={location.pathname === '/compras/realizar' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Realizar compra
                                 </Link>
                             </div>
                         )}

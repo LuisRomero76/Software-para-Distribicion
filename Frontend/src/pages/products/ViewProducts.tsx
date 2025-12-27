@@ -11,6 +11,7 @@ interface Product {
   nombre: string;
   descripcion?: string;
   tamaño?: string;
+  precio: number;
   category_id: number;
   sub_category_id: number;
   fecha_creacion: string;
@@ -38,6 +39,7 @@ export default function ViewProducts() {
     nombre: '',
     descripcion: '',
     tamaño: '',
+    precio: '',
     category_id: '',
     sub_category_id: ''
   });
@@ -122,6 +124,7 @@ export default function ViewProducts() {
       nombre: product.nombre,
       descripcion: product.descripcion || '',
       tamaño: product.tamaño || '',
+      precio: product.precio.toString(),
       category_id: product.category_id.toString(),
       sub_category_id: product.sub_category_id.toString()
     });
@@ -131,10 +134,16 @@ export default function ViewProducts() {
     e.preventDefault();
     if (!selectedProduct) return;
     
+    if (!editForm.precio || editForm.precio.trim() === '') {
+      alert('El precio es requerido');
+      return;
+    }
+    
     setSaving(true);
     try {
       const payload: any = {
         nombre: editForm.nombre,
+        precio: parseFloat(editForm.precio),
         category_id: parseInt(editForm.category_id),
         sub_category_id: parseInt(editForm.sub_category_id)
       };
@@ -171,6 +180,7 @@ export default function ViewProducts() {
         'Nombre': product.nombre,
         'Descripción': product.descripcion || '',
         'Tamaño': product.tamaño || '',
+        'Precio': product.precio,
         'Categoría': product.category?.nombre || '',
         'Subcategoría': product.subCategory?.nombre || '',
         'Fecha de Creación': new Date(product.createdAt).toLocaleString('es-ES', {
@@ -193,6 +203,7 @@ export default function ViewProducts() {
       { wch: 30 }, // Nombre
       { wch: 40 }, // Descripción
       { wch: 15 }, // Tamaño
+      { wch: 15 }, // Precio
       { wch: 20 }, // Categoría
       { wch: 20 }, // Subcategoría
       { wch: 20 }  // Fecha de Creación
@@ -253,8 +264,8 @@ export default function ViewProducts() {
                 <th>ID</th>
                 <th>Código</th>
                 <th>Nombre</th>
-                <th>Descripción</th>
                 <th>Tamaño</th>
+                <th>Precio <br/> (Bs.)</th>
                 <th>Categoría</th>
                 <th className="actions-col">Acciones</th>
               </tr>
@@ -265,8 +276,8 @@ export default function ViewProducts() {
                   <td className="id-col">{product.product_id}</td>
                   <td>{product.cod_barra || '-'}</td>
                   <td className="name-col">{product.nombre}</td>
-                  <td>{product.descripcion || '-'}</td>
                   <td>{product.tamaño || '-'}</td>
+                  <td>{typeof product.precio === 'number' ? product.precio.toFixed(2) : product.precio}</td>
                   <td>{getCategoryDisplay(product) || '-'}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
@@ -322,7 +333,7 @@ export default function ViewProducts() {
                       disabled={!editMode}
                     />
                   </label>
-                  <label className="form-field full-width">
+                  <label className="form-field">
                     <span className="label-text">Descripción</span>
                     <input
                       type="text"
@@ -330,6 +341,19 @@ export default function ViewProducts() {
                       value={editMode ? editForm.descripcion : selectedProduct.descripcion}
                       onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })}
                       disabled={!editMode}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio : selectedProduct.precio}
+                      onChange={e => setEditForm({ ...editForm, precio: e.target.value })}
+                      disabled={!editMode}
+                      required={editMode}
                     />
                   </label>
                   <label className="form-field">

@@ -17,6 +17,9 @@ export default function AddProduct() {
     nombre: '',
     descripcion: '',
     tamaño: '',
+    precio: '',
+    precio_compra: '',
+    cant_por_paquete: '',
     category_id: '',
     sub_category_id: ''
   });
@@ -71,17 +74,25 @@ export default function AddProduct() {
       return;
     }
 
+    if (!formData.precio || formData.precio.trim() === '') {
+      setError('El precio es requerido.');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload: any = {
         nombre: formData.nombre,
-        category_id: parseInt(formData.category_id)
+        category_id: parseInt(formData.category_id),
+        precio: parseFloat(formData.precio)
       };
 
       if (formData.cod_barra?.trim()) payload.cod_barra = formData.cod_barra.trim();
       if (formData.descripcion?.trim()) payload.descripcion = formData.descripcion.trim();
       if (formData.tamaño?.trim()) payload.tamaño = formData.tamaño.trim();
       if (formData.sub_category_id) payload.sub_category_id = parseInt(formData.sub_category_id);
+      if (formData.precio_compra) payload.precio_compra = parseFloat(formData.precio_compra);
+      if (formData.cant_por_paquete) payload.cant_por_paquete = parseInt(formData.cant_por_paquete);
 
       await request('/product', {
         method: 'POST',
@@ -95,6 +106,9 @@ export default function AddProduct() {
         nombre: '',
         descripcion: '',
         tamaño: '',
+        precio: '',
+        precio_compra: '',
+        cant_por_paquete: '',
         category_id: '',
         sub_category_id: ''
       });
@@ -141,7 +155,7 @@ export default function AddProduct() {
               />
             </label>
 
-            <label className="form-field full-width">
+            <label className="form-field">
               <span className="label-text">Descripción</span>
               <input
                 type="text"
@@ -149,6 +163,45 @@ export default function AddProduct() {
                 value={formData.descripcion}
                 onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
                 placeholder="Vino tinto premium de la casa"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio}
+                onChange={e => setFormData({ ...formData, precio: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio de compra</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_compra}
+                onChange={e => setFormData({ ...formData, precio_compra: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Cant. por paquete</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.cant_por_paquete}
+                onChange={e => setFormData({ ...formData, cant_por_paquete: e.target.value })}
+                step={1}
+                min={1}
+                placeholder="1"
               />
             </label>
 

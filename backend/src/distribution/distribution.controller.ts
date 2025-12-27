@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { DistributionService } from './distribution.service';
 import { CreateVehicleAssignmentDto } from './dto/vehicle-assignment.dto';
 import { UpdateVehicleAssignmentDto } from './dto/update-distribution.dto';
+import { AuthGuard } from 'src/auth/guard/auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('distribution')
 export class DistributionController {
   constructor(private readonly distributionService: DistributionService) {}

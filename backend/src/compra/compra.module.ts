@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CompraService } from './compra.service';
+import { CompraController } from './compra.controller';
+import { Compra } from './entities/compra.entity';
+import { DetalleCompra } from 'src/detalle_compra/entities/detalle_compra.entity';
+import { Lote } from 'src/lote/entities/lote.entity';
+import { Product } from 'src/product/entities/product.entity';
+import { Proveedor } from 'src/proveedor/entities/proveedor.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Compra, DetalleCompra, Lote, Product, Proveedor])],
+  controllers: [CompraController],
+  providers: [CompraService],
+  exports: [CompraService],
+})
+export class CompraModule {}

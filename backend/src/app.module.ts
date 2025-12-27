@@ -12,6 +12,13 @@ import { ProductModule } from './product/product.module';
 import { CategoriaClientesModule } from './categoria_clientes/categoria_clientes.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { RutaModule } from './ruta/ruta.module';
+import { ProveedorModule } from './proveedor/proveedor.module';
+import { GastoOperativoModule } from './gasto_operativo/gasto_operativo.module';
+import { CompraModule } from './compra/compra.module';
+import { VentaModule } from './venta/venta.module';
+import { DetalleVentaModule } from './detalle_venta/detalle_venta.module';
+import { DetalleCompraModule } from './detalle_compra/detalle_compra.module';
+import { LoteModule } from './lote/lote.module';
 
 @Module({
   imports: [
@@ -39,6 +46,13 @@ import { RutaModule } from './ruta/ruta.module';
     CategoriaClientesModule,
     ClientesModule,
     RutaModule,
+    ProveedorModule,
+    GastoOperativoModule,
+    CompraModule,
+    VentaModule,
+    DetalleVentaModule,
+    DetalleCompraModule,
+    LoteModule,
   ],
   controllers: [],
   providers: [],

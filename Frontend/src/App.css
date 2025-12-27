@@ -740,10 +740,7 @@
 }
 
 .actions-col {
-  text-align: center;
-  display: flex;
   gap: 0.5rem;
-  justify-content: center;
 }
 
 .action-btn {

@@ -1,0 +1,419 @@
+/* Estilos para página de compras - Soporta Light y Dark Mode */
+
+.compra-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 100%;
+}
+
+.compra-form .form-section {
+    background: var(--card, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.compra-form .form-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    color: var(--text, #0f172a);
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border, #e2e8f0);
+}
+
+/* Grid responsivo para campos del formulario */
+.form-group-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text, #0f172a);
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+    background-color: var(--bg-2, #f1f5f9);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.span-2 {
+    grid-column: span 2;
+}
+
+/* Toggle para proveedor */
+.toggle-group {
+    display: inline-flex;
+    gap: 0.5rem;
+    background: var(--bg-2, #f1f5f9);
+    border-radius: 999px;
+    padding: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--muted, #64748b);
+    transition: all 0.2s ease;
+}
+
+.toggle input {
+    display: none;
+}
+
+.toggle.active {
+    background: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Lista de productos */
+.products-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.product-card {
+    background: var(--bg-2, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+}
+
+.product-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.product-form-group label {
+    font-weight: 500;
+    color: var(--text, #0f172a);
+    font-size: 0.9rem;
+}
+
+.product-form-group input,
+.product-form-group select {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    transition: all 0.2s ease;
+}
+
+.product-form-group input:focus,
+.product-form-group select:focus {
+    outline: none;
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.input-disabled {
+    background-color: var(--bg-2, #f1f5f9) !important;
+    color: var(--muted, #64748b) !important;
+    cursor: not-allowed !important;
+}
+
+/* Botón de eliminar producto */
+.btn-icon {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon.btn-danger {
+    background-color: var(--danger, #ef4444);
+    color: white;
+}
+
+.btn-icon.btn-danger:hover {
+    background-color: #dc2626;
+    transform: scale(1.05);
+}
+
+.btn-icon.btn-success {
+    background-color: var(--success, #22c55e);
+    color: white;
+}
+
+.btn-icon.btn-success:hover {
+    background-color: #16a34a;
+}
+
+/* Total */
+.total-section {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.total-display {
+    background: linear-gradient(135deg, var(--primary, #0ea5e9), var(--primary-700, #0369a1));
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    text-align: right;
+    min-width: 280px;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.total-display h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.total-amount {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+/* Botones de acción */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 0.85rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--primary, #0ea5e9);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-700, #0369a1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--bg-2, #e2e8f0);
+    color: var(--text, #0f172a);
+    border: 1px solid var(--border, #cbd5e1);
+}
+
+.btn-secondary:hover {
+    background: var(--border, #cbd5e1);
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .compra-form .form-section {
+        padding: 1.5rem;
+    }
+    
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .span-2 {
+        grid-column: auto;
+    }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+    .page-container {
+        padding: 1rem;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .compra-form .form-section {
+        padding: 1.25rem;
+        border-radius: 8px;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+    }
+    
+    .form-group-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .toggle-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .product-card {
+        padding: 1rem;
+    }
+    
+    .total-display {
+        min-width: 100%;
+        text-align: center;
+    }
+    
+    .total-amount {
+        font-size: 1.75rem;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .compra-form .form-section {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+    }
+    
+    .form-group label,
+    .product-form-group label {
+        font-size: 0.85rem;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
+    .product-form-group input,
+    .product-form-group select {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .total-amount {
+        font-size: 1.5rem;
+    }
+}
+
+/* Grid específico para items de producto en diferentes tamaños */
+@media (min-width: 1200px) {
+    .product-card {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .product-card {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr) auto;
+        gap: 1rem;
+        align-items: end;
+    }
+}
+
+@media (max-width: 767px) {
+    .product-card {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .btn-icon.btn-danger {
+        width: 100%;
+        padding: 0.75rem;
+    }
+}

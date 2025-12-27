@@ -196,8 +196,6 @@ export default function VerClientes() {
                 <th>Teléfono</th>
                 <th>Categorías</th>
                 <th>Ciudad</th>
-                <th>Visita</th>
-                <th>Día de Visita</th>
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
@@ -217,8 +215,6 @@ export default function VerClientes() {
                     </div>
                   </td>
                   <td>{c.ciudad}</td>
-                  <td>{c.visita}</td>
-                  <td>{c.dia_visita}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => navigate(`/clientes/${c.cliente_id}`)} title="Ver detalles">
                       <Eye size={16} />

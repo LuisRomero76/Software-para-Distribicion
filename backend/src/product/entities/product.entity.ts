@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, CreateDateColumn } from 'typeorm';
 import { Category } from '../../category/entities/category.entity';
 import { SubCategory } from '../../sub-category/entities/sub-category.entity';
-import { ProductShipping } from './product-shipping.entity';
 
 @Entity()
 export class Product {
@@ -20,6 +19,15 @@ export class Product {
   @Column({ type: 'varchar', length: 50, nullable: true })
   tamaño: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
+  precio: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
+  precio_compra: number;
+
+  @Column({ type: 'int', nullable: true, default: 1 })
+  cant_por_paquete: number;
+
   @Column()
   category_id: number;
 
@@ -29,9 +37,6 @@ export class Product {
   @CreateDateColumn({ type: 'timestamp' })
   fecha_creacion: Date;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
-
   @ManyToOne(() => Category)
   @JoinColumn({ name: 'category_id' })
   category: Category;
@@ -39,7 +44,4 @@ export class Product {
   @ManyToOne(() => SubCategory)
   @JoinColumn({ name: 'sub_category_id' })
   subCategory: SubCategory;
-
-  @OneToMany(() => ProductShipping, (shipping) => shipping.product, { cascade: true })
-  shippingInfo: ProductShipping[];
 }

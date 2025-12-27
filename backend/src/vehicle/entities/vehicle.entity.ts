@@ -1,4 +1,5 @@
 import { VehicleAssignment } from 'src/distribution/entities/vehicle-assignment.entity';
+import { GastoOperativo } from 'src/gasto_operativo/entities/gasto_operativo.entity';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 
 @Entity()
@@ -29,4 +30,7 @@ export class Vehicle {
 
   @OneToMany(() => VehicleAssignment, (assignment) => assignment.vehicle, { cascade: true })
   assignments: VehicleAssignment[];
+
+  @OneToMany(() => GastoOperativo, (gasto) => gasto.vehiculo)
+  gastosOperativos: GastoOperativo[];
 }

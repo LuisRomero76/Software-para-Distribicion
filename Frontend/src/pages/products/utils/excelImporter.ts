@@ -5,6 +5,7 @@ export interface ProductImportRow {
   nombre?: string;
   descripcion?: string;
   tamaño?: string;
+  precio?: string | number;
 }
 
 export interface SheetData {
@@ -27,6 +28,7 @@ export async function readProductExcelFile(file: File): Promise<SheetData[]> {
       nombre: r['Nombre'] ?? r['nombre'] ?? '',
       descripcion: r['Descripción'] ?? r['descripcion'] ?? r['descripción'] ?? '',
       tamaño: r['Tamaño'] ?? r['tamaño'] ?? r['tamano'] ?? '',
+      precio: r['Precio'] ?? r['precio'] ?? '',
     });
 
     return {
@@ -47,6 +49,7 @@ export function generateProductTemplate(): void {
       'Nombre': 'Vino Tinto',
       'Descripción': 'Vino tinto premium',
       'Tamaño': '750ml',
+      'Precio': '150.50',
     }
   ];
 
@@ -56,6 +59,7 @@ export function generateProductTemplate(): void {
     { wch: 30 }, // Nombre
     { wch: 40 }, // Descripción
     { wch: 15 }, // Tamaño
+    { wch: 15 }, // Precio
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Productos');

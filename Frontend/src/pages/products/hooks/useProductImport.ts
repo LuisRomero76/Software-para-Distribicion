@@ -5,6 +5,7 @@ export interface ProductCreatePayload {
   nombre: string;
   descripcion?: string;
   tamaño?: string;
+  precio: string;
   category_id: number;
   sub_category_id?: number;
 }
@@ -18,6 +19,7 @@ export function useProductImport() {
     const payload: ProductCreatePayload = {
       nombre: String(row.nombre || '').trim(),
       category_id: categoryId,
+      precio: String(row.precio || '0').trim(),
     };
 
     // Solo incluir sub_category_id si se proporciona
@@ -42,9 +44,19 @@ export function useProductImport() {
   const validateRow = (row: ProductImportRow) => {
     const errors: string[] = [];
 
-    // Solo el nombre es obligatorio
+    // Validar nombre (obligatorio)
     if (!row.nombre || String(row.nombre).trim() === '') {
       errors.push('Nombre requerido');
+    }
+
+    // Validar precio (obligatorio)
+    if (!row.precio || String(row.precio).trim() === '') {
+      errors.push('Precio requerido');
+    } else {
+      const precio = parseFloat(String(row.precio).replace(',', '.'));
+      if (isNaN(precio) || precio < 0) {
+        errors.push('Precio inválido');
+      }
     }
 
     return { valid: errors.length === 0, errors };

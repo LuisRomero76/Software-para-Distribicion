@@ -21,6 +21,7 @@ import VerClientes from './pages/clientes/VerClientes'
 import NuevoCliente from './pages/clientes/NuevoCliente'
 import ClientDetails from './pages/clientes/ClientDetails'
 import ImportarClientes from './pages/clientes/ImportarClientes'
+import { VerCompras, RealizarCompra } from './pages/compras'
 
 function App() {
   return (
@@ -62,6 +63,8 @@ function App() {
               <Route path="products/import" element={<ImportProducts />} />
               <Route path="distribution/vehicles" element={<Vehicles />} />
               <Route path="distribution/assignments" element={<VehicleAssignment />} />
+              <Route path="compras" element={<VerCompras />} />
+              <Route path="compras/realizar" element={<RealizarCompra />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

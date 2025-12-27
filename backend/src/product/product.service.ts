@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
-import { ProductShipping } from './entities/product-shipping.entity';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 
@@ -11,8 +10,6 @@ export class ProductService {
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
-    @InjectRepository(ProductShipping)
-    private shippingRepository: Repository<ProductShipping>,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -35,7 +32,7 @@ export class ProductService {
 
   async findAll(): Promise<Product[]> {
     return this.productRepository.find({
-      relations: ['category', 'subCategory', 'shippingInfo'],
+      relations: ['category', 'subCategory'],
       order: { fecha_creacion: 'DESC' },
     });
   }
@@ -43,7 +40,7 @@ export class ProductService {
   async findOne(id: number): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { product_id: id },
-      relations: ['category', 'subCategory', 'shippingInfo'],
+      relations: ['category', 'subCategory'],
     });
 
     if (!product) {
@@ -60,7 +57,7 @@ export class ProductService {
 
     const product = await this.productRepository.findOne({
       where: { cod_barra },
-      relations: ['category', 'subCategory', 'shippingInfo'],
+      relations: ['category', 'subCategory'],
     });
 
     if (!product) {
