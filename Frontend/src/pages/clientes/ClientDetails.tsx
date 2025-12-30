@@ -34,7 +34,7 @@ export default function ClientDetails() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
-  const [errorField, setErrorField] = useState<string | null>(null);
+  const [, setErrorField] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCliente = async () => {
