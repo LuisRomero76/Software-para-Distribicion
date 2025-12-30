@@ -9,7 +9,7 @@ export function CategoriasTable({ categorias }: { categorias: CategoriaCliente[]
       <table className="data-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th >ID</th>
             <th>Nombre</th>
             <th>Creado</th>
           </tr>
@@ -17,7 +17,7 @@ export function CategoriasTable({ categorias }: { categorias: CategoriaCliente[]
         <tbody>
           {categorias.map(cat => (
             <tr key={cat.cliente_categoria_id}>
-              <td>{cat.cliente_categoria_id}</td>
+              <td className="col-id">{cat.cliente_categoria_id}</td>
               <td>{cat.nombre}</td>
               <td>{new Date(cat.createdAt).toLocaleString()}</td>
             </tr>

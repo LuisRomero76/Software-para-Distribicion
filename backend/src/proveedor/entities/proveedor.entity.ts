@@ -10,7 +10,7 @@ export class Proveedor {
   nombre: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  ruc: string;
+  nit_ci: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   email: string;
@@ -19,7 +19,7 @@ export class Proveedor {
   telefono: string;
 
   @Column({ type: 'text', nullable: true })
-  direccion: string;
+  ciudad: string;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

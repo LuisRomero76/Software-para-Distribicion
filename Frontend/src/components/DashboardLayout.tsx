@@ -174,6 +174,9 @@ export default function DashboardLayout() {
                                 <Link to="/compras/realizar" className={location.pathname === '/compras/realizar' ? 'active' : ''}>
                                     <UserPlus size={16} /> Realizar compra
                                 </Link>
+                                <Link to="/compras/proveedores" className={location.pathname === '/compras/proveedores' ? 'active' : ''}>
+                                    <Users size={16} /> Mis proveedores
+                                </Link>
                             </div>
                         )}
                     </nav>

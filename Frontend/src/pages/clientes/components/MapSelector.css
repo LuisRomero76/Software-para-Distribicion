@@ -1,0 +1,249 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-map-container {
+  background: var(--card);
+  border-radius: 12px;
+  width: 90vw;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+.modal-body-map {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow: visible;
+  min-height: 600px;
+}
+
+.map-search {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.map-search input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--background);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.map-search input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Dropdown de sugerencias */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 120px;
+  margin-top: 0.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--border);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: var(--background);
+}
+
+.suggestion-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.suggestion-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-name {
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-address {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Scrollbar personalizado para sugerencias */
+.search-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Estilos para modo oscuro */
+.dark .search-suggestions {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.map-info {
+  background: var(--background);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 3px solid var(--primary);
+}
+
+.map-info p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.map-hint {
+  color: var(--text-secondary);
+  font-size: 0.85rem !important;
+}
+
+.map-wrapper {
+  width: 100%;
+  height: 450px !important;
+  min-height: 450px !important;
+  max-height: 450px !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  position: relative;
+  background: #aad3df;
+  margin-bottom: 1rem;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  height: 450px !important;
+  width: 100% !important;
+  position: relative !important;
+  background: #aad3df;
+  border-radius: 8px;
+}
+
+.leaflet-tile-pane {
+  z-index: 200;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.leaflet-marker-pane {
+  z-index: 600;
+}
+
+.leaflet-control {
+  z-index: 800;
+}
+
+/* Estilos para el control de capas */
+.leaflet-control-layers {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-control-layers-toggle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z'/%3E%3C/svg%3E");
+  background-size: 20px 20px;
+  background-position: center;
+  width: 36px;
+  height: 36px;
+}
+
+.leaflet-control-layers-expanded {
+  padding: 10px;
+}
+
+.dark .leaflet-control-layers {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.dark .leaflet-control-layers-toggle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2'%3E%3Cpath d='M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z'/%3E%3C/svg%3E");
+}
+
+.dark .leaflet-control-layers-base label,
+.dark .leaflet-control-layers-overlays label {
+  color: #e0e0e0;
+}
+
+/* Mejorar la visualización del mapa en modo oscuro */
+.dark .leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+.dark .map-wrapper {
+  background: #1a1a1a;
+}
+
+.dark .leaflet-container {
+  background: #1a1a1a;
+}

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
 import { useCategoriasClientes } from './hooks/useCategoriasClientes';
-import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload } from 'lucide-react';
+import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload, MapPin } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Pagination from '../../components/Pagination';
+import MapSelector from './components/MapSelector';
 import './VerClientes.css';
 
 export default function VerClientes() {
@@ -17,8 +18,12 @@ export default function VerClientes() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [editForm, setEditForm] = useState<Partial<CreateClientePayload>>({});
   const [telefonos, setTelefonos] = useState<{ numero: string; nombre_contacto?: string }[]>([]);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +81,9 @@ export default function VerClientes() {
       cliente_categoria_ids: cliente.categorias.map(c => c.cliente_categoria_id),
     });
     setTelefonos(cliente.telefonos_referencia || []);
+    setEditError(null);
+    setEditSuccess(null);
+    setErrorField(null);
     setShowEditModal(true);
   };
 
@@ -84,11 +92,17 @@ export default function VerClientes() {
     setEditingCliente(null);
     setEditForm({});
     setTelefonos([]);
+    setEditError(null);
+    setEditSuccess(null);
+    setErrorField(null);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCliente) return;
+
+    setEditError(null);
+    setEditSuccess(null);
 
     const payload: Partial<CreateClientePayload> = { 
       sub_canal: editForm.sub_canal,
@@ -111,14 +125,62 @@ export default function VerClientes() {
 
     try {
       await updateCliente(editingCliente.cliente_id, payload);
-      setShowEditModal(false);
-      setEditingCliente(null);
-    } catch (e) {
-      console.error(e);
+      setEditSuccess('Cliente actualizado correctamente');
+      
+      // Cerrar modal después de 1.5 segundos
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditingCliente(null);
+        setEditError(null);
+        setEditSuccess(null);
+      }, 1500);
+    } catch (e: any) {
+      console.error('Error al actualizar cliente:', e);
+      
+      // Detectar errores específicos
+      let errorMessage = 'Error al actualizar cliente';
+      let fieldWithError: string | null = null;
+      
+      if (e?.message) {
+        const msg = e.message.toLowerCase();
+        
+        // Detectar error de NIT/CI duplicado
+        if (msg.includes('duplicate') || msg.includes('duplicado') || msg.includes('unique') || msg.includes('nit_ci') || msg.includes('ya está registrado')) {
+          errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
+          fieldWithError = 'nit_ci';
+        } 
+        // Detectar otros errores de duplicados
+        else if (msg.includes('already exists') || msg.includes('ya existe')) {
+          errorMessage = 'Ya existe un cliente con estos datos. Por favor, verifique la información ingresada.';
+        }
+        // Error de validación
+        else if (msg.includes('validation') || msg.includes('validación')) {
+          errorMessage = 'Error de validación: ' + e.message;
+        }
+        // Si es "Internal server error" y tenemos un NIT/CI, probablemente sea duplicado
+        else if (msg.includes('internal server error') && editForm.nit_ci) {
+          errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
+          fieldWithError = 'nit_ci';
+        }
+        // Otros errores
+        else if (!msg.includes('internal server error')) {
+          errorMessage = e.message;
+        }
+      }
+      
+      setEditError(errorMessage);
+      setErrorField(fieldWithError);
     }
   };
 
-  const updateEditForm = (k: keyof CreateClientePayload, v: any) => setEditForm(prev => ({ ...prev, [k]: v }));
+  const updateEditForm = (k: keyof CreateClientePayload, v: any) => {
+    setEditForm(prev => ({ ...prev, [k]: v }));
+    // Limpiar error si el usuario está editando el campo que tiene error
+    if (k === errorField) {
+      setEditError(null);
+      setErrorField(null);
+    }
+  };
 
   const toggleCategoria = (id: number) => {
     setEditForm(prev => {
@@ -256,6 +318,18 @@ export default function VerClientes() {
               <button className="modal-close" onClick={handleCancelEdit}>×</button>
             </div>
             <form className="modal-form" onSubmit={handleSaveEdit}>
+              {/* Alertas de error y éxito */}
+              {editError && (
+                <div className="alert alert-error" style={{ margin: '0 0 1rem 0' }}>
+                  {editError}
+                </div>
+              )}
+              {editSuccess && (
+                <div className="alert alert-success" style={{ margin: '0 0 1rem 0' }}>
+                  {editSuccess}
+                </div>
+              )}
+
               <div className="form-grid">
                 <div className="form-row">
                   <label>Sub Canal</label>
@@ -266,8 +340,13 @@ export default function VerClientes() {
                   <input value={editForm.nombre || ''} onChange={e => updateEditForm('nombre', e.target.value)} maxLength={100} required />
                 </div>
                 <div className="form-row">
-                  <label>NIT/CI</label>
-                  <input type="number" value={editForm.nit_ci || ''} onChange={e => updateEditForm('nit_ci', e.target.value ? parseInt(e.target.value, 10) : undefined)} />
+                  <label>NIT/CI {errorField === 'nit_ci' && <span style={{ color: '#ef4444', fontSize: '0.875rem', marginLeft: '8px' }}>⚠ Este campo está duplicado</span>}</label>
+                  <input 
+                    type="number" 
+                    value={editForm.nit_ci || ''} 
+                    onChange={e => updateEditForm('nit_ci', e.target.value ? parseInt(e.target.value, 10) : undefined)} 
+                    style={errorField === 'nit_ci' ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
+                  />
                 </div>
                 <div className="form-row">
                   <label>Dirección</label>
@@ -288,6 +367,27 @@ export default function VerClientes() {
                 <div className="form-row">
                   <label>Día de Visita</label>
                   <input type="date" value={editForm.dia_visita || ''} onChange={e => updateEditForm('dia_visita', e.target.value)} />
+                </div>
+                <div className="form-row">
+                  <label>Coordenadas</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      value={editForm.coordenadas || ''} 
+                      onChange={e => updateEditForm('coordenadas', e.target.value)} 
+                      maxLength={200}
+                      placeholder="-16.5,-68.15"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowMapModal(true)}
+                      title="Seleccionar en el mapa"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <MapPin size={18} /> Mapa
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -328,6 +428,13 @@ export default function VerClientes() {
           </div>
         </div>
       )}
+
+      <MapSelector
+        isOpen={showMapModal}
+        onClose={() => setShowMapModal(false)}
+        onSelect={(coordinates) => updateEditForm('coordenadas', coordinates)}
+        initialCoordinates={editForm.coordenadas}
+      />
     </div>
   );
 }

@@ -53,7 +53,7 @@ export default function ClientCategoryPanel({
       </form>
 
       <div className="table-container cat-table">
-        <table className="table">
+        <table className="data-table">
           <thead>
             <tr>
               <th className="col-id">ID</th>

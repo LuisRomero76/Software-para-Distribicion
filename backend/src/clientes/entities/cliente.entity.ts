@@ -39,12 +39,6 @@ export class Cliente {
     })
     telefonos_referencia: TelefonoReferencia[];
 
-    @Column({ type: 'varchar', length: 100, nullable: true })
-    ruta?: string;
-
-    @Column({ type: 'date', nullable: true })
-    dia_visita?: Date;
-
     @ManyToMany(() => CategoriaCliente, categoria => categoria.clientes, {
         eager: true,
     })

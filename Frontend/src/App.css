@@ -840,6 +840,15 @@
   background: var(--bg);
 }
 
+.form-input.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.form-input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;

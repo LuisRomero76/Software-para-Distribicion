@@ -21,7 +21,7 @@ import VerClientes from './pages/clientes/VerClientes'
 import NuevoCliente from './pages/clientes/NuevoCliente'
 import ClientDetails from './pages/clientes/ClientDetails'
 import ImportarClientes from './pages/clientes/ImportarClientes'
-import { VerCompras, RealizarCompra } from './pages/compras'
+import { VerCompras, RealizarCompra, VerProveedores } from './pages/compras'
 
 function App() {
   return (
@@ -65,6 +65,7 @@ function App() {
               <Route path="distribution/assignments" element={<VehicleAssignment />} />
               <Route path="compras" element={<VerCompras />} />
               <Route path="compras/realizar" element={<RealizarCompra />} />
+              <Route path="compras/proveedores" element={<VerProveedores />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

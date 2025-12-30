@@ -79,7 +79,7 @@ export default function SubCategoryPanel({
       </form>
 
       <div className="table-container subcat-table">
-        <table className="table">
+        <table className="data-table">
           <thead>
             <tr>
               <th>Categoría</th>

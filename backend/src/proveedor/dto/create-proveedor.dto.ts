@@ -8,7 +8,7 @@ export class CreateProveedorDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  ruc?: string;
+  nit_ci?: string;
 
   @IsOptional()
   @IsEmail()
@@ -22,5 +22,5 @@ export class CreateProveedorDto {
 
   @IsOptional()
   @IsString()
-  direccion?: string;
+  ciudad?: string;
 }

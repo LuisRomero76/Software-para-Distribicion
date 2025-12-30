@@ -3,27 +3,27 @@ import { request } from '../lib/http';
 export interface Proveedor {
     proveedor_id: number;
     nombre: string;
-    ruc?: string;
+    nit_ci?: string;
     email?: string;
     telefono?: string;
-    direccion?: string;
+    ciudad?: string;
     createdAt?: string;
 }
 
 export interface CreateProveedorDto {
     nombre: string;
-    ruc?: string;
+    nit_ci?: string;
     email?: string;
     telefono?: string;
-    direccion?: string;
+    ciudad?: string;
 }
 
 export interface UpdateProveedorDto {
     nombre?: string;
-    ruc?: string;
+    nit_ci?: string;
     email?: string;
     telefono?: string;
-    direccion?: string;
+    ciudad?: string;
 }
 
 // Proveedor Services

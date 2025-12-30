@@ -55,16 +55,6 @@ export class CreateClienteDto {
 	@Type(() => TelefonoReferenciaDto)
 	telefonos_referencia?: TelefonoReferenciaDto[];
 
-	@IsString()
-	@IsOptional()
-	@Length(0, 100)
-	@Transform(({ value }) => value?.toString().trim())
-	ruta?: string;
-
-	@IsOptional()
-	@IsDateString()
-	dia_visita?: string;
-
 	@IsArray()
 	@ArrayNotEmpty()
 	@ArrayUnique()

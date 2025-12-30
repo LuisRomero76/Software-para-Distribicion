@@ -25,10 +25,10 @@ export default function RealizarCompra() {
     const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null);
     const [nuevoProveedor, setNuevoProveedor] = useState<Partial<Proveedor>>({
         nombre: '',
-        ruc: '',
+        nit_ci: '',
         email: '',
         telefono: '',
-        direccion: '',
+        ciudad: '',
     });
     // Fecha se define automáticamente al registrar
     const [observaciones, setObservaciones] = useState('');
@@ -160,14 +160,14 @@ export default function RealizarCompra() {
             } else {
                 // Crear proveedor si al menos hay nombre
                 const tieneDatosProveedor = (nuevoProveedor.nombre && nuevoProveedor.nombre.trim().length > 0) ||
-                    nuevoProveedor.ruc || nuevoProveedor.email || nuevoProveedor.telefono || nuevoProveedor.direccion;
+                    nuevoProveedor.nit_ci || nuevoProveedor.email || nuevoProveedor.telefono || nuevoProveedor.ciudad;
                 if (tieneDatosProveedor) {
                     const creado = await createProveedor({
                         nombre: nuevoProveedor.nombre ?? '',
-                        ruc: nuevoProveedor.ruc ?? '',
+                        nit_ci: nuevoProveedor.nit_ci ?? '',
                         email: nuevoProveedor.email ?? '',
                         telefono: nuevoProveedor.telefono ?? '',
-                        direccion: nuevoProveedor.direccion ?? '',
+                        ciudad: nuevoProveedor.ciudad ?? '',
                     });
                     proveedorFinalId = creado.proveedor_id;
                 }
@@ -264,15 +264,15 @@ export default function RealizarCompra() {
                                         setProveedorSeleccionado(prov);
                                         setNuevoProveedor({
                                             nombre: prov?.nombre ?? '',
-                                            ruc: (prov as any)?.ruc ?? '',
+                                            nit_ci: (prov as any)?.nit_ci ?? '',
                                             email: prov?.email ?? '',
                                             telefono: prov?.telefono ?? '',
-                                            direccion: prov?.direccion ?? '',
+                                            ciudad: prov?.ciudad ?? '',
                                         });
                                     } else {
                                         setProveedorId(null);
                                         setProveedorSeleccionado(null);
-                                        setNuevoProveedor({ nombre: '', ruc: '', email: '', telefono: '', direccion: '' });
+                                        setNuevoProveedor({ nombre: '', nit_ci: '', email: '', telefono: '', ciudad: '' });
                                     }
                                 }}
                             >
@@ -289,7 +289,7 @@ export default function RealizarCompra() {
                     {/* Datos del proveedor (auto-relleno si se selecciona existente, editables si nuevo) */}
                     <div className="grid-2">
                         <div className="form-group">
-                            <label htmlFor="prov-nombre">Nombre del proveedor</label>
+                            <label htmlFor="prov-nombre">Nombre del proveedor/empresa</label>
                             <input
                                 id="prov-nombre"
                                 type="text"
@@ -300,12 +300,12 @@ export default function RealizarCompra() {
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="prov-ruc">RUC</label>
+                            <label htmlFor="prov-nit-ci">NIT/CI</label>
                             <input
-                                id="prov-ruc"
+                                id="prov-nit-ci"
                                 type="text"
-                                value={nuevoProveedor.ruc ?? ''}
-                                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, ruc: e.target.value })}
+                                value={nuevoProveedor.nit_ci ?? ''}
+                                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, nit_ci: e.target.value })}
                                 disabled={usarProveedorExistente && !!proveedorSeleccionado}
                                 placeholder="Opcional"
                             />
@@ -333,12 +333,12 @@ export default function RealizarCompra() {
                             />
                         </div>
                         <div className="form-group span-2">
-                            <label htmlFor="prov-direccion">Dirección</label>
+                            <label htmlFor="prov-ciudad">Ciudad</label>
                             <input
-                                id="prov-direccion"
+                                id="prov-ciudad"
                                 type="text"
-                                value={nuevoProveedor.direccion ?? ''}
-                                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, direccion: e.target.value })}
+                                value={nuevoProveedor.ciudad ?? ''}
+                                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, ciudad: e.target.value })}
                                 disabled={usarProveedorExistente && !!proveedorSeleccionado}
                                 placeholder="Opcional"
                             />
@@ -353,10 +353,10 @@ export default function RealizarCompra() {
                                                                     setLoading(true);
                                                                     const creado = await createProveedor({
                                                                         nombre: (nuevoProveedor.nombre ?? '').trim(),
-                                                                        ruc: nuevoProveedor.ruc ?? '',
+                                                                        nit_ci: nuevoProveedor.nit_ci ?? '',
                                                                         email: nuevoProveedor.email ?? '',
                                                                         telefono: nuevoProveedor.telefono ?? '',
-                                                                        direccion: nuevoProveedor.direccion ?? '',
+                                                                        ciudad: nuevoProveedor.ciudad ?? '',
                                                                     });
                                                                     const provLista = await getAllProveedores();
                                                                     setProveedores(provLista);

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoriaCliente } from 'src/categoria_clientes/entities/categoria_cliente.entity';
 import { In, Repository } from 'typeorm';
@@ -30,18 +30,28 @@ export class ClientesService {
   }
 
   async create(createClienteDto: CreateClienteDto) {
-    const categorias = await this.ensureCategorias(createClienteDto.cliente_categoria_ids);
-    const { cliente_categoria_ids, telefonos_referencia, ...data } = createClienteDto;
-    
-    const cliente = this.clienteRepository.create({ 
-      ...data, 
-      categorias,
-      telefonos_referencia: telefonos_referencia?.map(tel => 
-        this.telefonoReferenciaRepository.create(tel)
-      ) || []
-    });
-    
-    return await this.clienteRepository.save(cliente);
+    try {
+      const categorias = await this.ensureCategorias(createClienteDto.cliente_categoria_ids);
+      const { cliente_categoria_ids, telefonos_referencia, ...data } = createClienteDto;
+      
+      const cliente = this.clienteRepository.create({ 
+        ...data, 
+        categorias,
+        telefonos_referencia: telefonos_referencia?.map(tel => 
+          this.telefonoReferenciaRepository.create(tel)
+        ) || []
+      });
+      
+      return await this.clienteRepository.save(cliente);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        if (error.message.includes('nit_ci')) {
+          throw new ConflictException('El NIT/CI ingresado ya está registrado en otro cliente');
+        }
+        throw new ConflictException('Ya existe un cliente con estos datos');
+      }
+      throw error;
+    }
   }
 
   async findAll() {
@@ -57,25 +67,35 @@ export class ClientesService {
   }
 
   async update(id: number, updateClienteDto: UpdateClienteDto) {
-    const cliente = await this.findOne(id);
+    try {
+      const cliente = await this.findOne(id);
 
-    if (updateClienteDto.cliente_categoria_ids) {
-      cliente.categorias = await this.ensureCategorias(updateClienteDto.cliente_categoria_ids);
+      if (updateClienteDto.cliente_categoria_ids) {
+        cliente.categorias = await this.ensureCategorias(updateClienteDto.cliente_categoria_ids);
+      }
+
+      if (updateClienteDto.telefonos_referencia !== undefined) {
+        // Eliminar teléfonos anteriores
+        await this.telefonoReferenciaRepository.delete({ cliente_id: id });
+        
+        // Crear nuevos teléfonos
+        cliente.telefonos_referencia = updateClienteDto.telefonos_referencia?.map(tel =>
+          this.telefonoReferenciaRepository.create({ ...tel, cliente_id: id })
+        ) || [];
+      }
+
+      const { cliente_categoria_ids, telefonos_referencia, ...data } = updateClienteDto;
+      Object.assign(cliente, data);
+      return await this.clienteRepository.save(cliente);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        if (error.message.includes('nit_ci')) {
+          throw new ConflictException('El NIT/CI ingresado ya está registrado en otro cliente');
+        }
+        throw new ConflictException('Ya existe un cliente con estos datos');
+      }
+      throw error;
     }
-
-    if (updateClienteDto.telefonos_referencia !== undefined) {
-      // Eliminar teléfonos anteriores
-      await this.telefonoReferenciaRepository.delete({ cliente_id: id });
-      
-      // Crear nuevos teléfonos
-      cliente.telefonos_referencia = updateClienteDto.telefonos_referencia?.map(tel =>
-        this.telefonoReferenciaRepository.create({ ...tel, cliente_id: id })
-      ) || [];
-    }
-
-    const { cliente_categoria_ids, telefonos_referencia, ...data } = updateClienteDto;
-    Object.assign(cliente, data);
-    return await this.clienteRepository.save(cliente);
   }
 
   async remove(id: number) {
