@@ -313,7 +313,7 @@ export default function MapSelector({ isOpen, onClose, onSelect, initialCoordina
             <p className="map-hint">Haz clic en el mapa para seleccionar una ubicación</p>
           </div>
 
-          <div className="map-wrapper" style={{ height: '450px', width: '100%' }}>
+          <div className="map-wrapper">
             <MapContainer
               key={mapKey}
               center={position}
@@ -321,7 +321,6 @@ export default function MapSelector({ isOpen, onClose, onSelect, initialCoordina
               scrollWheelZoom={true}
               zoomControl={true}
               maxZoom={19}
-              style={{ height: '450px', width: '100%', position: 'relative' }}
             >
               <MapResizer />
               <LayersControl position="topright">

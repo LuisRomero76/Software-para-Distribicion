@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -129,6 +129,9 @@ export default function DashboardLayout() {
                                 </Link>
                                 <Link to="/distribution/assignments" className={location.pathname === '/distribution/assignments' ? 'active' : ''}>
                                     <Users size={16} /> Vincular vehículo
+                                </Link>
+                                <Link to="/distribution/rutas" className={location.pathname === '/distribution/rutas' ? 'active' : ''}>
+                                    <MapPin size={16} /> Asignar rutas
                                 </Link>
                             </div>
                         )}

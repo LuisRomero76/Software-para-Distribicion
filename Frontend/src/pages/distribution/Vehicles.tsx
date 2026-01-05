@@ -47,7 +47,6 @@ export default function Vehicles() {
     vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const totalPages = Math.max(1, Math.ceil(filteredVehicles.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedVehicles = filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
