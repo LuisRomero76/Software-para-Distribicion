@@ -11,6 +11,19 @@ interface RutasTableProps {
   getStatusBadgeClass: (estado: string) => string;
 }
 
+// Helper para formatear fechas sin problemas de zona horaria
+const formatDateLocal = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+  const [year, month, day] = date.split('-');
+  return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString('es-ES', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
 export const RutasTable: React.FC<RutasTableProps> = ({
   rutas,
   isLoading,
@@ -60,12 +73,7 @@ export const RutasTable: React.FC<RutasTableProps> = ({
             </td>
             <td>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {new Date(ruta.dia_visita).toLocaleDateString('es-ES', {
-                  weekday: 'short',
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
+                {formatDateLocal(ruta.dia_visita)}
               </div>
             </td>
             <td>

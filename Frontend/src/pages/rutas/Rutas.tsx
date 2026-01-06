@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRutas, useExcelExport } from './hooks';
 import {
@@ -14,6 +15,7 @@ import type { EstadoRuta, Ruta, RutaFormData } from './types';
 import '../../styles/page.css';
 
 export default function Rutas() {
+  const navigate = useNavigate();
   const { auth } = useAuth();
   const { rutas, clientes, colaboradores, loading, error, loadData, addRuta, updateRuta, deleteRuta } = useRutas(auth?.token);
   const { exportRutas } = useExcelExport();
@@ -37,7 +39,6 @@ export default function Rutas() {
     cliente_id: 0,
     collaborator_id: 0,
     dia_visita: '',
-    estado: 'pendiente',
     observaciones: ''
   });
   const [addingRuta, setAddingRuta] = useState(false);
@@ -107,6 +108,8 @@ export default function Rutas() {
     setSaving(true);
     try {
       await updateRuta(selectedRuta.ruta_id, editForm);
+      // Recargar los datos para obtener las relaciones actualizadas
+      await loadData();
       setSelectedRuta(null);
       setEditMode(false);
       setEditForm({
@@ -133,13 +136,13 @@ export default function Rutas() {
 
     setAddingRuta(true);
     try {
-      await addRuta(newRuta as RutaFormData);
+      // Asegurar que el estado siempre sea 'pendiente' al crear una nueva ruta
+      await addRuta({ ...newRuta, estado: 'pendiente' } as RutaFormData);
       setShowAddModal(false);
       setNewRuta({
         cliente_id: 0,
         collaborator_id: 0,
         dia_visita: '',
-        estado: 'pendiente' as EstadoRuta,
         observaciones: ''
       });
     } catch (err: any) {
@@ -186,7 +189,7 @@ export default function Rutas() {
           rutas={paginatedRutas}
           isLoading={loading}
           hasError={!!error}
-          onView={ruta => { setSelectedRuta(ruta); setEditMode(false); }}
+          onView={ruta => navigate(`/distribution/rutas/${ruta.ruta_id}`)}
           onEdit={handleEdit}
           onDelete={ruta => setDeleteTarget(ruta)}
           getStatusBadgeClass={getStatusBadgeClass}
@@ -208,6 +211,7 @@ export default function Rutas() {
         onRutaChange={setNewRuta}
         clientes={clientes}
         colaboradores={colaboradores}
+        rutas={rutas}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddRuta}
         isLoading={addingRuta}
@@ -221,6 +225,7 @@ export default function Rutas() {
           onEditFormChange={setEditForm}
           clientes={clientes}
           colaboradores={colaboradores}
+          rutas={rutas}
           onClose={() => { setSelectedRuta(null); setEditMode(false); }}
           onSave={handleSave}
           isSaving={saving}

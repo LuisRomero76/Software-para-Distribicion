@@ -8,6 +8,14 @@ interface RutaDeleteModalProps {
   isDeleting: boolean;
 }
 
+// Helper para formatear fechas sin problemas de zona horaria
+const formatDateLocal = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+  const [year, month, day] = date.split('-');
+  return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString('es-ES');
+};
+
 export const RutaDeleteModal: React.FC<RutaDeleteModalProps> = ({
   ruta,
   isOpen,
@@ -24,7 +32,7 @@ export const RutaDeleteModal: React.FC<RutaDeleteModalProps> = ({
         <p>
           Estás a punto de eliminar la ruta asignada a{' '}
           <strong>{ruta.cliente ? ruta.cliente.nombre : 'cliente'}</strong> para el día{' '}
-          <strong>{new Date(ruta.dia_visita).toLocaleDateString('es-ES')}</strong>.
+          <strong>{formatDateLocal(ruta.dia_visita)}</strong>.
         </p>
         <p className="warning-text">Esta acción no se puede deshacer.</p>
         <div className="modal-actions">

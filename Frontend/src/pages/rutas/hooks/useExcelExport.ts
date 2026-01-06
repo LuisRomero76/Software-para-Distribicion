@@ -1,6 +1,14 @@
 import * as XLSX from 'xlsx';
 import type { Ruta } from '../types';
 
+// Helper para formatear fechas sin problemas de zona horaria
+const formatDateLocal = (dateString: string) => {
+  if (!dateString) return '-';
+  const date = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+  const [year, month, day] = date.split('-');
+  return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString('es-ES');
+};
+
 export const useExcelExport = () => {
   const exportRutas = (rutas: Ruta[]) => {
     const dataToExport = rutas.map(ruta => ({
@@ -8,7 +16,7 @@ export const useExcelExport = () => {
       'Cliente': ruta.cliente ? ruta.cliente.nombre : '-',
       'Dirección': ruta.cliente ? ruta.cliente.direccion : '-',
       'Colaborador': ruta.colaborador ? `${ruta.colaborador.nombre} ${ruta.colaborador.apellido}` : '-',
-      'Día de Visita': new Date(ruta.dia_visita).toLocaleDateString('es-ES'),
+      'Día de Visita': formatDateLocal(ruta.dia_visita),
       'Estado': ruta.estado,
       'Observaciones': ruta.observaciones || '-',
       'Fecha de Creación': new Date(ruta.createdAt).toLocaleString('es-ES', {

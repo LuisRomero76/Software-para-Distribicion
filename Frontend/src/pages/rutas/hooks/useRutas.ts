@@ -52,27 +52,18 @@ export const useRutas = (token?: string) => {
     async (id: number, rutaData: Partial<RutaFormData>) => {
       try {
         const updated = await updateRuta(id, rutaData, token);
-        const cliente = rutaData.cliente_id
-          ? clientes.find(c => c.cliente_id === rutaData.cliente_id)
-          : undefined;
-        const colaborador = rutaData.collaborator_id
-          ? colaboradores.find(c => c.collaborator_id === rutaData.collaborator_id)
-          : undefined;
-
+        // El backend devuelve la ruta con las relaciones eager cargadas,
+        // así que usamos directamente esos datos
         setRutas(rutas.map(r => {
           if (r.ruta_id !== id) return r;
-          return {
-            ...updated,
-            cliente: cliente ?? r.cliente,
-            colaborador: colaborador ?? r.colaborador,
-          } as Ruta;
+          return updated;
         }));
         return updated;
       } catch (e: any) {
         throw new Error(e?.message ?? 'No se pudo actualizar la ruta');
       }
     },
-    [rutas, token, clientes, colaboradores]
+    [rutas, token]
   );
 
   const deleteRutaData = useCallback(

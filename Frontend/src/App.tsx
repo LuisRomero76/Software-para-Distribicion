@@ -15,7 +15,7 @@ import ChangePassword from './pages/ChangePassword'
 import CategoriesManagement from './pages/products/caregories/CategoriesManagement'
 import Vehicles from './pages/distribution/Vehicles'
 import VehicleAssignment from './pages/distribution/VehicleAssignment'
-import Rutas from './pages/rutas'
+import Rutas, { RutaDetalle, ReportesRutas } from './pages/rutas'
 import { ViewProducts, AddProduct, ImportProducts } from './pages/products'
 import CategoriasClientes from './pages/clientes/CategoriasClientes'
 import VerClientes from './pages/clientes/VerClientes'
@@ -65,6 +65,8 @@ function App() {
               <Route path="distribution/vehicles" element={<Vehicles />} />
               <Route path="distribution/assignments" element={<VehicleAssignment />} />
               <Route path="distribution/rutas" element={<Rutas />} />
+              <Route path="distribution/rutas/:id" element={<RutaDetalle />} />
+              <Route path="distribution/reportes" element={<ReportesRutas />} />
               <Route path="compras" element={<VerCompras />} />
               <Route path="compras/realizar" element={<RealizarCompra />} />
               <Route path="compras/proveedores" element={<VerProveedores />} />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Phone, User, Hash, Tag, Edit2, Calendar, Map, Trash2, Plus, X } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiGet } from './services/api';
@@ -18,6 +18,28 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Componente para forzar el resize del mapa
+function MapResizer() {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Múltiples intentos para asegurar que el mapa se renderice correctamente
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 100),
+      setTimeout(() => map.invalidateSize(), 200),
+      setTimeout(() => map.invalidateSize(), 300),
+      setTimeout(() => map.invalidateSize(), 500),
+      setTimeout(() => map.invalidateSize(), 1000)
+    ];
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [map]);
+  
+  return null;
+}
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -300,6 +322,7 @@ export default function ClientDetails() {
                   zoomControl={true}
                   style={{ height: '300px', width: '100%', borderRadius: '8px' }}
                 >
+                  <MapResizer />
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

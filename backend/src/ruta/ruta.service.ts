@@ -98,14 +98,26 @@ export class RutaService {
   async update(id: number, updateRutaDto: UpdateRutaDto): Promise<Ruta> {
     const ruta = await this.findOne(id);
 
-    // Si se actualiza el cliente, verificar que existe
-    if (updateRutaDto.cliente_id) {
+    // Si se actualiza el cliente, verificar que existe y que no tenga otra ruta asignada
+    if (updateRutaDto.cliente_id && updateRutaDto.cliente_id !== ruta.cliente_id) {
       const cliente = await this.clienteRepository.findOne({
         where: { cliente_id: updateRutaDto.cliente_id }
       });
       if (!cliente) {
         throw new NotFoundException(`Cliente con ID ${updateRutaDto.cliente_id} no encontrado`);
       }
+
+      // Verificar que el cliente no tenga otra ruta asignada
+      const rutaExistente = await this.rutaRepository.findOne({
+        where: { cliente_id: updateRutaDto.cliente_id }
+      });
+      if (rutaExistente) {
+        throw new BadRequestException(`El cliente ya tiene una ruta asignada (ID: ${rutaExistente.ruta_id})`);
+      }
+
+      // Asignar relación y FK explícitamente
+      ruta.cliente = cliente;
+      ruta.cliente_id = cliente.cliente_id;
     }
 
     // Si se actualiza el colaborador, verificar que existe
@@ -116,10 +128,27 @@ export class RutaService {
       if (!colaborador) {
         throw new NotFoundException(`Colaborador con ID ${updateRutaDto.collaborator_id} no encontrado`);
       }
+
+      // Asignar relación y FK explícitamente
+      ruta.colaborador = colaborador;
+      ruta.collaborator_id = colaborador.collaborator_id;
     }
 
-    Object.assign(ruta, updateRutaDto);
-    return await this.rutaRepository.save(ruta);
+    // Actualizar campos simples de ser provistos
+    if (updateRutaDto.dia_visita !== undefined) {
+      ruta.dia_visita = updateRutaDto.dia_visita as Date;
+    }
+    if (updateRutaDto.estado !== undefined) {
+      ruta.estado = updateRutaDto.estado as EstadoRuta;
+    }
+    if (updateRutaDto.observaciones !== undefined) {
+      ruta.observaciones = updateRutaDto.observaciones as string;
+    }
+
+    await this.rutaRepository.save(ruta);
+    
+    // Recargar la ruta para obtener las relaciones eager actualizadas
+    return await this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {

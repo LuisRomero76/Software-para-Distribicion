@@ -1,0 +1,375 @@
+/* Ruta Details - Administrative Layout (based on ClientDetails) */
+
+.ruta-details-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 1.5rem 2rem;
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* Header Section */
+.ruta-details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.ruta-details-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ruta-details-title-section h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: var(--bg-2);
+  border-color: var(--primary-color, #4f46e5);
+  color: var(--primary-color, #4f46e5);
+}
+
+/* Main Grid Layout */
+.ruta-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .ruta-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Section Cards */
+.detail-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.detail-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.detail-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.detail-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.info-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.info-field-value {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.info-field-value.empty {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Phone Links */
+.phone-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.phone-link:hover {
+  color: var(--primary-color, #4f46e5);
+  text-decoration: underline;
+}
+
+/* Full width sections */
+.full-width-section {
+  grid-column: 1 / -1;
+}
+
+/* Full width info fields */
+.info-field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Embedded Map Section */
+.embedded-map-section {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.embedded-map-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.embedded-map-container {
+  border-radius: 8px;
+  overflow: hidden;
+  height: 400px; /* Altura explícita para el contenedor */
+  width: 100%;
+}
+
+.embedded-map-container .leaflet-container {
+  z-index: 1;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Map not available */
+.map-not-available {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-2);
+  border-radius: 8px;
+  border: 2px dashed var(--border);
+}
+
+.map-not-available svg {
+  opacity: 0.2;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.map-not-available p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.map-not-available span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Error State */
+.error-state {
+  padding: 2rem;
+  text-align: center;
+  color: #dc2626;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* Loading State */
+.loading-state {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ruta-details-page {
+    padding: 1rem;
+  }
+
+  .ruta-details-title-section h1 {
+    font-size: 1.5rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .embedded-map-container {
+    height: 300px !important;
+  }
+
+  .embedded-map-container .leaflet-container {
+    height: 100% !important;
+  }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .ruta-details-page,
+.dark .ruta-details-page {
+  background: var(--bg, #0f172a);
+}
+
+[data-theme="dark"] .detail-section,
+.dark .detail-section {
+  background: var(--card, #1e293b);
+  border-color: var(--border, #334155);
+}
+
+[data-theme="dark"] .detail-section:hover,
+.dark .detail-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .info-field-value,
+.dark .info-field-value {
+  background: var(--bg-2, #0f172a);
+  border-color: var(--border, #334155);
+  color: var(--text, #f1f5f9);
+}
+
+[data-theme="dark"] .btn-back,
+.dark .btn-back {
+  color: var(--text, #f1f5f9);
+  border-color: var(--border, #334155);
+}
+
+[data-theme="dark"] .btn-back:hover,
+.dark .btn-back:hover {
+  background: var(--bg-2, #334155);
+}
+
+[data-theme="dark"] .map-not-available,
+.dark .map-not-available {
+  background: var(--bg-2, #0f172a);
+  border-color: var(--border, #334155);
+}
+
+[data-theme="dark"] .error-state,
+.dark .error-state {
+  background: #991b1b;
+  border-color: #b91c1c;
+  color: #fecaca;
+}
+
+[data-theme="dark"] .badge-warning,
+.dark .badge-warning {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+[data-theme="dark"] .badge-info,
+.dark .badge-info {
+  background: #1e3a8a;
+  color: #dbeafe;
+}
+
+[data-theme="dark"] .badge-success,
+.dark .badge-success {
+  background: #064e3b;
+  color: #d1fae5;
+}
+
+[data-theme="dark"] .badge-secondary,
+.dark .badge-secondary {
+  background: #374151;
+  color: #f3f4f6;
+}

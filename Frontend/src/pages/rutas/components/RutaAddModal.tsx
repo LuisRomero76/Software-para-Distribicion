@@ -1,4 +1,4 @@
-import type { Cliente, Colaborador, RutaFormData } from '../types';
+import type { Cliente, Colaborador, RutaFormData, Ruta } from '../types';
 
 interface RutaAddModalProps {
   isOpen: boolean;
@@ -6,6 +6,7 @@ interface RutaAddModalProps {
   onRutaChange: (ruta: Partial<RutaFormData>) => void;
   clientes: Cliente[];
   colaboradores: Colaborador[];
+  rutas: Ruta[];
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
@@ -17,22 +18,28 @@ export const RutaAddModal: React.FC<RutaAddModalProps> = ({
   onRutaChange,
   clientes,
   colaboradores,
+  rutas,
   onClose,
   onSubmit,
   isLoading
 }) => {
   if (!isOpen) return null;
 
+  // Filtrar clientes que ya tienen rutas asignadas
+  const clientesDisponibles = clientes.filter(
+    cliente => !rutas.some(ruta => ruta.cliente_id === cliente.cliente_id)
+  );
+
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="modal-large" onClick={e => e.stopPropagation()}>
+      <div className="modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
         <div className="modal-header">
           <h3>Asignar nueva ruta</h3>
           <button className="modal-close" onClick={onClose} type="button">×</button>
         </div>
         <form className="modal-form" onSubmit={onSubmit}>
           <div className="form-grid">
-            <label>
+            <label style={{ gridColumn: '1 / -1' }}>
               <span className="label-text">Cliente *</span>
               <select
                 value={newRuta.cliente_id || 0}
@@ -41,15 +48,20 @@ export const RutaAddModal: React.FC<RutaAddModalProps> = ({
                 required
               >
                 <option value={0}>Seleccione un cliente</option>
-                {clientes.map(cliente => (
+                {clientesDisponibles.map(cliente => (
                   <option key={cliente.cliente_id} value={cliente.cliente_id}>
                     {cliente.nombre} - {cliente.direccion}
                   </option>
                 ))}
               </select>
+              {clientesDisponibles.length === 0 && (
+                <small style={{ color: '#ff6b6b', marginTop: '0.25rem', display: 'block' }}>
+                  Todos los clientes ya tienen rutas asignadas
+                </small>
+              )}
             </label>
 
-            <label>
+            <label style={{ gridColumn: '1 / -1' }}>
               <span className="label-text">Colaborador *</span>
               <select
                 value={newRuta.collaborator_id || 0}
@@ -66,7 +78,7 @@ export const RutaAddModal: React.FC<RutaAddModalProps> = ({
               </select>
             </label>
 
-            <label>
+            <label style={{ gridColumn: '1 / -1' }}>
               <span className="label-text">Día de Visita *</span>
               <input
                 type="date"
@@ -75,21 +87,6 @@ export const RutaAddModal: React.FC<RutaAddModalProps> = ({
                 className="form-input"
                 required
               />
-            </label>
-
-            <label>
-              <span className="label-text">Estado *</span>
-              <select
-                value={newRuta.estado || 'pendiente'}
-                onChange={e => onRutaChange({ ...newRuta, estado: e.target.value as any })}
-                className="form-input"
-                required
-              >
-                <option value="pendiente">Pendiente</option>
-                <option value="en_progreso">En Progreso</option>
-                <option value="completada">Completada</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
             </label>
 
             <label style={{ gridColumn: '1 / -1' }}>
