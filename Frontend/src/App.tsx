@@ -23,6 +23,11 @@ import NuevoCliente from './pages/clientes/NuevoCliente'
 import ClientDetails from './pages/clientes/ClientDetails'
 import ImportarClientes from './pages/clientes/ImportarClientes'
 import { VerCompras, RealizarCompra, VerProveedores } from './pages/compras'
+import IngresosEgresos from './pages/finanzas/IngresosEgresos'
+import RegistroIngresosEgresos from './pages/finanzas/RegistroIngresosEgresos'
+import ReporteIngresosEgresos from './pages/finanzas/ReporteIngresosEgresos'
+import GestionCategoriasFinanzas from './pages/finanzas/GestionCategoriasFinanzas'
+import VerIngresosEgresos from './pages/finanzas/VerIngresosEgresos'
 
 function App() {
   return (
@@ -70,6 +75,11 @@ function App() {
               <Route path="compras" element={<VerCompras />} />
               <Route path="compras/realizar" element={<RealizarCompra />} />
               <Route path="compras/proveedores" element={<VerProveedores />} />
+              <Route path="finanzas/ingresos-egresos" element={<IngresosEgresos />} />
+              <Route path="finanzas/registro-ingresos-egresos" element={<RegistroIngresosEgresos />} />
+              <Route path="finanzas/reporte-ingresos-egresos" element={<ReporteIngresosEgresos />} />
+              <Route path="finanzas/categorias" element={<GestionCategoriasFinanzas />} />
+              <Route path="finanzas/ver-ingresos-egresos" element={<VerIngresosEgresos />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

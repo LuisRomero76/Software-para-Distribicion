@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3 } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +19,7 @@ export default function DashboardLayout() {
     const isClientesRoute = location.pathname.startsWith('/clientes');
     const isDistributionRoute = location.pathname.startsWith('/distribution');
     const isComprasRoute = location.pathname.startsWith('/compras');
+    const isFinanzasRoute = location.pathname.startsWith('/finanzas');
     
     const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
     const [collaboratorMenuOpen, setCollaboratorMenuOpen] = useState(isCollaboratorRoute);
@@ -27,6 +28,7 @@ export default function DashboardLayout() {
     const [distributionMenuOpen, setDistributionMenuOpen] = useState(isDistributionRoute);
     const [clientesMenuOpen, setClientesMenuOpen] = useState(isClientesRoute);
     const [comprasMenuOpen, setComprasMenuOpen] = useState(isComprasRoute);
+    const [finanzasMenuOpen, setFinanzasMenuOpen] = useState(isFinanzasRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -39,6 +41,7 @@ export default function DashboardLayout() {
         setDistributionMenuOpen(isDistributionRoute);
         setClientesMenuOpen(isClientesRoute);
         setComprasMenuOpen(isComprasRoute);
+        setFinanzasMenuOpen(isFinanzasRoute);
     }, [location.pathname]);
 
     return (
@@ -184,6 +187,33 @@ export default function DashboardLayout() {
                                     <Users size={16} /> Mis proveedores
                                 </Link>
                             </div>
+                        )}
+
+                        <button className="sidebar-group" onClick={() => setFinanzasMenuOpen(v => !v)} title="Finanzas">
+                            <Wallet size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Ingresos/Egresos</span>
+                                    {finanzasMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {finanzasMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/finanzas/registro-ingresos-egresos" className={location.pathname === '/finanzas/registro-ingresos-egresos' ? 'active' : ''}>
+                                    <Wallet size={16} /> Registrar Ingresos/Egresos
+                                </Link>
+                                <Link to="/finanzas/ver-ingresos-egresos" className={location.pathname === '/finanzas/ver-ingresos-egresos' ? 'active' : ''}>
+                                    <Wallet size={16} /> Ver Ingresos/Egresos
+                                </Link>
+                                <Link to="/finanzas/reporte-ingresos-egresos" className={location.pathname === '/finanzas/reporte-ingresos-egresos' ? 'active' : ''}>
+                                    <Wallet size={16} /> Reporte de Ingresos/Egresos
+                                </Link>
+                                <Link to="/finanzas/categorias" className={location.pathname === '/finanzas/categorias' ? 'active' : ''}>
+                                    <Wallet size={16} /> Gestionar Categorías
+                                </Link>
+                            </div>
+                            
                         )}
                     </nav>
                 </aside>

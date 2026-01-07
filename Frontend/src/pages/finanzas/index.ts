@@ -1,0 +1,5 @@
+export { default as IngresosEgresos } from './IngresosEgresos'
+export { default as RegistroIngresosEgresos } from './RegistroIngresosEgresos'
+export { default as ReporteIngresosEgresos } from './ReporteIngresosEgresos'
+export { default as GestionCategoriasFinanzas } from './GestionCategoriasFinanzas'
+export { default as VerIngresosEgresos } from './VerIngresosEgresos'
