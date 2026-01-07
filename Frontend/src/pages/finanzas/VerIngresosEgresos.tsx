@@ -188,12 +188,7 @@ export default function VerIngresosEgresos() {
     const fileName = `ingresos_egresos_${year}-${month}-${day}.xlsx`
     XLSX.writeFile(workbook, fileName)
   }
-
-  const formatFecha = (dateString: string) => {
-    if (!dateString) return '—'
-    return dateString.split('T')[0]
-  }
-
+  
   return (
     <div className="page-container">
       <div className="page-header">
