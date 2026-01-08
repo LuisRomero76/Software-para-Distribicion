@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Trash2, Edit2, TrendingDown, TrendingUp } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { listCategorias, createCategoria, updateCategoria, deleteCategoria, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
+import { listIngresoCategorias, createIngresoCategoria, updateIngresoCategoria, deleteIngresoCategoria, type IngresoCategoria } from '../../services/ingresoService'
 import '../../styles/page.css'
+
+type TipoCategoria = 'EGRESO' | 'INGRESO'
 
 export default function GestionCategoriasFinanzas() {
   const { auth } = useAuth()
-  const [categorias, setCategorias] = useState<GastoOperativoCategoria[]>([])
+  const [tipoActivo, setTipoActivo] = useState<TipoCategoria>('EGRESO')
+  const [categoriasEgreso, setCategoriasEgreso] = useState<GastoOperativoCategoria[]>([])
+  const [categoriasIngreso, setCategoriasIngreso] = useState<IngresoCategoria[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [deleteCategory, setDeleteCategory] = useState<GastoOperativoCategoria | null>(null)
+  const [deleteCategory, setDeleteCategory] = useState<GastoOperativoCategoria | IngresoCategoria | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -20,15 +25,19 @@ export default function GestionCategoriasFinanzas() {
   })
 
   useEffect(() => {
-    document.title = 'Grupo Vicorsa | Gestionar Categorías de Gastos'
+    document.title = 'Grupo Vicorsa | Gestionar Categorías de Finanzas'
     loadCategorias()
   }, [])
 
   const loadCategorias = async () => {
     setLoading(true)
     try {
-      const data = await listCategorias(auth?.token)
-      setCategorias(data)
+      const [egresosData, ingresosData] = await Promise.all([
+        listCategorias(auth?.token),
+        listIngresoCategorias(auth?.token)
+      ])
+      setCategoriasEgreso(egresosData)
+      setCategoriasIngreso(ingresosData)
       setError(null)
     } catch (err: any) {
       setError(err?.message ?? 'No se pudieron cargar las categorías')
@@ -43,15 +52,25 @@ export default function GestionCategoriasFinanzas() {
 
     setLoading(true)
     try {
-      if (editingId) {
-        const updated = await updateCategoria(editingId, formData, auth?.token)
-        setCategorias(c => c.map(cat => cat.categoria_id === editingId ? updated : cat))
-        setEditingId(null)
+      if (tipoActivo === 'EGRESO') {
+        if (editingId) {
+          const updated = await updateCategoria(editingId, formData, auth?.token)
+          setCategoriasEgreso(c => c.map(cat => cat.categoria_id === editingId ? updated : cat))
+        } else {
+          const created = await createCategoria(formData, auth?.token)
+          setCategoriasEgreso(c => [created, ...c])
+        }
       } else {
-        const created = await createCategoria(formData, auth?.token)
-        setCategorias(c => [created, ...c])
+        if (editingId) {
+          const updated = await updateIngresoCategoria(editingId, formData, auth?.token)
+          setCategoriasIngreso(c => c.map(cat => cat.categoria_id === editingId ? updated : cat))
+        } else {
+          const created = await createIngresoCategoria(formData, auth?.token)
+          setCategoriasIngreso(c => [created, ...c])
+        }
       }
       setFormData({ nombre: '', descripcion: '' })
+      setEditingId(null)
       setShowForm(false)
       setError(null)
     } catch (err: any) {
@@ -61,7 +80,7 @@ export default function GestionCategoriasFinanzas() {
     }
   }
 
-  const handleEdit = (cat: GastoOperativoCategoria) => {
+  const handleEdit = (cat: GastoOperativoCategoria | IngresoCategoria) => {
     setFormData({ nombre: cat.nombre, descripcion: cat.descripcion || '' })
     setEditingId(cat.categoria_id)
     setShowForm(true)
@@ -78,8 +97,13 @@ export default function GestionCategoriasFinanzas() {
 
     setDeleting(true)
     try {
-      await deleteCategoria(deleteCategory.categoria_id, auth?.token)
-      setCategorias(c => c.filter(cat => cat.categoria_id !== deleteCategory.categoria_id))
+      if (tipoActivo === 'EGRESO') {
+        await deleteCategoria((deleteCategory as GastoOperativoCategoria).categoria_id, auth?.token)
+        setCategoriasEgreso(c => c.filter(cat => cat.categoria_id !== deleteCategory.categoria_id))
+      } else {
+        await deleteIngresoCategoria((deleteCategory as IngresoCategoria).categoria_id, auth?.token)
+        setCategoriasIngreso(c => c.filter(cat => cat.categoria_id !== deleteCategory.categoria_id))
+      }
       setDeleteCategory(null)
       setError(null)
     } catch (err: any) {
@@ -89,15 +113,69 @@ export default function GestionCategoriasFinanzas() {
     }
   }
 
+  const categorias = tipoActivo === 'EGRESO' ? categoriasEgreso : categoriasIngreso
+
   return (
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Gestionar Categorías de Gastos</h2>
-          <p className="page-subtitle">Crea y administra las categorías de ingresos y egresos</p>
+          <h2 className="page-title">Gestionar Categorías de Finanzas</h2>
+          <p className="page-subtitle">Administra las categorías de ingresos y egresos</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(true)}>
           <Plus size={18} /> Nueva categoría
+        </button>
+      </div>
+
+      {/* Tabs para seleccionar tipo de categoría */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button
+          onClick={() => {
+            setTipoActivo('EGRESO')
+            setEditingId(null)
+            setShowForm(false)
+            setFormData({ nombre: '', descripcion: '' })
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: tipoActivo === 'EGRESO' ? '#ef4444' : '#f3f4f6',
+            color: tipoActivo === 'EGRESO' ? '#fff' : '#374151',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <TrendingDown size={20} />
+          Categorías Egresos
+        </button>
+        <button
+          onClick={() => {
+            setTipoActivo('INGRESO')
+            setEditingId(null)
+            setShowForm(false)
+            setFormData({ nombre: '', descripcion: '' })
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: tipoActivo === 'INGRESO' ? '#22c55e' : '#f3f4f6',
+            color: tipoActivo === 'INGRESO' ? '#fff' : '#374151',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <TrendingUp size={20} />
+          Categorías Ingresos
         </button>
       </div>
 
@@ -110,7 +188,7 @@ export default function GestionCategoriasFinanzas() {
       ) : (
         <div className="report-table-card">
           <div className="report-table-header">
-            <h3>Categorías Registradas</h3>
+            <h3>Categorías {tipoActivo === 'EGRESO' ? 'de Egresos' : 'de Ingresos'}</h3>
             <span>{categorias.length} categoría(s)</span>
           </div>
           <table className="data-table">
@@ -159,7 +237,7 @@ export default function GestionCategoriasFinanzas() {
         <div className="modal-overlay" role="dialog" aria-modal="true" onClick={handleCancel}>
           <div className="modal-large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? 'Editar categoría' : 'Nueva categoría'}</h3>
+              <h3>{editingId ? 'Editar categoría' : `Nueva categoría ${tipoActivo === 'EGRESO' ? 'de Egreso' : 'de Ingreso'}`}</h3>
               <button className="modal-close" onClick={handleCancel}>×</button>
             </div>
             <form className="modal-form" onSubmit={handleSubmit}>
@@ -172,7 +250,7 @@ export default function GestionCategoriasFinanzas() {
                       className="form-input"
                       value={formData.nombre}
                       onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                      placeholder="Ej: Combustible, Mantenimiento, etc."
+                      placeholder={tipoActivo === 'EGRESO' ? 'Ej: Combustible, Mantenimiento, etc.' : 'Ej: Prestamo, Devolucion, etc.'}
                       required
                       autoFocus
                     />

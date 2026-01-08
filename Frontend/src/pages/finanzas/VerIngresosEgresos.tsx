@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { request } from '../../lib/http'
 import { useAuth } from '../../context/AuthContext'
-import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react'
+import { Eye, Edit2, Search, RefreshCw, Trash2, Download, TrendingDown, TrendingUp } from 'lucide-react'
 import Pagination from '../../components/Pagination'
 import * as XLSX from 'xlsx'
 import { getAllGastosOperativos, updateGastoOperativo, type GastoOperativo } from '../../services/gastoOperativoService'
+import { getAllIngresos, updateIngreso, deleteIngreso, listIngresoCategoriaActivas, type Ingreso, type IngresoCategoria } from '../../services/ingresoService'
 import { listCategoriasActivas, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
 
 interface Vehicle {
@@ -13,19 +14,35 @@ interface Vehicle {
   modelo?: string
 }
 
+type TipoRegistro = 'INGRESO' | 'EGRESO'
+
+interface RegistroUnificado {
+  id: number
+  tipo: TipoRegistro
+  categoria_id?: number | null
+  descripcion: string
+  monto: number
+  vehiculo_id?: number | null
+  createdAt: string
+  categoriaRelacion?: any
+  vehiculo?: Vehicle | null
+  original: GastoOperativo | Ingreso
+}
+
 export default function VerIngresosEgresos() {
   const { auth } = useAuth()
-  const [gastos, setGastos] = useState<GastoOperativo[]>([])
+  const [registros, setRegistros] = useState<RegistroUnificado[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedGasto, setSelectedGasto] = useState<GastoOperativo | null>(null)
+  const [selectedRegistro, setSelectedRegistro] = useState<RegistroUnificado | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  const [deleteGasto, setDeleteGasto] = useState<GastoOperativo | null>(null)
+  const [deleteRegistro, setDeleteRegistro] = useState<RegistroUnificado | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [categorias, setCategorias] = useState<GastoOperativoCategoria[]>([])
+  const [categoriasEgreso, setCategoriasEgreso] = useState<GastoOperativoCategoria[]>([])
+  const [categoriasIngreso, setCategoriasIngreso] = useState<IngresoCategoria[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [editForm, setEditForm] = useState({
     categoria_id: 0,
@@ -35,14 +52,48 @@ export default function VerIngresosEgresos() {
   })
   const [saving, setSaving] = useState(false)
 
-  const loadGastos = async () => {
+  const loadDatos = async () => {
     setLoading(true)
     try {
-      const data = await getAllGastosOperativos(auth?.token)
-      setGastos(Array.isArray(data) ? data : [])
+      const [gastosData, ingresosData] = await Promise.all([
+        getAllGastosOperativos(auth?.token),
+        getAllIngresos(auth?.token)
+      ])
+      
+      const gastosUnificados: RegistroUnificado[] = (Array.isArray(gastosData) ? gastosData : []).map(g => ({
+        id: g.gasto_id,
+        tipo: 'EGRESO' as const,
+        categoria_id: g.categoria_id,
+        descripcion: g.descripcion,
+        monto: Number(g.monto),
+        vehiculo_id: g.vehiculo_id,
+        createdAt: g.createdAt,
+        categoriaRelacion: g.categoriaRelacion,
+        vehiculo: g.vehiculo,
+        original: g
+      }))
+      
+      const ingresosUnificados: RegistroUnificado[] = (Array.isArray(ingresosData) ? ingresosData : []).map(i => ({
+        id: i.ingreso_id,
+        tipo: 'INGRESO' as const,
+        categoria_id: i.categoria_id,
+        descripcion: i.descripcion,
+        monto: Number(i.monto),
+        vehiculo_id: undefined,
+        createdAt: i.createdAt,
+        categoriaRelacion: i.categoriaRelacion,
+        vehiculo: undefined,
+        original: i
+      }))
+      
+      const combinados = [...gastosUnificados, ...ingresosUnificados].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      
+      setRegistros(combinados)
       setError(null)
     } catch (e: any) {
-      setError(e?.message ?? 'No se pudo cargar los egresos')
+      setError(e?.message ?? 'No se pudieron cargar los datos')
     } finally {
       setLoading(false)
     }
@@ -50,8 +101,12 @@ export default function VerIngresosEgresos() {
 
   const loadCategorias = async () => {
     try {
-      const data = await listCategoriasActivas(auth?.token)
-      setCategorias(Array.isArray(data) ? data : [])
+      const [egresoData, ingresoData] = await Promise.all([
+        listCategoriasActivas(auth?.token),
+        listIngresoCategoriaActivas(auth?.token)
+      ])
+      setCategoriasEgreso(Array.isArray(egresoData) ? egresoData : [])
+      setCategoriasIngreso(Array.isArray(ingresoData) ? ingresoData : [])
     } catch (e: any) {
       console.error('Error al cargar categorías:', e)
     }
@@ -71,51 +126,54 @@ export default function VerIngresosEgresos() {
   }, [])
 
   useEffect(() => {
-    loadGastos()
+    loadDatos()
     loadCategorias()
     loadVehicles()
   }, [auth?.token])
 
-  const filteredGastos = gastos.filter(gasto =>
-    gasto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (gasto.categoriaRelacion?.nombre || gasto.categoria || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRegistros = registros.filter(registro =>
+    registro.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (registro.categoriaRelacion?.nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedGastos = filteredGastos.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedRegistros = filteredRegistros.slice(startIndex, startIndex + itemsPerPage)
   useEffect(() => { setCurrentPage(1) }, [searchTerm])
 
   const handleDelete = async () => {
-    if (!deleteGasto) return
+    if (!deleteRegistro) return
     setDeleting(true)
     try {
-      await request(`/gasto-operativo/${deleteGasto.gasto_id}`, { method: 'DELETE' }, auth?.token)
-      setGastos(gastos.filter(g => g.gasto_id !== deleteGasto.gasto_id))
-      setDeleteGasto(null)
+      if (deleteRegistro.tipo === 'EGRESO') {
+        const gasto = deleteRegistro.original as GastoOperativo
+        await request(`/gasto-operativo/${gasto.gasto_id}`, { method: 'DELETE' }, auth?.token)
+      } else {
+        const ingreso = deleteRegistro.original as Ingreso
+        await deleteIngreso(ingreso.ingreso_id, auth?.token)
+      }
+      setRegistros(registros.filter(r => !(r.tipo === deleteRegistro.tipo && r.id === deleteRegistro.id)))
+      setDeleteRegistro(null)
     } catch (e: any) {
-      alert(e?.message ?? 'No se pudo eliminar el egreso')
+      alert(e?.message ?? 'No se pudo eliminar el registro')
     } finally {
       setDeleting(false)
     }
   }
 
-  const handleEdit = (gasto: GastoOperativo) => {
-    // Buscar el gasto actualizado en el estado global para asegurar que tiene todas las relaciones
-    const gastoActualizado = gastos.find(g => g.gasto_id === gasto.gasto_id) || gasto
-
-    setSelectedGasto(gastoActualizado)
+  const handleEdit = (registro: RegistroUnificado) => {
+    setSelectedRegistro(registro)
     setEditMode(true)
     setEditForm({
-      categoria_id: gastoActualizado.categoria_id ?? 0,
-      descripcion: gastoActualizado.descripcion,
-      monto: gastoActualizado.monto.toString(),
-      vehiculo_id: gastoActualizado.vehiculo_id ?? 0
+      categoria_id: registro.categoria_id ?? 0,
+      descripcion: registro.descripcion,
+      monto: registro.monto.toString(),
+      vehiculo_id: registro.vehiculo_id ?? 0
     })
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedGasto) return
+    if (!selectedRegistro) return
 
     if (!editForm.monto || editForm.monto.trim() === '') {
       alert('El monto es requerido')
@@ -130,54 +188,66 @@ export default function VerIngresosEgresos() {
 
     setSaving(true)
     try {
-      const vehiculoIdNum = Number(editForm.vehiculo_id)
       const payload: any = {
         categoria_id: categoriaIdNum,
         descripcion: editForm.descripcion,
-        monto: parseFloat(editForm.monto),
-        vehiculo_id: !Number.isNaN(vehiculoIdNum) && vehiculoIdNum > 0 ? vehiculoIdNum : null
+        monto: parseFloat(editForm.monto)
       }
 
-      const updated = await updateGastoOperativo(selectedGasto.gasto_id, payload, auth?.token)
-      
-      const updatedGastos = gastos.map(g => g.gasto_id === selectedGasto.gasto_id ? updated : g)
-      setGastos(updatedGastos)
-      setSelectedGasto(null)
+      if (selectedRegistro.tipo === 'EGRESO') {
+        const gasto = selectedRegistro.original as GastoOperativo
+        const vehiculoIdNum = Number(editForm.vehiculo_id)
+        payload.vehiculo_id = !Number.isNaN(vehiculoIdNum) && vehiculoIdNum > 0 ? vehiculoIdNum : null
+        await updateGastoOperativo(gasto.gasto_id, payload, auth?.token)
+      } else {
+        await updateIngreso(selectedRegistro.id, payload, auth?.token)
+      }
+
+      await loadDatos()
+      setSelectedRegistro(null)
       setEditMode(false)
     } catch (e: any) {
       console.error('Error al actualizar:', e)
+      alert('Error al guardar los cambios')
     } finally {
       setSaving(false)
     }
   }
 
   const exportToExcel = () => {
-    const dataToExport = gastos.map(gasto => ({
-      'ID': gasto.gasto_id,
-      'Categoría': gasto.categoriaRelacion?.nombre || gasto.categoria || '—',
-      'Descripción': gasto.descripcion,
-      'Monto (Bs)': Number(gasto.monto).toFixed(2),
-      'Vehículo': gasto.vehiculo ? (gasto.vehiculo.placa || `Vehículo #${gasto.vehiculo.vehicle_id}`) : '—',
-      'Fecha de Creación': new Date(gasto.createdAt).toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }))
+    const dataToExport = registros.map(registro => {
+      const baseData: any = {
+        'Tipo': registro.tipo,
+        'ID': registro.id,
+        'Categoría': registro.categoriaRelacion?.nombre || '—',
+        'Descripción': registro.descripcion,
+        'Monto (Bs)': Number(registro.monto).toFixed(2),
+        'Fecha': new Date(registro.createdAt).toLocaleString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      }
+      if (registro.tipo === 'EGRESO') {
+        baseData['Vehículo'] = registro.vehiculo ? (registro.vehiculo.placa || `Vehículo #${registro.vehiculo.vehicle_id}`) : '—'
+      }
+      return baseData
+    })
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Egresos')
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ingresos y Egresos')
 
     const columnWidths = [
+      { wch: 12 }, // Tipo
       { wch: 8 },  // ID
       { wch: 20 }, // Categoría
       { wch: 40 }, // Descripción
       { wch: 15 }, // Monto
-      { wch: 25 }, // Vehículo
-      { wch: 20 }  // Fecha de Creación
+      { wch: 20 }, // Fecha
+      { wch: 25 }  // Vehículo (solo para egresos)
     ]
     worksheet['!cols'] = columnWidths
 
@@ -197,10 +267,10 @@ export default function VerIngresosEgresos() {
           <p className="page-subtitle">Gestiona el registro de ingresos y egresos operativos</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn-export" onClick={exportToExcel} disabled={gastos.length === 0} title="Exportar a Excel">
+          <button className="btn-export" onClick={exportToExcel} disabled={registros.length === 0} title="Exportar a Excel">
             <Download size={18} /> Exportar
           </button>
-          <button className="btn-refresh" onClick={loadGastos} disabled={loading}>
+          <button className="btn-refresh" onClick={loadDatos} disabled={loading}>
             <RefreshCw size={18} className={loading ? 'spin' : ''} /> Actualizar
           </button>
         </div>
@@ -218,20 +288,21 @@ export default function VerIngresosEgresos() {
             />
           </div>
           <div className="table-info">
-            {filteredGastos.length} de {gastos.length} egreso(s)
+            {filteredRegistros.length} de {registros.length} registro(s)
           </div>
         </div>
 
         {loading ? (
-          <div className="loading-state">Cargando egresos...</div>
+          <div className="loading-state">Cargando registros...</div>
         ) : error ? (
           <div className="error-state">{error}</div>
-        ) : filteredGastos.length === 0 ? (
-          <div className="empty-state">No hay egresos registrados.</div>
+        ) : filteredRegistros.length === 0 ? (
+          <div className="empty-state">No hay ingresos o egresos registrados.</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
+                <th>Tipo</th>
                 <th>ID</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
@@ -242,22 +313,38 @@ export default function VerIngresosEgresos() {
               </tr>
             </thead>
             <tbody>
-              {paginatedGastos.map(gasto => (
-                <tr key={gasto.gasto_id}>
-                  <td className="id-col">{gasto.gasto_id}</td>
-                  <td>{gasto.categoriaRelacion?.nombre || gasto.categoria || '—'}</td>
-                  <td className="name-col">{gasto.descripcion}</td>
-                  <td>{Number(gasto.monto).toFixed(2)}</td>
-                  <td>{new Date(gasto.createdAt).toLocaleDateString('es-ES')}</td>
-                  <td>{gasto.vehiculo ? (gasto.vehiculo.placa || `Vehículo #${gasto.vehiculo.vehicle_id}`) : '—'}</td>
+              {paginatedRegistros.map((registro, idx) => (
+                <tr key={`${registro.tipo}-${registro.id}-${idx}`}>
+                  <td>
+                    <span style={{
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      backgroundColor: registro.tipo === 'INGRESO' ? '#dcfce7' : '#fee2e2',
+                      color: registro.tipo === 'INGRESO' ? '#22c55e' : '#ef4444',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      {registro.tipo === 'INGRESO' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                      {registro.tipo}
+                    </span>
+                  </td>
+                  <td className="id-col">{registro.id}</td>
+                  <td>{registro.categoriaRelacion?.nombre || '—'}</td>
+                  <td className="name-col">{registro.descripcion}</td>
+                  <td>{Number(registro.monto).toFixed(2)}</td>
+                  <td>{new Date(registro.createdAt).toLocaleDateString('es-ES')}</td>
+                  <td>{registro.vehiculo ? (registro.vehiculo.placa || `Vehículo #${registro.vehiculo.vehicle_id}`) : '—'}</td>
                   <td className="actions-col">
-                    <button className="action-btn view" onClick={() => { setSelectedGasto(gasto); setEditMode(false) }} title="Ver detalles">
+                    <button className="action-btn view" onClick={() => { setSelectedRegistro(registro); setEditMode(false) }} title="Ver detalles">
                       <Eye size={16} />
                     </button>
-                    <button className="action-btn edit" onClick={() => handleEdit(gasto)} title="Editar">
+                    <button className="action-btn edit" onClick={() => handleEdit(registro)} title="Editar">
                       <Edit2 size={16} />
                     </button>
-                    <button className="action-btn delete" onClick={() => setDeleteGasto(gasto)} title="Eliminar">
+                    <button className="action-btn delete" onClick={() => setDeleteRegistro(registro)} title="Eliminar">
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -268,18 +355,18 @@ export default function VerIngresosEgresos() {
         )}
         <Pagination
           currentPage={currentPage}
-          totalItems={filteredGastos.length}
+          totalItems={filteredRegistros.length}
           itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
         />
       </div>
 
-      {selectedGasto && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setSelectedGasto(null); setEditMode(false) }}>
+      {selectedRegistro && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setSelectedRegistro(null); setEditMode(false) }}>
           <div className="modal-large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editMode ? 'Editar Egreso' : 'Detalles del Egreso'}</h3>
-              <button className="modal-close" onClick={() => { setSelectedGasto(null); setEditMode(false) }}>×</button>
+              <h3>{editMode ? `Editar ${selectedRegistro.tipo}` : `Detalles del ${selectedRegistro.tipo}`}</h3>
+              <button className="modal-close" onClick={() => { setSelectedRegistro(null); setEditMode(false) }}>×</button>
             </div>
             <form className="modal-form" onSubmit={handleSave}>
               <div className="modal-body">
@@ -294,12 +381,12 @@ export default function VerIngresosEgresos() {
                         required
                       >
                         <option value="0">Seleccionar...</option>
-                        {categorias.map(cat => (
+                        {(selectedRegistro.tipo === 'EGRESO' ? categoriasEgreso : categoriasIngreso).map(cat => (
                           <option key={cat.categoria_id} value={cat.categoria_id}>{cat.nombre}</option>
                         ))}
                       </select>
                     ) : (
-                      <input type="text" className="form-input" value={selectedGasto.categoriaRelacion?.nombre || selectedGasto.categoria || '—'} disabled />
+                      <input type="text" className="form-input" value={selectedRegistro.categoriaRelacion?.nombre || '—'} disabled />
                     )}
                   </label>
                   <label className="form-field">
@@ -307,7 +394,7 @@ export default function VerIngresosEgresos() {
                     <input
                       type="text"
                       className="form-input"
-                        value={editMode ? editForm.descripcion : selectedGasto.descripcion}
+                      value={editMode ? editForm.descripcion : selectedRegistro.descripcion}
                       onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })}
                       disabled={!editMode}
                       required={editMode}
@@ -320,53 +407,59 @@ export default function VerIngresosEgresos() {
                       step="0.01"
                       min="0"
                       className="form-input"
-                        value={editMode ? editForm.monto : selectedGasto.monto}
-                        onChange={e => setEditForm({ ...editForm, monto: e.target.value })}
+                      value={editMode ? editForm.monto : selectedRegistro.monto}
+                      onChange={e => setEditForm({ ...editForm, monto: e.target.value })}
                       disabled={!editMode}
                       required={editMode}
                     />
                   </label>
-                  <label className="form-field">
-                    <span className="label-text">Vehículo</span>
-                    {editMode ? (
-                      <select
-                        className="form-input"
-                        value={editForm.vehiculo_id}
-                        onChange={e => setEditForm({ ...editForm, vehiculo_id: parseInt(e.target.value, 10) })}
-                      >
-                        <option value="0">Sin vehículo</option>
-                        {vehicles.map(v => (
-                          <option key={v.vehicle_id} value={v.vehicle_id}>
-                            {v.placa ? `${v.placa} - ${v.modelo ?? ''}` : `Vehículo #${v.vehicle_id}`}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={selectedGasto.vehiculo ? (selectedGasto.vehiculo.placa || `Vehículo #${selectedGasto.vehiculo.vehicle_id}`) : '—'} 
-                        disabled 
-                      />
-                    )}
-                  </label>
+                  {selectedRegistro.tipo === 'EGRESO' && (
+                    <label className="form-field">
+                      <span className="label-text">Vehículo</span>
+                      {editMode ? (
+                        <select
+                          className="form-input"
+                          value={editForm.vehiculo_id}
+                          onChange={e => setEditForm({ ...editForm, vehiculo_id: parseInt(e.target.value, 10) })}
+                        >
+                          <option value="0">Sin vehículo</option>
+                          {vehicles.map(v => (
+                            <option key={v.vehicle_id} value={v.vehicle_id}>
+                              {v.placa ? `${v.placa} - ${v.modelo ?? ''}` : `Vehículo #${v.vehicle_id}`}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={selectedRegistro.vehiculo ? (selectedRegistro.vehiculo.placa || `Vehículo #${selectedRegistro.vehiculo.vehicle_id}`) : '—'} 
+                          disabled 
+                        />
+                      )}
+                    </label>
+                  )}
                   <label className="form-field">
                     <span className="label-text">ID</span>
-                    <input type="text" className="form-input" value={`#${selectedGasto.gasto_id}`} disabled />
+                    <input type="text" className="form-input" value={`#${selectedRegistro.id}`} disabled />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Tipo</span>
+                    <input type="text" className="form-input" value={selectedRegistro.tipo} disabled />
                   </label>
                   <label className="form-field">
                     <span className="label-text">Fecha de Creación</span>
                     <input 
                       type="text" 
                       className="form-input" 
-                      value={new Date(selectedGasto.createdAt).toLocaleString('es-ES')} 
+                      value={new Date(selectedRegistro.createdAt).toLocaleString('es-ES')} 
                       disabled 
                     />
                   </label>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => { setSelectedGasto(null); setEditMode(false) }} disabled={saving}>
+                <button type="button" className="btn-secondary" onClick={() => { setSelectedRegistro(null); setEditMode(false) }} disabled={saving}>
                   Cerrar
                 </button>
                 {editMode && (
@@ -380,14 +473,14 @@ export default function VerIngresosEgresos() {
         </div>
       )}
 
-      {deleteGasto && (
+      {deleteRegistro && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal">
-            <h3>¿Eliminar egreso?</h3>
-            <p>Se eliminará el egreso con descripción <strong>"{deleteGasto.descripcion}"</strong> del sistema.</p>
+            <h3>¿Eliminar {deleteRegistro.tipo.toLowerCase()}?</h3>
+            <p>Se eliminará el {deleteRegistro.tipo.toLowerCase()} con descripción <strong>"{deleteRegistro.descripcion}"</strong> del sistema.</p>
             <p className="warning-text">Esta acción no se puede deshacer.</p>
             <div className="modal-actions">
-              <button className="btn outline" onClick={() => setDeleteGasto(null)} disabled={deleting}>
+              <button className="btn outline" onClick={() => setDeleteRegistro(null)} disabled={deleting}>
                 Cancelar
               </button>
               <button className="btn danger" onClick={handleDelete} disabled={deleting}>

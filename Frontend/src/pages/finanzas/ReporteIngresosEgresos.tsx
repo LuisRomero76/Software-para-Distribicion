@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Filter, Calendar, TrendingDown, Download } from 'lucide-react'
+import { Filter, Calendar, TrendingDown, TrendingUp, Download } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { getAllGastosOperativos, type GastoOperativo } from '../../services/gastoOperativoService'
+import { getAllIngresos, listIngresoCategoriaActivas, type Ingreso, type IngresoCategoria } from '../../services/ingresoService'
 import { listCategoriasActivas, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
 import { request } from '../../lib/http'
 import * as XLSX from 'xlsx'
@@ -13,11 +14,16 @@ interface Vehicle {
   modelo?: string
 }
 
+type TipoReporte = 'EGRESO' | 'INGRESO'
+
 export default function ReporteIngresosEgresos() {
   const { auth } = useAuth()
+  const [tipoReporte, setTipoReporte] = useState<TipoReporte>('EGRESO')
   const [gastos, setGastos] = useState<GastoOperativo[]>([])
+  const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [categorias, setCategorias] = useState<GastoOperativoCategoria[]>([])
+  const [categoriasEgreso, setCategoriasEgreso] = useState<GastoOperativoCategoria[]>([])
+  const [categoriasIngreso, setCategoriasIngreso] = useState<IngresoCategoria[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,14 +40,18 @@ export default function ReporteIngresosEgresos() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [gastosData, vehiclesData, categoriasData] = await Promise.all([
+      const [gastosData, ingresosData, vehiclesData, categoriasEgresoData, categoriasIngresoData] = await Promise.all([
         getAllGastosOperativos(auth?.token),
+        getAllIngresos(auth?.token),
         request<Vehicle[]>('/vehicle', {}, auth?.token),
-        listCategoriasActivas(auth?.token)
+        listCategoriasActivas(auth?.token),
+        listIngresoCategoriaActivas(auth?.token)
       ])
       setGastos(Array.isArray(gastosData) ? gastosData : [])
+      setIngresos(Array.isArray(ingresosData) ? ingresosData : [])
       setVehicles(Array.isArray(vehiclesData) ? vehiclesData : [])
-      setCategorias(Array.isArray(categoriasData) ? categoriasData : [])
+      setCategoriasEgreso(Array.isArray(categoriasEgresoData) ? categoriasEgresoData : [])
+      setCategoriasIngreso(Array.isArray(categoriasIngresoData) ? categoriasIngresoData : [])
       setError(null)
     } catch (e: any) {
       setError(e?.message ?? 'No se pudieron cargar los datos')
@@ -50,16 +60,24 @@ export default function ReporteIngresosEgresos() {
     }
   }
 
-  const gastosFiltrados = useMemo(() => {
-    let data = [...gastos]
-    if (categoriaFiltro !== 0) data = data.filter(g => g.categoria_id === categoriaFiltro)
-    if (vehicleFiltro) data = data.filter(g => g.vehiculo_id === vehicleFiltro)
-    if (fechaInicio) data = data.filter(g => g.createdAt.split('T')[0] >= fechaInicio)
-    if (fechaFin) data = data.filter(g => g.createdAt.split('T')[0] <= fechaFin)
+  const datosFiltrados = useMemo(() => {
+    let data: any[] = []
+    
+    if (tipoReporte === 'EGRESO') {
+      data = [...gastos]
+      if (categoriaFiltro !== 0) data = data.filter(g => g.categoria_id === categoriaFiltro)
+      if (vehicleFiltro) data = data.filter(g => g.vehiculo_id === vehicleFiltro)
+    } else {
+      data = [...ingresos]
+      if (categoriaFiltro !== 0) data = data.filter(i => i.categoria_id === categoriaFiltro)
+    }
+    
+    if (fechaInicio) data = data.filter(d => d.createdAt.split('T')[0] >= fechaInicio)
+    if (fechaFin) data = data.filter(d => d.createdAt.split('T')[0] <= fechaFin)
     return data
-  }, [gastos, categoriaFiltro, vehicleFiltro, fechaInicio, fechaFin])
+  }, [gastos, ingresos, tipoReporte, categoriaFiltro, vehicleFiltro, fechaInicio, fechaFin])
 
-  const totalGastos = useMemo(() => gastosFiltrados.reduce((acc, g) => acc + Number(g.monto), 0), [gastosFiltrados])
+  const total = useMemo(() => datosFiltrados.reduce((acc, d) => acc + Number(d.monto), 0), [datosFiltrados])
 
   const formatFecha = (dateString: string) => {
     if (!dateString) return '—'
@@ -68,34 +86,57 @@ export default function ReporteIngresosEgresos() {
   }
 
   const exportToExcel = () => {
-    const dataToExport = gastosFiltrados.map(gasto => ({
-      'ID': gasto.gasto_id,
-      'Categoría': gasto.categoriaRelacion?.nombre || gasto.categoria || '—',
-      'Descripción': gasto.descripcion,
-      'Monto (Bs)': Number(gasto.monto).toFixed(2),
-      'Fecha de Creación': formatFecha(gasto.createdAt),
-      'Vehículo': gasto.vehiculo ? (gasto.vehiculo.placa || `Vehículo #${gasto.vehiculo.vehicle_id}`) : '—'
-    }))
+    const dataToExport = datosFiltrados.map((item: any) => {
+      if (tipoReporte === 'EGRESO') {
+        return {
+          'ID': item.gasto_id,
+          'Categoría': item.categoriaRelacion?.nombre || item.categoria || '—',
+          'Descripción': item.descripcion,
+          'Monto (Bs)': Number(item.monto).toFixed(2),
+          'Fecha': formatFecha(item.createdAt),
+          'Vehículo': item.vehiculo ? (item.vehiculo.placa || `Vehículo #${item.vehiculo.vehicle_id}`) : '—'
+        }
+      } else {
+        return {
+          'ID': item.ingreso_id,
+          'Tipo': item.tipo,
+          'Categoría': item.categoriaRelacion?.nombre || '—',
+          'Descripción': item.descripcion,
+          'Monto (Bs)': Number(item.monto).toFixed(2),
+          'Fecha': formatFecha(item.createdAt)
+        }
+      }
+    })
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport)
     const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Egresos')
+    const sheetName = tipoReporte === 'EGRESO' ? 'Egresos' : 'Ingresos'
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
 
-    const columnWidths = [
-      { wch: 8 },  // ID
-      { wch: 20 }, // Categoría
-      { wch: 40 }, // Descripción
-      { wch: 15 }, // Monto
-      { wch: 20 }, // Fecha de Creación
-      { wch: 25 }  // Vehículo
-    ]
+    const columnWidths = tipoReporte === 'EGRESO' 
+      ? [
+          { wch: 8 },  // ID
+          { wch: 20 }, // Categoría
+          { wch: 40 }, // Descripción
+          { wch: 15 }, // Monto
+          { wch: 20 }, // Fecha
+          { wch: 25 }  // Vehículo
+        ]
+      : [
+          { wch: 8 },  // ID
+          { wch: 15 }, // Tipo
+          { wch: 20 }, // Categoría
+          { wch: 40 }, // Descripción
+          { wch: 15 }, // Monto
+          { wch: 20 }  // Fecha
+        ]
     worksheet['!cols'] = columnWidths
 
     const today = new Date()
     const year = today.getFullYear()
     const month = String(today.getMonth() + 1).padStart(2, '0')
     const day = String(today.getDate()).padStart(2, '0')
-    const fileName = `reporte_egresos_${year}-${month}-${day}.xlsx`
+    const fileName = `reporte_${tipoReporte.toLowerCase()}_${year}-${month}-${day}.xlsx`
     XLSX.writeFile(workbook, fileName)
   }
 
@@ -104,10 +145,60 @@ export default function ReporteIngresosEgresos() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Reporte de Ingresos/Egresos</h2>
-          <p className="page-subtitle">Visualiza y filtra los egresos operativos</p>
+          <p className="page-subtitle">Visualiza y filtra ingresos y egresos</p>
         </div>
-        <button className="btn-export" onClick={exportToExcel} disabled={gastosFiltrados.length === 0} title="Exportar a Excel">
+        <button className="btn-export" onClick={exportToExcel} disabled={datosFiltrados.length === 0} title="Exportar a Excel">
           <Download size={18} /> Exportar
+        </button>
+      </div>
+
+      {/* Tabs para seleccionar tipo de reporte */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button
+          onClick={() => {
+            setTipoReporte('EGRESO')
+            setCategoriaFiltro(0)
+            setVehicleFiltro(0)
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: tipoReporte === 'EGRESO' ? '#ef4444' : '#f3f4f6',
+            color: tipoReporte === 'EGRESO' ? '#fff' : '#374151',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <TrendingDown size={20} />
+          Egresos
+        </button>
+        <button
+          onClick={() => {
+            setTipoReporte('INGRESO')
+            setCategoriaFiltro(0)
+            setVehicleFiltro(0)
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: tipoReporte === 'INGRESO' ? '#22c55e' : '#f3f4f6',
+            color: tipoReporte === 'INGRESO' ? '#fff' : '#374151',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <TrendingUp size={20} />
+          Ingresos
         </button>
       </div>
 
@@ -125,7 +216,7 @@ export default function ReporteIngresosEgresos() {
               onChange={(e) => setCategoriaFiltro(Number(e.target.value))}
             >
               <option value={0}>Todas</option>
-              {categorias.map(cat => (
+              {(tipoReporte === 'EGRESO' ? categoriasEgreso : categoriasIngreso).map(cat => (
                 <option key={cat.categoria_id} value={cat.categoria_id}>
                   {cat.nombre}
                 </option>
@@ -133,21 +224,23 @@ export default function ReporteIngresosEgresos() {
             </select>
           </div>
 
-          <div className="filter-group">
-            <label className="filter-label">Vehículo</label>
-            <select
-              className="filter-select"
-              value={vehicleFiltro}
-              onChange={(e) => setVehicleFiltro(Number(e.target.value))}
-            >
-              <option value={0}>Todos</option>
-              {vehicles.map(v => (
-                <option key={v.vehicle_id} value={v.vehicle_id}>
-                  {v.placa ? `${v.placa} - ${v.modelo ?? ''}` : `Vehículo #${v.vehicle_id}`}
-                </option>
-              ))}
-            </select>
-          </div>
+          {tipoReporte === 'EGRESO' && (
+            <div className="filter-group">
+              <label className="filter-label">Vehículo</label>
+              <select
+                className="filter-select"
+                value={vehicleFiltro}
+                onChange={(e) => setVehicleFiltro(Number(e.target.value))}
+              >
+                <option value={0}>Todos</option>
+                {vehicles.map(v => (
+                  <option key={v.vehicle_id} value={v.vehicle_id}>
+                    {v.placa ? `${v.placa} - ${v.modelo ?? ''}` : `Vehículo #${v.vehicle_id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="filter-group">
             <label className="filter-label"><Calendar size={16} /> Desde</label>
@@ -162,51 +255,67 @@ export default function ReporteIngresosEgresos() {
       </div>
 
       {loading ? (
-        <div className="loading-state">Cargando egresos...</div>
+        <div className="loading-state">Cargando datos...</div>
       ) : error ? (
         <div className="error">{error}</div>
-      ) : gastosFiltrados.length === 0 ? (
-        <div className="empty-state">No hay egresos registrados con estos filtros</div>
+      ) : datosFiltrados.length === 0 ? (
+        <div className="empty-state">No hay {tipoReporte === 'EGRESO' ? 'egresos' : 'ingresos'} registrados con estos filtros</div>
       ) : (
         <div className="report-table-card" style={{ marginBottom: '2rem' }}>
           <div className="report-table-header">
-            <h3>Registro de Egresos</h3>
-            <span>{gastosFiltrados.length} registro(s)</span>
+            <h3>Registro de {tipoReporte === 'EGRESO' ? 'Egresos' : 'Ingresos'}</h3>
+            <span>{datosFiltrados.length} registro(s)</span>
           </div>
           <table className="data-table">
             <thead>
               <tr>
                 <th>ID</th>
+                {tipoReporte === 'INGRESO' && <th>Tipo</th>}
                 <th>Categoría</th>
                 <th>Descripción</th>
                 <th>Monto</th>
-                <th>Fecha de Creación</th>
-                <th>Vehículo</th>
+                <th>Fecha</th>
+                {tipoReporte === 'EGRESO' && <th>Vehículo</th>}
               </tr>
             </thead>
             <tbody>
-              {gastosFiltrados.map(g => (
-                <tr key={g.gasto_id}>
-                  <td className="id-col">#{g.gasto_id}</td>
-                  <td>{g.categoriaRelacion?.nombre || g.categoria || '—'}</td>
-                  <td>{g.descripcion}</td>
-                  <td>Bs {Number(g.monto).toFixed(2)}</td>
-                  <td>{formatFecha(g.createdAt)}</td>
-                  <td>{g.vehiculo ? (g.vehiculo.placa || `Vehículo #${g.vehiculo.vehicle_id}`) : '—'}</td>
-                </tr>
-              ))}
+              {datosFiltrados.map((item: any) => 
+                tipoReporte === 'EGRESO' ? (
+                  <tr key={item.gasto_id}>
+                    <td className="id-col">#{item.gasto_id}</td>
+                    <td>{item.categoriaRelacion?.nombre || item.categoria || '—'}</td>
+                    <td>{item.descripcion}</td>
+                    <td>Bs {Number(item.monto).toFixed(2)}</td>
+                    <td>{formatFecha(item.createdAt)}</td>
+                    <td>{item.vehiculo ? (item.vehiculo.placa || `Vehículo #${item.vehiculo.vehicle_id}`) : '—'}</td>
+                  </tr>
+                ) : (
+                  <tr key={item.ingreso_id}>
+                    <td className="id-col">#{item.ingreso_id}</td>
+                    <td><span style={{ padding: '0.25rem 0.75rem', backgroundColor: '#f0fdf4', borderRadius: '0.25rem', fontSize: '0.875rem', fontWeight: '600', color: '#22c55e' }}>{item.tipo}</span></td>
+                    <td>{item.categoriaRelacion?.nombre || '—'}</td>
+                    <td>{item.descripcion}</td>
+                    <td>Bs {Number(item.monto).toFixed(2)}</td>
+                    <td>{formatFecha(item.createdAt)}</td>
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>
       )}
 
       <div className="stat-card" style={{ marginTop: '0.5rem' }}>
-        <div className="stat-icon" style={{ background: '#fee2e2' }}>
-          <TrendingDown size={22} color="#b91c1c" />
+        <div className="stat-icon" style={{ background: tipoReporte === 'EGRESO' ? '#fee2e2' : '#dcfce7' }}>
+          {tipoReporte === 'EGRESO' ? (
+            <TrendingDown size={22} color="#b91c1c" />
+          ) : (
+            <TrendingUp size={22} color="#16a34a" />
+          )}
         </div>
         <div className="stat-content">
-          <p className="stat-label">Total egresos filtrados</p>
-          <p className="stat-value" style={{ fontSize: '1.5rem' }}>Bs {totalGastos.toFixed(2)}</p>
+          <p className="stat-label">Total {tipoReporte === 'EGRESO' ? 'egresos' : 'ingresos'} filtrados</p>
+          <p className="stat-value" style={{ fontSize: '1.5rem' }}>Bs {total.toFixed(2)}</p>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { RutaModule } from './ruta/ruta.module';
 import { ProveedorModule } from './proveedor/proveedor.module';
 import { GastoOperativoModule } from './gasto_operativo/gasto_operativo.module';
+import { IngresoModule } from './ingreso/ingreso.module';
 import { CompraModule } from './compra/compra.module';
 import { VentaModule } from './venta/venta.module';
 import { DetalleVentaModule } from './detalle_venta/detalle_venta.module';
@@ -48,6 +49,7 @@ import { LoteModule } from './lote/lote.module';
     RutaModule,
     ProveedorModule,
     GastoOperativoModule,
+    IngresoModule,
     CompraModule,
     VentaModule,
     DetalleVentaModule,
