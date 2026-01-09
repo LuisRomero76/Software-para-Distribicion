@@ -194,12 +194,13 @@ export default function RealizarCompra() {
 
             const detalles = productosCompra.map(p => {
                 if (p.modo === 'paquete') {
-                    // Modo paquete: guardar cantidad de paquetes y precio por paquete
+                    // Modo paquete: guardar cantidad de paquetes y precio por paquete con indicador de modo
                     return {
                         product_id: p.producto_id,
                         cantidad: p.paquetes ?? 1,
                         precio_unitario: parseFloat(String(p.precio_compra)),
                         fecha_vencimiento: p.fecha_vencimiento || undefined,
+                        modo: 'paquete' as const,
                     };
                 } else {
                     // Modo unidad: guardar cantidad de unidades y precio por unidad
@@ -208,6 +209,7 @@ export default function RealizarCompra() {
                         cantidad: p.cantidad,
                         precio_unitario: parseFloat(String(p.precio_compra)),
                         fecha_vencimiento: p.fecha_vencimiento || undefined,
+                        modo: 'unidad' as const,
                     };
                 }
             });

@@ -79,15 +79,22 @@ export class CompraService {
 
       // Crear los detalles de compra y los lotes
       for (const detalleDto of createCompraDto.detalles) {
-        const subtotal = detalleDto.cantidad * detalleDto.precio_unitario;
-
-        // Obtener información del producto para calcular unidades sueltas
+        // Obtener información del producto
         const producto = await this.productRepository.findOne({
           where: { product_id: detalleDto.product_id },
         });
 
+        // Convertir cantidad a unidades si es modo paquete
+        let cantidadEnUnidades = detalleDto.cantidad;
+        if (detalleDto.modo === 'paquete') {
+          const unidadesPorPaquete = producto?.cant_por_paquete || 1;
+          cantidadEnUnidades = detalleDto.cantidad * unidadesPorPaquete;
+        }
+
+        const subtotal = detalleDto.cantidad * detalleDto.precio_unitario;
+
         const unidadesPorPaquete = producto?.cant_por_paquete || 1;
-        const unidadesSueltas = detalleDto.cantidad % unidadesPorPaquete;
+        const unidadesSueltas = cantidadEnUnidades % unidadesPorPaquete;
 
         // Crear detalle de compra
         const detalle = this.detalleCompraRepository.create({
@@ -101,11 +108,11 @@ export class CompraService {
 
         const detalleSaved = await queryRunner.manager.save(detalle);
 
-        // Crear el lote automáticamente
+        // Crear el lote automáticamente (siempre en unidades)
         const lote = this.loteRepository.create({
           product_id: detalleDto.product_id,
-          cantidad_inicial: detalleDto.cantidad,
-          cantidad_actual: detalleDto.cantidad,
+          cantidad_inicial: cantidadEnUnidades,
+          cantidad_actual: cantidadEnUnidades,
           unidades_sueltas: unidadesSueltas,
           costo_unitario: detalleDto.precio_unitario,
           fecha_vencimiento: detalleDto.fecha_vencimiento,

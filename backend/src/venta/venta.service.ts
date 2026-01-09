@@ -74,8 +74,14 @@ export class VentaService {
           );
         }
 
-        // Usar el precio del producto como precio de venta
-        const precioVenta = lote.producto.precio;
+        // Usar el precio según el modo de venta
+        let precioVenta: number;
+        if (detalleDto.modo === 'paquete') {
+          precioVenta = lote.producto.precio_venta_paquete || lote.producto.precio;
+        } else {
+          precioVenta = lote.producto.precio;
+        }
+        
         totalVenta += precioVenta * detalleDto.cantidad;
       }
 
@@ -108,7 +114,14 @@ export class VentaService {
           cantidadEnUnidades = detalleDto.cantidad * unidadesPorPaquete;
         }
 
-        const precioVenta = lote.producto.precio;
+        // Usar el precio según el modo de venta
+        let precioVenta: number;
+        if (detalleDto.modo === 'paquete') {
+          precioVenta = lote.producto.precio_venta_paquete || lote.producto.precio;
+        } else {
+          precioVenta = lote.producto.precio;
+        }
+        
         const subtotal = precioVenta * detalleDto.cantidad;
 
         // Crear detalle de venta

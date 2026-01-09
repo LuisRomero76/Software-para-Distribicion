@@ -1,5 +1,10 @@
-import { IsInt, IsNumber, IsOptional, IsDate, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsDate, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export enum ModoCompra {
+  UNIDAD = 'unidad',
+  PAQUETE = 'paquete',
+}
 
 export class CreateDetalleCompraDto {
   @IsInt()
@@ -18,4 +23,8 @@ export class CreateDetalleCompraDto {
   @Type(() => Date)
   @IsDate()
   fecha_vencimiento?: Date;
+
+  @IsOptional()
+  @IsEnum(ModoCompra)
+  modo?: ModoCompra;
 }
