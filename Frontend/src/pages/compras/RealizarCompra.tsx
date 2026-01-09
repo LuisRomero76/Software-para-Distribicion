@@ -7,11 +7,17 @@ import './compras.css';
 import { getAllProveedores, createProveedor, type Proveedor } from '../../services/proveedorService';
 import { getAllProducts, type Producto } from '../../services/productService';
 
+// Extend Producto type to include package pricing
+interface ProductoExtendido extends Producto {
+    precio_compra_paquete?: number;
+}
+
 interface CompraProducto extends DetalleCompra {
     id: string; // ID temporal para el formulario
     modo: 'unidad' | 'paquete';
     paquetes?: number; // solo si modo = paquete
     fecha_vencimiento?: string;
+    producto?: ProductoExtendido; // Override del tipo heredado
 }
 
 export default function RealizarCompra() {
@@ -35,7 +41,7 @@ export default function RealizarCompra() {
     
     // Productos y proveedores
     const [proveedores, setProveedores] = useState<Proveedor[]>([]);
-    const [productos, setProductos] = useState<Producto[]>([]);
+    const [productos, setProductos] = useState<ProductoExtendido[]>([]);
     const [productosCompra, setProductosCompra] = useState<CompraProducto[]>([
         {
             id: '1',
@@ -60,7 +66,7 @@ export default function RealizarCompra() {
                 getAllProducts(),
             ]);
             setProveedores(prov);
-            setProductos(prod);
+            setProductos(prod as ProductoExtendido[]);
         } catch (err) {
             setError('Error al cargar datos');
             console.error(err);
@@ -77,7 +83,13 @@ export default function RealizarCompra() {
             if (producto) {
                 nuevosProductos[index].producto_id = value;
                 nuevosProductos[index].producto = producto;
-                nuevosProductos[index].precio_compra = producto.precio_compra ?? 0; // Precio de compra
+                // Establecer precio según modo actual
+                const modoActual = nuevosProductos[index].modo;
+                if (modoActual === 'paquete') {
+                    nuevosProductos[index].precio_compra = producto.precio_compra_paquete ?? 0;
+                } else {
+                    nuevosProductos[index].precio_compra = producto.precio_compra ?? 0;
+                }
                 // reset por si cambió el modo
                 nuevosProductos[index].cantidad = 1;
                 nuevosProductos[index].paquetes = 1;
@@ -87,7 +99,17 @@ export default function RealizarCompra() {
         } else if (field === 'paquetes') {
             nuevosProductos[index].paquetes = Math.max(1, parseInt(value) || 0);
         } else if (field === 'modo') {
-            nuevosProductos[index].modo = value as 'unidad' | 'paquete';
+            const nuevoModo = value as 'unidad' | 'paquete';
+            nuevosProductos[index].modo = nuevoModo;
+            // Actualizar precio según el nuevo modo
+            const producto = nuevosProductos[index].producto;
+            if (producto) {
+                if (nuevoModo === 'paquete') {
+                    nuevosProductos[index].precio_compra = producto.precio_compra_paquete ?? 0;
+                } else {
+                    nuevosProductos[index].precio_compra = producto.precio_compra ?? 0;
+                }
+            }
         } else if (field === 'precio_compra') {
             nuevosProductos[index].precio_compra = parseFloat(value) || 0;
         } else if (field === 'fecha_vencimiento') {
@@ -118,19 +140,16 @@ export default function RealizarCompra() {
         }
     };
 
-    const unidadesDeItem = (item: CompraProducto): number => {
-        if (item.modo === 'paquete') {
-            const porPaquete = item.producto?.cant_por_paquete ?? 1;
-            const paquetes = item.paquetes ?? 1;
-            return paquetes * porPaquete;
-        }
-        return item.cantidad;
-    };
-
     const calcularTotal = (): number => {
         return productosCompra.reduce((sum, item) => {
-            const unidades = unidadesDeItem(item);
-            return sum + (unidades * item.precio_compra);
+            if (item.modo === 'paquete') {
+                // Precio por paquete * cantidad de paquetes
+                const paquetes = item.paquetes ?? 1;
+                return sum + (paquetes * item.precio_compra);
+            } else {
+                // Precio por unidad * cantidad de unidades
+                return sum + (item.cantidad * item.precio_compra);
+            }
         }, 0);
     };
 
@@ -173,12 +192,27 @@ export default function RealizarCompra() {
                 }
             }
 
-            const detalles = productosCompra.map(p => ({
-                product_id: p.producto_id,
-                cantidad: unidadesDeItem(p),
-                precio_unitario: p.precio_compra,
-                fecha_vencimiento: p.fecha_vencimiento || undefined,
-            }));
+            const detalles = productosCompra.map(p => {
+                if (p.modo === 'paquete') {
+                    // Modo paquete: guardar cantidad de paquetes y precio por paquete
+                    return {
+                        product_id: p.producto_id,
+                        cantidad: p.paquetes ?? 1,
+                        precio_unitario: parseFloat(String(p.precio_compra)),
+                        fecha_vencimiento: p.fecha_vencimiento || undefined,
+                    };
+                } else {
+                    // Modo unidad: guardar cantidad de unidades y precio por unidad
+                    return {
+                        product_id: p.producto_id,
+                        cantidad: p.cantidad,
+                        precio_unitario: parseFloat(String(p.precio_compra)),
+                        fecha_vencimiento: p.fecha_vencimiento || undefined,
+                    };
+                }
+            });
+
+            console.log('Detalles a enviar:', JSON.stringify(detalles, null, 2));
 
             await createCompra({
                 proveedor_id: proveedorFinalId,
@@ -488,7 +522,10 @@ export default function RealizarCompra() {
                                     <label>Subtotal</label>
                                     <input
                                         type="text"
-                                        value={`BS. ${(unidadesDeItem(producto) * producto.precio_compra).toFixed(2)}`}
+                                        value={`BS. ${(producto.modo === 'paquete' 
+                                            ? (producto.paquetes ?? 1) * producto.precio_compra 
+                                            : producto.cantidad * producto.precio_compra
+                                        ).toFixed(2)}`}
                                         disabled
                                         className="input-disabled"
                                     />

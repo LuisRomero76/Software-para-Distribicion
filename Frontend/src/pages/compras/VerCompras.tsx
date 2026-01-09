@@ -151,7 +151,7 @@ export default function VerCompras() {
                             {paginatedCompras.map(compra => (
                                 <tr key={compra.compra_id}>
                                     <td className="id-col">#{compra.compra_id}</td>
-                                    <td>{compra.proveedor?.nombre || 'N/A'}</td>
+                                    <td>{compra.proveedor?.nombre || '-'}</td>
                                     <td>{new Date(compra.fecha_compra).toLocaleDateString('es-ES')}</td>
                                     <td>{parseFloat(compra.total as any).toFixed(2)}</td>
                                     <td>{compra.detalles?.length || 0}</td>
@@ -218,10 +218,10 @@ export default function VerCompras() {
                                         <tbody>
                                             {selectedCompra.detalles.map((det: any, idx: number) => (
                                                 <tr key={idx}>
-                                                    <td>{det.producto?.nombre || `Producto #${det.producto_id}`}</td>
+                                                    <td>{det.producto?.nombre || `Producto #${det.product_id}`}</td>
                                                     <td>{det.cantidad}</td>
-                                                    <td>{parseFloat(det.precio_compra).toFixed(2)}</td>
-                                                    <td>{(det.cantidad * parseFloat(det.precio_compra)).toFixed(2)}</td>
+                                                    <td>{parseFloat(det.precio_unitario).toFixed(2)}</td>
+                                                    <td>{(det.cantidad * parseFloat(det.precio_unitario)).toFixed(2)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

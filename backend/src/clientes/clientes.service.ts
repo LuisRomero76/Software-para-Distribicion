@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoriaCliente } from 'src/categoria_clientes/entities/categoria_cliente.entity';
-import { In, Repository } from 'typeorm';
+import { In, Repository, DataSource } from 'typeorm';
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { Cliente } from './entities/cliente.entity';
@@ -17,6 +17,7 @@ export class ClientesService {
     private readonly categoriaClienteRepository: Repository<CategoriaCliente>,
     @InjectRepository(TelefonoReferencia)
     private readonly telefonoReferenciaRepository: Repository<TelefonoReferencia>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private async ensureCategorias(cliente_categoria_ids: number[]) {
@@ -99,8 +100,83 @@ export class ClientesService {
   }
 
   async remove(id: number) {
-    const cliente = await this.findOne(id);
-    await this.clienteRepository.remove(cliente);
-    return { deleted: true };
+    const cliente = await this.clienteRepository.findOne({
+      where: { cliente_id: id },
+    });
+
+    if (!cliente) {
+      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+    }
+
+    // Iniciar transacción para eliminar en orden correcto
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Primero eliminar las rutas asociadas al cliente
+      await queryRunner.manager.delete('ruta', {
+        cliente_id: id,
+      });
+
+      // Eliminar ventas asociadas (si existen)
+      // Primero obtener las ventas del cliente
+      const ventas = await queryRunner.manager.find('venta', {
+        where: { cliente_id: id },
+      }) as any[];
+
+      // Para cada venta, eliminar sus detalles y devolver stock
+      for (const venta of ventas) {
+        // Obtener detalles de la venta
+        const detalles = await queryRunner.manager.find('detalle_venta', {
+          where: { venta_id: venta.venta_id },
+        }) as any[];
+
+        // Devolver stock a los lotes
+        for (const detalle of detalles) {
+          const lote = await queryRunner.manager.findOne('lote', {
+            where: { lote_id: detalle.lote_id },
+          }) as any;
+
+          if (lote) {
+            lote.cantidad_actual += detalle.cantidad;
+            await queryRunner.manager.save('lote', lote);
+          }
+        }
+
+        // Eliminar detalles de venta
+        await queryRunner.manager.delete('detalle_venta', {
+          venta_id: venta.venta_id,
+        });
+
+        // Eliminar ingreso asociado
+        await queryRunner.manager.delete('ingreso', {
+          referencia_id: venta.venta_id,
+        });
+
+        // Eliminar la venta
+        await queryRunner.manager.delete('venta', {
+          venta_id: venta.venta_id,
+        });
+      }
+
+      // Eliminar teléfonos de referencia
+      await queryRunner.manager.delete('telefono_referencia', {
+        cliente_id: id,
+      });
+
+      // Finalmente eliminar el cliente
+      await queryRunner.manager.delete('cliente', {
+        cliente_id: id,
+      });
+
+      await queryRunner.commitTransaction();
+      return { deleted: true };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

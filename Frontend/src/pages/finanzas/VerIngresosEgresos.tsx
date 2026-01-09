@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download, TrendingDown, TrendingUp } from 'lucide-react'
 import Pagination from '../../components/Pagination'
 import * as XLSX from 'xlsx'
-import { getAllGastosOperativos, updateGastoOperativo, type GastoOperativo } from '../../services/gastoOperativoService'
+import { getAllGastosOperativos, updateGastoOperativo, type GastoOperativo, type TipoEgreso } from '../../services/gastoOperativoService'
 import { getAllIngresos, updateIngreso, deleteIngreso, listIngresoCategoriaActivas, type Ingreso, type IngresoCategoria } from '../../services/ingresoService'
 import { listCategoriasActivas, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
 
@@ -19,8 +19,10 @@ type TipoRegistro = 'INGRESO' | 'EGRESO'
 interface RegistroUnificado {
   id: number
   tipo: TipoRegistro
+  tipoEgreso?: TipoEgreso
+  tipoIngreso?: string
   categoria_id?: number | null
-  descripcion: string
+  descripcion: string | null
   monto: number
   vehiculo_id?: number | null
   createdAt: string
@@ -63,6 +65,7 @@ export default function VerIngresosEgresos() {
       const gastosUnificados: RegistroUnificado[] = (Array.isArray(gastosData) ? gastosData : []).map(g => ({
         id: g.gasto_id,
         tipo: 'EGRESO' as const,
+        tipoEgreso: g.tipo,
         categoria_id: g.categoria_id,
         descripcion: g.descripcion,
         monto: Number(g.monto),
@@ -76,6 +79,7 @@ export default function VerIngresosEgresos() {
       const ingresosUnificados: RegistroUnificado[] = (Array.isArray(ingresosData) ? ingresosData : []).map(i => ({
         id: i.ingreso_id,
         tipo: 'INGRESO' as const,
+        tipoIngreso: (i as any).tipo,
         categoria_id: i.categoria_id,
         descripcion: i.descripcion,
         monto: Number(i.monto),
@@ -132,7 +136,7 @@ export default function VerIngresosEgresos() {
   }, [auth?.token])
 
   const filteredRegistros = registros.filter(registro =>
-    registro.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (registro.descripcion && registro.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (registro.categoriaRelacion?.nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -165,7 +169,7 @@ export default function VerIngresosEgresos() {
     setEditMode(true)
     setEditForm({
       categoria_id: registro.categoria_id ?? 0,
-      descripcion: registro.descripcion,
+      descripcion: registro.descripcion || '',
       monto: registro.monto.toString(),
       vehiculo_id: registro.vehiculo_id ?? 0
     })
@@ -304,6 +308,7 @@ export default function VerIngresosEgresos() {
               <tr>
                 <th>Tipo</th>
                 <th>ID</th>
+                <th>Subtipo</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
                 <th>Monto <br /> (Bs.)</th>
@@ -332,8 +337,9 @@ export default function VerIngresosEgresos() {
                     </span>
                   </td>
                   <td className="id-col">{registro.id}</td>
+                  <td>{registro.tipo === 'EGRESO' ? (registro.tipoEgreso || '—') : (registro.tipoIngreso || '—')}</td>
                   <td>{registro.categoriaRelacion?.nombre || '—'}</td>
-                  <td className="name-col">{registro.descripcion}</td>
+                  <td className="name-col">{registro.descripcion || '—'}</td>
                   <td>{Number(registro.monto).toFixed(2)}</td>
                   <td>{new Date(registro.createdAt).toLocaleDateString('es-ES')}</td>
                   <td>{registro.vehiculo ? (registro.vehiculo.placa || `Vehículo #${registro.vehiculo.vehicle_id}`) : '—'}</td>
@@ -372,6 +378,15 @@ export default function VerIngresosEgresos() {
               <div className="modal-body">
                 <div className="form-grid">
                   <label className="form-field">
+                    <span className="label-text">Tipo de {selectedRegistro.tipo}</span>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={selectedRegistro.tipo === 'EGRESO' ? (selectedRegistro.tipoEgreso || '—') : (selectedRegistro.tipoIngreso || '—')} 
+                      disabled 
+                    />
+                  </label>
+                  <label className="form-field">
                     <span className="label-text">Categoría</span>
                     {editMode ? (
                       <select
@@ -394,7 +409,7 @@ export default function VerIngresosEgresos() {
                     <input
                       type="text"
                       className="form-input"
-                      value={editMode ? editForm.descripcion : selectedRegistro.descripcion}
+                      value={editMode ? editForm.descripcion : (selectedRegistro.descripcion || '')}
                       onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })}
                       disabled={!editMode}
                       required={editMode}

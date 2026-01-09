@@ -19,6 +19,8 @@ export default function AddProduct() {
     tamaño: '',
     precio: '',
     precio_compra: '',
+    precio_compra_paquete: '',
+    precio_venta_paquete: '',
     cant_por_paquete: '',
     category_id: '',
     sub_category_id: ''
@@ -92,6 +94,8 @@ export default function AddProduct() {
       if (formData.tamaño?.trim()) payload.tamaño = formData.tamaño.trim();
       if (formData.sub_category_id) payload.sub_category_id = parseInt(formData.sub_category_id);
       if (formData.precio_compra) payload.precio_compra = parseFloat(formData.precio_compra);
+      if (formData.precio_compra_paquete) payload.precio_compra_paquete = parseFloat(formData.precio_compra_paquete);
+      if (formData.precio_venta_paquete) payload.precio_venta_paquete = parseFloat(formData.precio_venta_paquete);
       if (formData.cant_por_paquete) payload.cant_por_paquete = parseInt(formData.cant_por_paquete);
 
       await request('/product', {
@@ -108,6 +112,8 @@ export default function AddProduct() {
         tamaño: '',
         precio: '',
         precio_compra: '',
+        precio_compra_paquete: '',
+        precio_venta_paquete: '',
         cant_por_paquete: '',
         category_id: '',
         sub_category_id: ''
@@ -180,12 +186,38 @@ export default function AddProduct() {
             </label>
 
             <label className="form-field">
-              <span className="label-text">Precio de compra</span>
+              <span className="label-text">Precio de compra (Unitario)</span>
               <input
                 type="number"
                 className="form-input"
                 value={formData.precio_compra}
                 onChange={e => setFormData({ ...formData, precio_compra: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio de compra (Paquete)</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_compra_paquete}
+                onChange={e => setFormData({ ...formData, precio_compra_paquete: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio de venta (Paquete)</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_venta_paquete}
+                onChange={e => setFormData({ ...formData, precio_venta_paquete: e.target.value })}
                 step={0.01}
                 min={0}
                 placeholder="0.00"

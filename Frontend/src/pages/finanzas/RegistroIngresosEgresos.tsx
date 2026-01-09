@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Car, TrendingUp, TrendingDown } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { createGastoOperativo } from '../../services/gastoOperativoService'
+import { createGastoOperativo, type TipoEgreso } from '../../services/gastoOperativoService'
 import { createIngreso, listIngresoCategoriaActivas, type IngresoCategoria } from '../../services/ingresoService'
 import { listCategoriasActivas, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
 import { request } from '../../lib/http'
@@ -25,6 +25,7 @@ export default function RegistroIngresosEgresos() {
   const [error, setError] = useState<string | null>(null)
 
   const [formEgreso, setFormEgreso] = useState({
+    tipo: 'OTRO' as TipoEgreso,
     categoria_id: 0,
     descripcion: '',
     monto: '',
@@ -80,21 +81,23 @@ export default function RegistroIngresosEgresos() {
 
   const handleSubmitEgreso = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formEgreso.descripcion || !formEgreso.monto || !formEgreso.categoria_id) {
-      alert('Por favor complete todos los campos obligatorios')
+    if (!formEgreso.monto || !formEgreso.tipo) {
+      alert('Por favor complete el monto y tipo')
       return
     }
 
     setSaving(true)
     try {
-      const payload = {
-        categoria_id: formEgreso.categoria_id,
-        descripcion: formEgreso.descripcion,
+      const payload: any = {
+        tipo: formEgreso.tipo,
         monto: Number(formEgreso.monto),
-        vehiculo_id: formEgreso.vehiculo_id || null
       }
+      if (formEgreso.categoria_id) payload.categoria_id = formEgreso.categoria_id
+      if (formEgreso.descripcion) payload.descripcion = formEgreso.descripcion
+      if (formEgreso.vehiculo_id) payload.vehiculo_id = formEgreso.vehiculo_id
+      
       await createGastoOperativo(payload, auth?.token)
-      setFormEgreso({ categoria_id: categoriasEgreso[0]?.categoria_id || 0, descripcion: '', monto: '', vehiculo_id: 0 })
+      setFormEgreso({ tipo: 'OTRO', categoria_id: 0, descripcion: '', monto: '', vehiculo_id: 0 })
       alert('Egreso registrado correctamente')
     } catch (err: any) {
       alert(err?.message ?? 'No se pudo registrar el egreso')
@@ -190,14 +193,30 @@ export default function RegistroIngresosEgresos() {
           </div>
           <form className="filters-grid" style={{ gridTemplateColumns: '1fr' }} onSubmit={handleSubmitEgreso}>
             <div className="filter-group">
-              <label className="filter-label">Categoría *</label>
+              <label className="filter-label">Tipo de Egreso *</label>
+              <select
+                className="filter-select"
+                value={formEgreso.tipo}
+                onChange={(e) => setFormEgreso({ ...formEgreso, tipo: e.target.value as TipoEgreso })}
+                required
+              >
+                <option value="COMPRA">Compra</option>
+                <option value="COMBUSTIBLE">Combustible</option>
+                <option value="MANTENIMIENTO">Mantenimiento</option>
+                <option value="OPERATIVO">Operativo</option>
+                <option value="NOMINA">Nómina</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">Categoría</label>
               <select
                 className="filter-select"
                 value={formEgreso.categoria_id}
                 onChange={(e) => setFormEgreso({ ...formEgreso, categoria_id: Number(e.target.value) })}
-                required
               >
-                <option value={0}>-- Seleccione categoría --</option>
+                <option value={0}>-- Sin categoría --</option>
                 {categoriasEgreso.map(cat => (
                   <option key={cat.categoria_id} value={cat.categoria_id}>
                     {cat.nombre}
@@ -212,8 +231,7 @@ export default function RegistroIngresosEgresos() {
                 className="filter-input"
                 value={formEgreso.descripcion}
                 onChange={(e) => setFormEgreso({ ...formEgreso, descripcion: e.target.value })}
-                placeholder="Detalle del gasto"
-                required
+                placeholder="Detalle del gasto (opcional)"
               />
             </div>
 

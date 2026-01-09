@@ -7,9 +7,13 @@ import { DetalleCompra } from 'src/detalle_compra/entities/detalle_compra.entity
 import { Lote } from 'src/lote/entities/lote.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { Proveedor } from 'src/proveedor/entities/proveedor.entity';
+import { GastoOperativoModule } from 'src/gasto_operativo/gasto_operativo.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Compra, DetalleCompra, Lote, Product, Proveedor])],
+  imports: [
+    TypeOrmModule.forFeature([Compra, DetalleCompra, Lote, Product, Proveedor]),
+    GastoOperativoModule,
+  ],
   controllers: [CompraController],
   providers: [CompraService],
   exports: [CompraService],

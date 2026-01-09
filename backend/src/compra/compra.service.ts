@@ -8,6 +8,8 @@ import { DetalleCompra } from 'src/detalle_compra/entities/detalle_compra.entity
 import { Lote } from 'src/lote/entities/lote.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { Proveedor } from 'src/proveedor/entities/proveedor.entity';
+import { GastoOperativoService } from 'src/gasto_operativo/gasto_operativo.service';
+import { TipoEgreso } from 'src/gasto_operativo/entities/gasto_operativo.entity';
 
 @Injectable()
 export class CompraService {
@@ -23,6 +25,7 @@ export class CompraService {
     @InjectRepository(Proveedor)
     private proveedorRepository: Repository<Proveedor>,
     private dataSource: DataSource,
+    private gastoOperativoService: GastoOperativoService,
   ) {}
 
   /**
@@ -78,6 +81,14 @@ export class CompraService {
       for (const detalleDto of createCompraDto.detalles) {
         const subtotal = detalleDto.cantidad * detalleDto.precio_unitario;
 
+        // Obtener información del producto para calcular unidades sueltas
+        const producto = await this.productRepository.findOne({
+          where: { product_id: detalleDto.product_id },
+        });
+
+        const unidadesPorPaquete = producto?.cant_por_paquete || 1;
+        const unidadesSueltas = detalleDto.cantidad % unidadesPorPaquete;
+
         // Crear detalle de compra
         const detalle = this.detalleCompraRepository.create({
           compra_id: compraSaved.compra_id,
@@ -95,6 +106,7 @@ export class CompraService {
           product_id: detalleDto.product_id,
           cantidad_inicial: detalleDto.cantidad,
           cantidad_actual: detalleDto.cantidad,
+          unidades_sueltas: unidadesSueltas,
           costo_unitario: detalleDto.precio_unitario,
           fecha_vencimiento: detalleDto.fecha_vencimiento,
           detalle_compra_id: detalleSaved.detalle_compra_id,
@@ -102,6 +114,12 @@ export class CompraService {
 
         await queryRunner.manager.save(lote);
       }
+
+      // Crear egreso automáticamente
+      await this.gastoOperativoService.create({
+        tipo: TipoEgreso.COMPRA,
+        monto: total,
+      });
 
       await queryRunner.commitTransaction();
 
@@ -142,7 +160,50 @@ export class CompraService {
   }
 
   async remove(id: number): Promise<void> {
-    const compra = await this.findOne(id);
-    await this.compraRepository.remove(compra);
+    const compra = await this.compraRepository.findOne({
+      where: { compra_id: id },
+      relations: ['detalles'],
+    });
+
+    if (!compra) {
+      throw new NotFoundException(`Compra con ID ${id} no encontrada`);
+    }
+
+    // Iniciar transacción para eliminar en orden correcto
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Primero eliminar los lotes asociados a los detalles de compra
+      for (const detalle of compra.detalles) {
+        // Buscar y eliminar lotes creados por esta compra
+        await queryRunner.manager.delete('lote', {
+          detalle_compra_id: detalle.detalle_compra_id,
+        });
+      }
+
+      // Luego eliminar los detalles de compra
+      await queryRunner.manager.delete('detalle_compra', {
+        compra_id: id,
+      });
+
+      // Eliminar el egreso asociado si existe
+      await queryRunner.manager.delete('gasto_operativo', {
+        descripcion: `Compra #${id}`,
+      });
+
+      // Finalmente eliminar la compra
+      await queryRunner.manager.delete('compra', {
+        compra_id: id,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

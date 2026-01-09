@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet, ShoppingBag } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +19,7 @@ export default function DashboardLayout() {
     const isClientesRoute = location.pathname.startsWith('/clientes');
     const isDistributionRoute = location.pathname.startsWith('/distribution');
     const isComprasRoute = location.pathname.startsWith('/compras');
+    const isVentasRoute = location.pathname.startsWith('/ventas');
     const isFinanzasRoute = location.pathname.startsWith('/finanzas');
     
     const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
@@ -28,6 +29,7 @@ export default function DashboardLayout() {
     const [distributionMenuOpen, setDistributionMenuOpen] = useState(isDistributionRoute);
     const [clientesMenuOpen, setClientesMenuOpen] = useState(isClientesRoute);
     const [comprasMenuOpen, setComprasMenuOpen] = useState(isComprasRoute);
+    const [ventasMenuOpen, setVentasMenuOpen] = useState(isVentasRoute);
     const [finanzasMenuOpen, setFinanzasMenuOpen] = useState(isFinanzasRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -41,6 +43,7 @@ export default function DashboardLayout() {
         setDistributionMenuOpen(isDistributionRoute);
         setClientesMenuOpen(isClientesRoute);
         setComprasMenuOpen(isComprasRoute);
+        setVentasMenuOpen(isVentasRoute);
         setFinanzasMenuOpen(isFinanzasRoute);
     }, [location.pathname]);
 
@@ -116,31 +119,50 @@ export default function DashboardLayout() {
                                 </Link>
                             </div>
                         )}
-                        <button className="sidebar-group" onClick={() => setDistributionMenuOpen(v => !v)} title="Distribución">
-                            <Truck size={20} />
+
+                        <button className="sidebar-group" onClick={() => setComprasMenuOpen(v => !v)} title="Compras">
+                            <ShoppingCart size={20} />
                             {!sidebarCollapsed && (
                                 <>
-                                    <span>Distribución</span>
-                                    {distributionMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    <span>Compras</span>
+                                    {comprasMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                 </>
                             )}
                         </button>
-                        {distributionMenuOpen && !sidebarCollapsed && (
+                        {comprasMenuOpen && !sidebarCollapsed && (
                             <div className="sidebar-submenu">
-                                <Link to="/distribution/vehicles" className={location.pathname === '/distribution/vehicles' ? 'active' : ''}>
-                                    <Truck size={16} /> Ver vehículos
+                                <Link to="/compras" className={location.pathname === '/compras' ? 'active' : ''}>
+                                    <ShoppingCart size={16} /> Ver compras
                                 </Link>
-                                <Link to="/distribution/assignments" className={location.pathname === '/distribution/assignments' ? 'active' : ''}>
-                                    <Users size={16} /> Vincular vehículo
+                                <Link to="/compras/realizar" className={location.pathname === '/compras/realizar' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Realizar compra
                                 </Link>
-                                <Link to="/distribution/rutas" className={location.pathname === '/distribution/rutas' ? 'active' : ''}>
-                                    <MapPin size={16} /> Asignar rutas
-                                </Link>
-                                <Link to="/distribution/reportes" className={location.pathname === '/distribution/reportes' ? 'active' : ''}>
-                                    <BarChart3 size={16} /> Reportes de rutas
+                                <Link to="/compras/proveedores" className={location.pathname === '/compras/proveedores' ? 'active' : ''}>
+                                    <Users size={16} /> Mis proveedores
                                 </Link>
                             </div>
                         )}
+
+                        <button className="sidebar-group" onClick={() => setVentasMenuOpen(v => !v)} title="Ventas">
+                            <ShoppingBag size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Ventas</span>
+                                    {ventasMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {ventasMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/ventas" className={location.pathname === '/ventas' ? 'active' : ''}>
+                                    <ShoppingBag size={16} /> Ver ventas
+                                </Link>
+                                <Link to="/ventas/realizar" className={location.pathname === '/ventas/realizar' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Realizar venta
+                                </Link>
+                            </div>
+                        )}
+
                         <button className="sidebar-group" onClick={() => setClientesMenuOpen(v => !v)} title="Mis Clientes">
                             <User size={20} />
                             {!sidebarCollapsed && (
@@ -163,28 +185,6 @@ export default function DashboardLayout() {
                                 </Link>
                                 <Link to="/clientes/importar" className={location.pathname === '/clientes/importar' ? 'active' : ''}>
                                     <Upload size={16} /> Importar clientes
-                                </Link>
-                            </div>
-                        )}
-                        <button className="sidebar-group" onClick={() => setComprasMenuOpen(v => !v)} title="Compras">
-                            <ShoppingCart size={20} />
-                            {!sidebarCollapsed && (
-                                <>
-                                    <span>Compras</span>
-                                    {comprasMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </>
-                            )}
-                        </button>
-                        {comprasMenuOpen && !sidebarCollapsed && (
-                            <div className="sidebar-submenu">
-                                <Link to="/compras" className={location.pathname === '/compras' ? 'active' : ''}>
-                                    <ShoppingCart size={16} /> Ver compras
-                                </Link>
-                                <Link to="/compras/realizar" className={location.pathname === '/compras/realizar' ? 'active' : ''}>
-                                    <UserPlus size={16} /> Realizar compra
-                                </Link>
-                                <Link to="/compras/proveedores" className={location.pathname === '/compras/proveedores' ? 'active' : ''}>
-                                    <Users size={16} /> Mis proveedores
                                 </Link>
                             </div>
                         )}
@@ -214,6 +214,32 @@ export default function DashboardLayout() {
                                 </Link>
                             </div>
                             
+                        )}
+
+                        <button className="sidebar-group" onClick={() => setDistributionMenuOpen(v => !v)} title="Distribución">
+                            <Truck size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Distribución</span>
+                                    {distributionMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {distributionMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/distribution/vehicles" className={location.pathname === '/distribution/vehicles' ? 'active' : ''}>
+                                    <Truck size={16} /> Ver vehículos
+                                </Link>
+                                <Link to="/distribution/assignments" className={location.pathname === '/distribution/assignments' ? 'active' : ''}>
+                                    <Users size={16} /> Vincular vehículo
+                                </Link>
+                                <Link to="/distribution/rutas" className={location.pathname === '/distribution/rutas' ? 'active' : ''}>
+                                    <MapPin size={16} /> Asignar rutas
+                                </Link>
+                                <Link to="/distribution/reportes" className={location.pathname === '/distribution/reportes' ? 'active' : ''}>
+                                    <BarChart3 size={16} /> Reportes de rutas
+                                </Link>
+                            </div>
                         )}
                     </nav>
                 </aside>

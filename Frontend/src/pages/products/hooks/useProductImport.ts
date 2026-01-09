@@ -6,6 +6,10 @@ export interface ProductCreatePayload {
   descripcion?: string;
   tamaño?: string;
   precio: string;
+  precio_compra?: string;
+  precio_compra_paquete?: string;
+  precio_venta_paquete?: string;
+  cant_por_paquete?: string;
   category_id: number;
   sub_category_id?: number;
 }
@@ -36,6 +40,18 @@ export function useProductImport() {
     }
     if (row.tamaño && String(row.tamaño).trim() !== '') {
       payload.tamaño = String(row.tamaño).trim();
+    }
+    if (row.precio_compra && String(row.precio_compra).trim() !== '') {
+      payload.precio_compra = String(row.precio_compra).trim();
+    }
+    if (row.precio_compra_paquete && String(row.precio_compra_paquete).trim() !== '') {
+      payload.precio_compra_paquete = String(row.precio_compra_paquete).trim();
+    }
+    if (row.precio_venta_paquete && String(row.precio_venta_paquete).trim() !== '') {
+      payload.precio_venta_paquete = String(row.precio_venta_paquete).trim();
+    }
+    if (row.cant_por_paquete && String(row.cant_por_paquete).trim() !== '') {
+      payload.cant_por_paquete = String(row.cant_por_paquete).trim();
     }
 
     return payload;

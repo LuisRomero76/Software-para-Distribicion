@@ -6,6 +6,10 @@ export interface ProductImportRow {
   descripcion?: string;
   tamaño?: string;
   precio?: string | number;
+  precio_compra?: string | number;
+  precio_compra_paquete?: string | number;
+  precio_venta_paquete?: string | number;
+  cant_por_paquete?: string | number;
 }
 
 export interface SheetData {
@@ -29,6 +33,10 @@ export async function readProductExcelFile(file: File): Promise<SheetData[]> {
       descripcion: r['Descripción'] ?? r['descripcion'] ?? r['descripción'] ?? '',
       tamaño: r['Tamaño'] ?? r['tamaño'] ?? r['tamano'] ?? '',
       precio: r['Precio'] ?? r['precio'] ?? '',
+      precio_compra: r['Precio Compra'] ?? r['precio_compra'] ?? '',
+      precio_compra_paquete: r['Precio Compra Paquete'] ?? r['precio_compra_paquete'] ?? '',
+      precio_venta_paquete: r['Precio Venta Paquete'] ?? r['precio_venta_paquete'] ?? '',
+      cant_por_paquete: r['Cant. por Paquete'] ?? r['cant_por_paquete'] ?? '',
     });
 
     return {
@@ -50,6 +58,10 @@ export function generateProductTemplate(): void {
       'Descripción': 'Vino tinto premium',
       'Tamaño': '750ml',
       'Precio': '150.50',
+      'Precio Compra': '100.00',
+      'Precio Compra Paquete': '570.00',
+      'Precio Venta Paquete': '870.00',
+      'Cant. por Paquete': '6',
     }
   ];
 
@@ -60,6 +72,10 @@ export function generateProductTemplate(): void {
     { wch: 40 }, // Descripción
     { wch: 15 }, // Tamaño
     { wch: 15 }, // Precio
+    { wch: 18 }, // Precio Compra
+    { wch: 22 }, // Precio Compra Paquete
+    { wch: 22 }, // Precio Venta Paquete
+    { wch: 18 }, // Cant. por Paquete
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Productos');

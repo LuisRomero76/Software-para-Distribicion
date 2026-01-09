@@ -4,8 +4,10 @@ export interface Producto {
     product_id: number;
     nombre: string;
     descripcion?: string;
-    precio: number; // precio de venta
+    precio: number; // precio de venta por unidad
     precio_compra?: number; // precio de compra por unidad
+    precio_compra_paquete?: number; // precio de compra por paquete
+    precio_venta_paquete?: number; // precio de venta por paquete
     cant_por_paquete?: number; // unidades por paquete
     cod_barra?: string;
     categoria_id: number;
@@ -26,6 +28,8 @@ export interface CreateProductoDto {
     sub_categoria_id: number;
     stock?: number;
     precio_compra?: number;
+    precio_compra_paquete?: number;
+    precio_venta_paquete?: number;
     cant_por_paquete?: number;
 }
 

@@ -8,10 +8,22 @@ export enum CategoriaGasto {
   GENERAL = 'GENERAL'
 }
 
+export enum TipoEgreso {
+  COMPRA = 'COMPRA',
+  COMBUSTIBLE = 'COMBUSTIBLE',
+  MANTENIMIENTO = 'MANTENIMIENTO',
+  OPERATIVO = 'OPERATIVO',
+  NOMINA = 'NOMINA',
+  OTRO = 'OTRO'
+}
+
 @Entity()
 export class GastoOperativo {
   @PrimaryGeneratedColumn()
   gasto_id: number;
+
+  @Column({ type: 'enum', enum: TipoEgreso, default: TipoEgreso.OTRO })
+  tipo: TipoEgreso;
 
   @Column({ type: 'enum', enum: CategoriaGasto, nullable: true })
   categoria: CategoriaGasto;
@@ -19,8 +31,8 @@ export class GastoOperativo {
   @Column({ nullable: true })
   categoria_id: number | null;
 
-  @Column({ type: 'varchar', length: 200 })
-  descripcion: string;
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  descripcion: string | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   monto: number;

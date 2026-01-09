@@ -7,6 +7,8 @@ import { Venta } from './entities/venta.entity';
 import { DetalleVenta } from 'src/detalle_venta/entities/detalle_venta.entity';
 import { Lote } from 'src/lote/entities/lote.entity';
 import { Cliente } from 'src/clientes/entities/cliente.entity';
+import { IngresoService } from 'src/ingreso/ingreso.service';
+import { TipoIngreso } from 'src/ingreso/entities/ingreso.entity';
 
 @Injectable()
 export class VentaService {
@@ -20,6 +22,7 @@ export class VentaService {
     @InjectRepository(Cliente)
     private clienteRepository: Repository<Cliente>,
     private dataSource: DataSource,
+    private ingresoService: IngresoService,
   ) {}
 
   /**
@@ -57,10 +60,17 @@ export class VentaService {
           throw new NotFoundException(`Lote con ID ${detalleDto.lote_id} no encontrado`);
         }
 
-        if (lote.cantidad_actual < detalleDto.cantidad) {
+        // Convertir cantidad a unidades si es modo paquete
+        let cantidadEnUnidades = detalleDto.cantidad;
+        if (detalleDto.modo === 'paquete') {
+          const unidadesPorPaquete = lote.producto.cant_por_paquete || 1;
+          cantidadEnUnidades = detalleDto.cantidad * unidadesPorPaquete;
+        }
+
+        if (lote.cantidad_actual < cantidadEnUnidades) {
           throw new BadRequestException(
             `Stock insuficiente en el lote #${lote.lote_id}. ` +
-            `Disponible: ${lote.cantidad_actual}, Solicitado: ${detalleDto.cantidad}`
+            `Disponible: ${lote.cantidad_actual}, Solicitado: ${cantidadEnUnidades}`
           );
         }
 
@@ -91,6 +101,13 @@ export class VentaService {
           throw new NotFoundException(`Lote con ID ${detalleDto.lote_id} no encontrado`);
         }
 
+        // Convertir cantidad a unidades si es modo paquete
+        let cantidadEnUnidades = detalleDto.cantidad;
+        if (detalleDto.modo === 'paquete') {
+          const unidadesPorPaquete = lote.producto.cant_por_paquete || 1;
+          cantidadEnUnidades = detalleDto.cantidad * unidadesPorPaquete;
+        }
+
         const precioVenta = lote.producto.precio;
         const subtotal = precioVenta * detalleDto.cantidad;
 
@@ -105,10 +122,18 @@ export class VentaService {
 
         await queryRunner.manager.save(detalle);
 
-        // Descontar del stock del lote
-        lote.cantidad_actual -= detalleDto.cantidad;
+        // Descontar del stock del lote (en unidades)
+        lote.cantidad_actual -= cantidadEnUnidades;
         await queryRunner.manager.save(lote);
       }
+
+      // Crear ingreso automáticamente
+      await this.ingresoService.create({
+        tipo: TipoIngreso.VENTA,
+        descripcion: `Venta #${ventaSaved.venta_id}`,
+        monto: totalVenta,
+        referencia_id: ventaSaved.venta_id,
+      });
 
       await queryRunner.commitTransaction();
 
@@ -151,7 +176,54 @@ export class VentaService {
   }
 
   async remove(id: number): Promise<void> {
-    const venta = await this.findOne(id);
-    await this.ventaRepository.remove(venta);
+    const venta = await this.ventaRepository.findOne({
+      where: { venta_id: id },
+      relations: ['detalles'],
+    });
+
+    if (!venta) {
+      throw new NotFoundException(`Venta con ID ${id} no encontrada`);
+    }
+
+    // Iniciar transacción para eliminar en orden correcto
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Primero devolver el stock a los lotes
+      for (const detalle of venta.detalles) {
+        const lote = await queryRunner.manager.findOne('lote', {
+          where: { lote_id: detalle.lote_id },
+        }) as any;
+
+        if (lote) {
+          lote.cantidad_actual += detalle.cantidad;
+          await queryRunner.manager.save('lote', lote);
+        }
+      }
+
+      // Eliminar los detalles de venta
+      await queryRunner.manager.delete('detalle_venta', {
+        venta_id: id,
+      });
+
+      // Eliminar el ingreso asociado si existe
+      await queryRunner.manager.delete('ingreso', {
+        referencia_id: id,
+      });
+
+      // Finalmente eliminar la venta
+      await queryRunner.manager.delete('venta', {
+        venta_id: id,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

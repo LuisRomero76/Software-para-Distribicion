@@ -25,6 +25,12 @@ export class Product {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
   precio_compra: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
+  precio_compra_paquete: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
+  precio_venta_paquete: number;
+
   @Column({ type: 'int', nullable: true, default: 1 })
   cant_por_paquete: number;
 

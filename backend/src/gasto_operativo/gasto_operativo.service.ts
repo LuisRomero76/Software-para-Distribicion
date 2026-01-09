@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateGastoOperativoDto } from './dto/create-gasto_operativo.dto';
 import { UpdateGastoOperativoDto } from './dto/update-gasto_operativo.dto';
-import { GastoOperativo, CategoriaGasto } from './entities/gasto_operativo.entity';
+import { GastoOperativo, CategoriaGasto, TipoEgreso } from './entities/gasto_operativo.entity';
 import { GastoOperativoCategoria } from './entities/gasto_operativo_categoria.entity';
 import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
 
@@ -19,7 +19,7 @@ export class GastoOperativoService {
   ) {}
 
   async create(createGastoOperativoDto: CreateGastoOperativoDto): Promise<GastoOperativo> {
-    const { categoria, categoria_id, vehiculo_id, ...rest } = createGastoOperativoDto;
+    const { tipo, categoria, categoria_id, vehiculo_id, ...rest } = createGastoOperativoDto;
 
     // Validar que el vehículo exista si se proporciona
     if (vehiculo_id) {
@@ -39,6 +39,7 @@ export class GastoOperativoService {
 
     const gastoData: Partial<GastoOperativo> = {
       ...rest,
+      tipo: tipo || TipoEgreso.OTRO,
       categoria: categoria || undefined,
       categoria_id: categoria_id || undefined,
       vehiculo_id: vehiculo_id || undefined,
@@ -71,7 +72,12 @@ export class GastoOperativoService {
   async update(id: number, updateGastoOperativoDto: UpdateGastoOperativoDto): Promise<GastoOperativo> {
     const gasto = await this.findOne(id);
     
-    const { categoria, categoria_id, vehiculo_id, ...rest } = updateGastoOperativoDto;
+    const { tipo, categoria, categoria_id, vehiculo_id, ...rest } = updateGastoOperativoDto;
+
+    // Manejar tipo si se proporciona
+    if (tipo !== undefined) {
+      gasto.tipo = tipo;
+    }
 
     // Manejar vehículo (setear FK y limpiar/actualizar relación)
     if (vehiculo_id !== undefined) {

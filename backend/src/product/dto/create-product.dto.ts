@@ -34,6 +34,18 @@ export class CreateProductDto {
 
   @IsOptional()
   @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'El precio de compra por paquete no puede ser negativo' })
+  precio_compra_paquete?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'El precio de venta por paquete no puede ser negativo' })
+  precio_venta_paquete?: number;
+
+  @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1, { message: 'La cantidad por paquete debe ser al menos 1' })
   cant_por_paquete?: number;

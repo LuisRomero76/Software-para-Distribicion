@@ -1,8 +1,12 @@
 import { IsEnum, IsString, IsNumber, IsOptional, IsInt, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CategoriaGasto } from '../entities/gasto_operativo.entity';
+import { CategoriaGasto, TipoEgreso } from '../entities/gasto_operativo.entity';
 
 export class CreateGastoOperativoDto {
+  @IsOptional()
+  @IsEnum(TipoEgreso, { message: 'El tipo debe ser COMPRA, COMBUSTIBLE, MANTENIMIENTO, OPERATIVO, NOMINA u OTRO' })
+  tipo?: TipoEgreso;
+
   @IsOptional()
   @IsEnum(CategoriaGasto, { message: 'La categoría debe ser COMBUSTIBLE, MANTENIMIENTO o GENERAL' })
   categoria?: CategoriaGasto;
@@ -12,9 +16,10 @@ export class CreateGastoOperativoDto {
   @IsInt()
   categoria_id?: number;
 
+  @IsOptional()
   @IsString()
   @MaxLength(200)
-  descripcion: string;
+  descripcion?: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

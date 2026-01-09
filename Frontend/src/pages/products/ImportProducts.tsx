@@ -17,6 +17,7 @@ export default function ImportProducts() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [categories, setCategories] = useState<any[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
@@ -49,6 +50,12 @@ export default function ImportProducts() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    await processFile(file);
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const processFile = async (file: File) => {
     setError(null);
     setSuccess(null);
 
@@ -70,8 +77,31 @@ export default function ImportProducts() {
     } finally {
       setLoading(false);
     }
+  };
 
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+      await processFile(file);
+    } else {
+      setError('Por favor, arrastra un archivo Excel válido (.xlsx, .xls, .csv)');
+    }
   };
 
   const handleSheetChange = (index: number) => {
@@ -170,7 +200,12 @@ export default function ImportProducts() {
       {sheets.length === 0 ? (
         <>
           <div className="upload-section">
-            <div className="upload-zone">
+            <div 
+              className={`upload-zone ${isDragging ? 'dragging' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="upload-zone-icon">
                 <Upload size={36} />
               </div>
@@ -196,6 +231,7 @@ export default function ImportProducts() {
                 id="excel-file"
                 accept=".xlsx,.xls,.csv"
                 onChange={handleFileUpload}
+                style={{ display: 'none' }}
               />
             </div>
           </div>
@@ -215,8 +251,8 @@ export default function ImportProducts() {
                 <div className="instruction-text">
                   <p>Completa los datos en Excel</p>
                   <ul>
-                    <li><b>Obligatorio:</b> Nombre</li>
-                    <li><b>Opcionales:</b> Código de barras, Descripción, Tamaño</li>
+                    <li><b>Obligatorios:</b> Nombre, Precio</li>
+                    <li><b>Opcionales:</b> Código de barras, Descripción, Tamaño, Precio Compra, Precio Compra Paquete, Precio Venta Paquete, Cant. por Paquete</li>
                   </ul>
                 </div>
               </div>
@@ -332,6 +368,11 @@ export default function ImportProducts() {
                     <th>Nombre *</th>
                     <th>Descripción</th>
                     <th>Tamaño</th>
+                    <th>Precio *</th>
+                    <th>Precio Compra</th>
+                    <th>Precio Compra Paq.</th>
+                    <th>Precio Venta Paq.</th>
+                    <th>Cant. por Paq.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,6 +399,21 @@ export default function ImportProducts() {
                         </td>
                         <td>
                           <input className="cell-input" value={row.tamaño || ''} onChange={(e) => handleCellChange(idx, 'tamaño', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className={`cell-input ${has('Precio') ? 'cell-error' : ''}`} value={row.precio || ''} onChange={(e) => handleCellChange(idx, 'precio', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.precio_compra || ''} onChange={(e) => handleCellChange(idx, 'precio_compra', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.precio_compra_paquete || ''} onChange={(e) => handleCellChange(idx, 'precio_compra_paquete', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.precio_venta_paquete || ''} onChange={(e) => handleCellChange(idx, 'precio_venta_paquete', e.target.value)} />
+                        </td>
+                        <td>
+                          <input className="cell-input" value={row.cant_por_paquete || ''} onChange={(e) => handleCellChange(idx, 'cant_por_paquete', e.target.value)} />
                         </td>
                       </tr>
                     );

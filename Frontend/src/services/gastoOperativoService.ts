@@ -1,12 +1,14 @@
 import { request } from '../lib/http'
 
 export type CategoriaGasto = 'COMBUSTIBLE' | 'MANTENIMIENTO' | 'GENERAL'
+export type TipoEgreso = 'COMPRA' | 'COMBUSTIBLE' | 'MANTENIMIENTO' | 'OPERATIVO' | 'NOMINA' | 'OTRO'
 
 export interface GastoOperativo {
   gasto_id: number
+  tipo?: TipoEgreso
   categoria?: CategoriaGasto
   categoria_id?: number
-  descripcion: string
+  descripcion: string | null
   monto: number
   vehiculo_id?: number | null
   createdAt: string
@@ -23,9 +25,10 @@ export interface GastoOperativo {
 }
 
 export interface CreateGastoOperativoInput {
+  tipo?: TipoEgreso
   categoria?: CategoriaGasto
   categoria_id?: number
-  descripcion: string
+  descripcion?: string
   monto: number
   vehiculo_id?: number | null
 }

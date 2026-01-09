@@ -90,8 +90,9 @@ export default function ReporteIngresosEgresos() {
       if (tipoReporte === 'EGRESO') {
         return {
           'ID': item.gasto_id,
+          'Tipo': item.tipo || 'OTRO',
           'Categoría': item.categoriaRelacion?.nombre || item.categoria || '—',
-          'Descripción': item.descripcion,
+          'Descripción': item.descripcion || '—',
           'Monto (Bs)': Number(item.monto).toFixed(2),
           'Fecha': formatFecha(item.createdAt),
           'Vehículo': item.vehiculo ? (item.vehiculo.placa || `Vehículo #${item.vehiculo.vehicle_id}`) : '—'
@@ -116,6 +117,7 @@ export default function ReporteIngresosEgresos() {
     const columnWidths = tipoReporte === 'EGRESO' 
       ? [
           { wch: 8 },  // ID
+          { wch: 15 }, // Tipo
           { wch: 20 }, // Categoría
           { wch: 40 }, // Descripción
           { wch: 15 }, // Monto
@@ -162,7 +164,7 @@ export default function ReporteIngresosEgresos() {
           }}
           style={{
             padding: '0.75rem 1.5rem',
-            backgroundColor: tipoReporte === 'EGRESO' ? '#ef4444' : '#f3f4f6',
+            backgroundColor: tipoReporte === 'EGRESO' ? '#ef4444' : '#e2e4e5ff',
             color: tipoReporte === 'EGRESO' ? '#fff' : '#374151',
             border: 'none',
             borderRadius: '0.375rem',
@@ -185,7 +187,7 @@ export default function ReporteIngresosEgresos() {
           }}
           style={{
             padding: '0.75rem 1.5rem',
-            backgroundColor: tipoReporte === 'INGRESO' ? '#22c55e' : '#f3f4f6',
+            backgroundColor: tipoReporte === 'INGRESO' ? '#22c55e' : '#e2e4e5ff',
             color: tipoReporte === 'INGRESO' ? '#fff' : '#374151',
             border: 'none',
             borderRadius: '0.375rem',
@@ -270,7 +272,7 @@ export default function ReporteIngresosEgresos() {
             <thead>
               <tr>
                 <th>ID</th>
-                {tipoReporte === 'INGRESO' && <th>Tipo</th>}
+                <th>Tipo</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
                 <th>Monto</th>
@@ -283,10 +285,11 @@ export default function ReporteIngresosEgresos() {
                 tipoReporte === 'EGRESO' ? (
                   <tr key={item.gasto_id}>
                     <td className="id-col">#{item.gasto_id}</td>
+                    <td><span style={{ padding: '0.25rem 0.75rem', backgroundColor: '#f0fdf4', borderRadius: '0.25rem', fontSize: '0.875rem', fontWeight: '600', color: '#3b22c5ff' }}>{item.tipo || 'OTRO'}</span></td>
                     <td>{item.categoriaRelacion?.nombre || item.categoria || '—'}</td>
-                    <td>{item.descripcion}</td>
+                    <td>{item.descripcion || '—'}</td>
                     <td>Bs {Number(item.monto).toFixed(2)}</td>
-                    <td>{formatFecha(item.createdAt)}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString('es-ES')}</td>
                     <td>{item.vehiculo ? (item.vehiculo.placa || `Vehículo #${item.vehiculo.vehicle_id}`) : '—'}</td>
                   </tr>
                 ) : (

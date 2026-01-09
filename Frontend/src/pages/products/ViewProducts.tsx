@@ -12,6 +12,10 @@ interface Product {
   descripcion?: string;
   tamaño?: string;
   precio: number;
+  precio_compra?: number;
+  precio_compra_paquete?: number;
+  precio_venta_paquete?: number;
+  cant_por_paquete?: number;
   category_id: number;
   sub_category_id: number;
   fecha_creacion: string;
@@ -40,6 +44,10 @@ export default function ViewProducts() {
     descripcion: '',
     tamaño: '',
     precio: '',
+    precio_compra: '',
+    precio_compra_paquete: '',
+    precio_venta_paquete: '',
+    cant_por_paquete: '',
     category_id: '',
     sub_category_id: ''
   });
@@ -124,9 +132,13 @@ export default function ViewProducts() {
       nombre: product.nombre,
       descripcion: product.descripcion || '',
       tamaño: product.tamaño || '',
-      precio: product.precio.toString(),
-      category_id: product.category_id.toString(),
-      sub_category_id: product.sub_category_id.toString()
+      precio: product.precio?.toString() || '0',
+      precio_compra: product.precio_compra?.toString() || '',
+      precio_compra_paquete: product.precio_compra_paquete?.toString() || '',
+      precio_venta_paquete: product.precio_venta_paquete?.toString() || '',
+      cant_por_paquete: product.cant_por_paquete?.toString() || '',
+      category_id: product.category_id?.toString() || '',
+      sub_category_id: product.sub_category_id?.toString() || ''
     });
   };
 
@@ -151,6 +163,10 @@ export default function ViewProducts() {
       if (editForm.cod_barra?.trim()) payload.cod_barra = editForm.cod_barra.trim();
       if (editForm.descripcion?.trim()) payload.descripcion = editForm.descripcion.trim();
       if (editForm.tamaño?.trim()) payload.tamaño = editForm.tamaño.trim();
+      if (editForm.precio_compra) payload.precio_compra = parseFloat(editForm.precio_compra);
+      if (editForm.precio_compra_paquete) payload.precio_compra_paquete = parseFloat(editForm.precio_compra_paquete);
+      if (editForm.precio_venta_paquete) payload.precio_venta_paquete = parseFloat(editForm.precio_venta_paquete);
+      if (editForm.cant_por_paquete) payload.cant_por_paquete = parseInt(editForm.cant_por_paquete);
 
       const updated = await request<Product>(
         `/product/${selectedProduct.product_id}`,
@@ -399,6 +415,57 @@ export default function ViewProducts() {
                     ) : (
                       <input type="text" className="form-input" value={selectedProduct.subCategory?.nombre || ''} disabled />
                     )}
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio de Compra (Unitario)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio_compra : (selectedProduct.precio_compra || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_compra: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="0.00"
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio de Compra (Paquete)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio_compra_paquete : (selectedProduct.precio_compra_paquete || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_compra_paquete: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="0.00"
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio de Venta (Paquete)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio_venta_paquete : (selectedProduct.precio_venta_paquete || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_venta_paquete: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="0.00"
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Unidades por Paquete</span>
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input"
+                      value={editMode ? editForm.cant_por_paquete : (selectedProduct.cant_por_paquete || '')}
+                      onChange={e => setEditForm({ ...editForm, cant_por_paquete: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="1"
+                    />
                   </label>
                 </div>
               </div>

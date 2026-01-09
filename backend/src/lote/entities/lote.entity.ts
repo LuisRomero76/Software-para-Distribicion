@@ -17,6 +17,9 @@ export class Lote {
   @Column({ type: 'int' })
   cantidad_actual: number;
 
+  @Column({ type: 'int', default: 0, comment: 'Unidades sueltas (no completan un paquete)' })
+  unidades_sueltas: number;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   costo_unitario: number;
 
