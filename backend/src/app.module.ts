@@ -20,6 +20,7 @@ import { VentaModule } from './venta/venta.module';
 import { DetalleVentaModule } from './detalle_venta/detalle_venta.module';
 import { DetalleCompraModule } from './detalle_compra/detalle_compra.module';
 import { LoteModule } from './lote/lote.module';
+import { PagoModule } from './pago/pago.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { LoteModule } from './lote/lote.module';
     DetalleVentaModule,
     DetalleCompraModule,
     LoteModule,
+    PagoModule,
   ],
   controllers: [],
   providers: [],

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { UpdateVentaDto } from './dto/update-venta.dto';
-import { Venta } from './entities/venta.entity';
+import { Venta, TipoVenta, EstadoVenta } from './entities/venta.entity';
 import { DetalleVenta } from 'src/detalle_venta/entities/detalle_venta.entity';
 import { Lote } from 'src/lote/entities/lote.entity';
 import { Cliente } from 'src/clientes/entities/cliente.entity';
@@ -86,11 +86,18 @@ export class VentaService {
       }
 
       // Crear la venta
+      const montoPagado = createVentaDto.monto_pagado || 0;
+      const estado = createVentaDto.tipo_venta === TipoVenta.CONTADO ? EstadoVenta.COMPLETADO : EstadoVenta.PENDIENTE;
+      const montoAdeudado = totalVenta - montoPagado;
+
       const venta = this.ventaRepository.create({
         cliente_id: createVentaDto.cliente_id,
         fecha_venta: createVentaDto.fecha_venta,
         tipo_venta: createVentaDto.tipo_venta,
         total: totalVenta,
+        monto_pagado: montoPagado,
+        monto_adeudado: createVentaDto.tipo_venta === TipoVenta.CREDITO ? montoAdeudado : 0,
+        estado: estado,
         observaciones: createVentaDto.observaciones,
       });
 
@@ -129,6 +136,7 @@ export class VentaService {
           venta_id: ventaSaved.venta_id,
           lote_id: detalleDto.lote_id,
           cantidad: detalleDto.cantidad,
+          modo: detalleDto.modo,
           precio_venta_real: precioVenta,
           subtotal,
         });

@@ -40,6 +40,7 @@ export default function RealizarVenta() {
     const [clienteId, setClienteId] = useState<number | null>(null);
     const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
     const [tipoVenta, setTipoVenta] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
+    const [montoPagado, setMontoPagado] = useState<number>(0);
     const [observaciones, setObservaciones] = useState('');
     
     // Datos
@@ -296,6 +297,7 @@ export default function RealizarVenta() {
                 cliente_id: clienteFinalId,
                 fecha_venta: new Date().toISOString(),
                 tipo_venta: tipoVenta,
+                monto_pagado: tipoVenta === 'CREDITO' ? montoPagado : undefined,
                 observaciones,
                 detalles,
             }, auth?.token);
@@ -418,43 +420,12 @@ export default function RealizarVenta() {
                     )}
                 </div>
 
-                {/* Datos Generales */}
-                <div className="form-section">
-                    <h3 className="section-title">Datos de la Venta</h3>
-                    
-                    <div className="grid-2">
-                        <div className="form-group">
-                            <label>Tipo de Venta *</label>
-                            <select
-                                className="form-input"
-                                value={tipoVenta}
-                                onChange={(e) => setTipoVenta(e.target.value as 'CONTADO' | 'CREDITO')}
-                                required
-                            >
-                                <option value="CONTADO">Contado</option>
-                                <option value="CREDITO">Crédito</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group span-2">
-                            <label>Observaciones</label>
-                            <textarea
-                                className="form-input"
-                                value={observaciones}
-                                onChange={(e) => setObservaciones(e.target.value)}
-                                rows={3}
-                                placeholder="Notas adicionales sobre la venta..."
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Productos */}
+                {/* Productos - AHORA PRIMERO */}
                 <div className="form-section">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>Productos a Vender</h3>
                         <button type="button" className="btn-icon btn-success" onClick={agregarProducto}>
-                            <Plus size={18} /> Agregar Producto
+                            <Plus size={18} />
                         </button>
                     </div>
 
@@ -626,6 +597,79 @@ export default function RealizarVenta() {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Datos de la Venta - AHORA DESPUÉS DE PRODUCTOS */}
+                <div className="form-section">
+                    <h3 className="section-title">Datos de la Venta</h3>
+                    
+                    <div className="grid-2">
+                        <div className="form-group">
+                            <label>Tipo de Venta *</label>
+                            <select
+                                className="form-input"
+                                value={tipoVenta}
+                                onChange={(e) => {
+                                    setTipoVenta(e.target.value as 'CONTADO' | 'CREDITO');
+                                    if (e.target.value === 'CONTADO') {
+                                        setMontoPagado(0);
+                                    }
+                                }}
+                                required
+                            >
+                                <option value="CONTADO">Contado</option>
+                                <option value="CREDITO">Crédito</option>
+                            </select>
+                        </div>
+
+                        {tipoVenta === 'CREDITO' && (
+                            <>
+                                <div className="form-group">
+                                    <label>Monto Adelantado (Bs.)</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={montoPagado}
+                                        onChange={(e) => setMontoPagado(parseFloat(e.target.value) || 4)}
+                                        min="0"
+                                        max={calcularTotal()}
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    />
+                                    {montoPagado > calcularTotal() && (
+                                        <small style={{ color: 'var(--danger)', fontSize: '0.85rem', display: 'block', marginTop: '0.25rem' }}>
+                                            ⚠️ El adelanto no puede ser mayor al total
+                                        </small>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Monto Adeudado (Bs.)</label>
+                                    <input
+                                        type="text"
+                                        className="form-input input-disabled"
+                                        value={(calcularTotal() - montoPagado).toFixed(2)}
+                                        disabled
+                                        style={{ 
+                                            fontWeight: '600',
+                                            color: (calcularTotal() - montoPagado) > 0 ? 'var(--warning)' : 'var(--success)'
+                                        }}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <div className="form-group span-2">
+                            <label>Observaciones</label>
+                            <textarea
+                                className="form-input"
+                                value={observaciones}
+                                onChange={(e) => setObservaciones(e.target.value)}
+                                rows={3}
+                                placeholder="Notas adicionales sobre la venta..."
+                            />
+                        </div>
                     </div>
                 </div>
 

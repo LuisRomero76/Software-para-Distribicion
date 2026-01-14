@@ -1,4 +1,4 @@
-import { IsInt, IsDate, IsOptional, IsString, IsEnum, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsInt, IsDate, IsOptional, IsString, IsEnum, IsArray, ValidateNested, ArrayMinSize, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TipoVenta } from '../entities/venta.entity';
 import { CreateDetalleVentaDto } from 'src/detalle_venta/dto/create-detalle_venta.dto';
@@ -16,6 +16,11 @@ export class CreateVentaDto {
   tipo_venta: TipoVenta;
 
   @IsOptional()
+  @Type(() => Number)
+  @Min(0, { message: 'El monto pagado no puede ser negativo' })
+  monto_pagado?: number;
+
+  @IsOptional()
   @IsString()
   observaciones?: string;
 
@@ -25,3 +30,4 @@ export class CreateVentaDto {
   @Type(() => CreateDetalleVentaDto)
   detalles: CreateDetalleVentaDto[];
 }
+

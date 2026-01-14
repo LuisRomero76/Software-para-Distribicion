@@ -66,6 +66,7 @@ export function generateExcelTemplate(): void {
     {
       sub_canal: 'Canal 1',
       visita: 'Día',
+      dia_visita: 'Lunes',
       nit_ci: 12345678,
       nombre: 'Cliente Ejemplo 1',
       direccion: 'Calle Principal 123',
@@ -73,13 +74,13 @@ export function generateExcelTemplate(): void {
       coordenadas: '4.7110,-74.0075',
       telefono: '3001234567',
       ruta: 'Ruta A',
-      dia_visita: '2025-01-15',
     },
   ];
   const ws1 = XLSX.utils.json_to_sheet(clientesData);
   ws1['!cols'] = [
     { wch: 12 }, // sub_canal
     { wch: 10 }, // visita
+    { wch: 15 }, // dia_visita
     { wch: 12 }, // nit_ci
     { wch: 20 }, // nombre
     { wch: 25 }, // direccion
@@ -87,7 +88,6 @@ export function generateExcelTemplate(): void {
     { wch: 20 }, // coordenadas
     { wch: 15 }, // telefono
     { wch: 15 }, // ruta
-    { wch: 15 }, // dia_visita
   ];
   XLSX.utils.book_append_sheet(wb, ws1, 'Clientes');
   
@@ -96,6 +96,7 @@ export function generateExcelTemplate(): void {
     {
       sub_canal: 'Canal 2',
       visita: 'Noche',
+      dia_visita: 'Martes',
       nit_ci: 87654321,
       nombre: 'Cliente Categoría A',
       direccion: 'Avenida Secundaria 456',
@@ -103,21 +104,20 @@ export function generateExcelTemplate(): void {
       coordenadas: '6.2442,-75.5812',
       telefono: '3109876543',
       ruta: 'Ruta B',
-      dia_visita: '2025-01-20',
     },
   ];
   const ws2 = XLSX.utils.json_to_sheet(clientesCatA);
   ws2['!cols'] = [
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 12 },
-    { wch: 20 },
-    { wch: 25 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 15 },
+    { wch: 12 }, // sub_canal
+    { wch: 10 }, // visita
+    { wch: 15 }, // dia_visita
+    { wch: 12 }, // nit_ci
+    { wch: 20 }, // nombre
+    { wch: 25 }, // direccion
+    { wch: 15 }, // ciudad
+    { wch: 20 }, // coordenadas
+    { wch: 15 }, // telefono
+    { wch: 15 }, // ruta
   ];
   XLSX.utils.book_append_sheet(wb, ws2, 'Categoría_A');
     

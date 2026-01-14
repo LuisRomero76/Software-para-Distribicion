@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CreateClientePayload } from '../hooks/useClientes';
 import type { CategoriaCliente } from '../hooks/useCategoriasClientes';
 import { Visita } from '../types/visita';
+import { DiaVisita } from '../types/dia-visita';
 
 interface Props {
   categorias: CategoriaCliente[];
@@ -49,8 +50,17 @@ export function ClienteForm({ categorias, onSubmit, onCancel }: Props) {
                 </select>
               </div>
               <div className="form-row">
-                <label>NIT/CI</label>
-                <input type="number" value={form.nit_ci || ''} onChange={e => update('nit_ci', e.target.value ? Number(e.target.value) : undefined)} />
+                <label>Día de visita</label>
+                <select value={form.dia_visita || ''} onChange={e => update('dia_visita', e.target.value || undefined)}>
+                  <option value="">Sin especificar</option>
+                  <option value={DiaVisita.LUNES}>{DiaVisita.LUNES}</option>
+                  <option value={DiaVisita.MARTES}>{DiaVisita.MARTES}</option>
+                  <option value={DiaVisita.MIERCOLES}>{DiaVisita.MIERCOLES}</option>
+                  <option value={DiaVisita.JUEVES}>{DiaVisita.JUEVES}</option>
+                  <option value={DiaVisita.VIERNES}>{DiaVisita.VIERNES}</option>
+                  <option value={DiaVisita.SABADO}>{DiaVisita.SABADO}</option>
+                  <option value={DiaVisita.DOMINGO}>{DiaVisita.DOMINGO}</option>
+                </select>
               </div>
               <div className="form-row">
                 <label>Nombre</label>
@@ -70,15 +80,24 @@ export function ClienteForm({ categorias, onSubmit, onCancel }: Props) {
               </div>
               <div className="form-row">
                 <label>Teléfono</label>
-                <input value={form.telefono || ''} onChange={e => update('telefono', e.target.value || undefined)} maxLength={20} />
-              </div>
-              <div className="form-row">
-                <label>Ruta</label>
-                <input value={form.ruta || ''} onChange={e => update('ruta', e.target.value || undefined)} maxLength={100} />
+                <input value={form.telefono || ''} onChange={e => update('telefono', e.target.value || undefined)} maxLength={50} />
               </div>
               <div className="form-row">
                 <label>Día de visita</label>
-                <input type="date" value={form.dia_visita || ''} onChange={e => update('dia_visita', e.target.value || undefined)} />
+                <select value={form.dia_visita || ''} onChange={e => update('dia_visita', e.target.value || undefined)}>
+                  <option value="">Sin especificar</option>
+                  <option value={DiaVisita.LUNES}>{DiaVisita.LUNES}</option>
+                  <option value={DiaVisita.MARTES}>{DiaVisita.MARTES}</option>
+                  <option value={DiaVisita.MIERCOLES}>{DiaVisita.MIERCOLES}</option>
+                  <option value={DiaVisita.JUEVES}>{DiaVisita.JUEVES}</option>
+                  <option value={DiaVisita.VIERNES}>{DiaVisita.VIERNES}</option>
+                  <option value={DiaVisita.SABADO}>{DiaVisita.SABADO}</option>
+                  <option value={DiaVisita.DOMINGO}>{DiaVisita.DOMINGO}</option>
+                </select>
+              </div>
+              <div className="form-row">
+                <label>NIT/CI</label>
+                <input type="number" value={form.nit_ci || ''} onChange={e => update('nit_ci', e.target.value ? Number(e.target.value) : undefined)} />
               </div>
             </div>
 
@@ -109,7 +128,7 @@ export function ClienteForm({ categorias, onSubmit, onCancel }: Props) {
                 <tbody>
                   {telefonos.map((t, idx) => (
                     <tr key={idx}>
-                      <td><input value={t.numero} onChange={e => setTelefonos(prev => prev.map((x, i) => i===idx ? { ...x, numero: e.target.value } : x))} maxLength={20} /></td>
+                      <td><input value={t.numero} onChange={e => setTelefonos(prev => prev.map((x, i) => i===idx ? { ...x, numero: e.target.value } : x))} maxLength={50} /></td>
                       <td><input value={t.nombre_contacto || ''} onChange={e => setTelefonos(prev => prev.map((x, i) => i===idx ? { ...x, nombre_contacto: e.target.value || undefined } : x))} maxLength={100} /></td>
                       <td>
                         <button type="button" className="action-btn delete" onClick={() => setTelefonos(prev => prev.filter((_, i) => i!==idx))}>Eliminar</button>

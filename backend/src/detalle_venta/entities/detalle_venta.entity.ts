@@ -16,6 +16,9 @@ export class DetalleVenta {
   @Column({ type: 'int' })
   cantidad: number;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  modo?: string; // 'unidad' o 'paquete'
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio_venta_real: number;
 

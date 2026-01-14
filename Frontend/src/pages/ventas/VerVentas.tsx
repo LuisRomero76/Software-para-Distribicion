@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, Trash2, Download, Search, RefreshCw, AlertCircle } from 'lucide-react';
-import { getAllVentas, deleteVenta, type Venta } from '../../services/ventaService';
+import { Plus, Eye, Trash2, Download, Search, RefreshCw, AlertCircle, DollarSign, X } from 'lucide-react';
+import { getAllVentas, deleteVenta, createPago, getPagosByVenta, type Venta, type Pago, type CreatePagoDto } from '../../services/ventaService';
 import { useAuth } from '../../context/AuthContext';
 import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
@@ -23,7 +23,12 @@ export default function VerVentas() {
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteVentaState, setDeleteVentaState] = useState<Venta | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [selectedVenta, setSelectedVenta] = useState<VentaDetail | null>(null);
+    
+    // Estados para modal de pagos
+    const [pagoModal, setPagoModal] = useState<{ venta: Venta | null; pagos: Pago[] }>({ venta: null, pagos: [] });
+    const [montoPago, setMontoPago] = useState<number>(0);
+    const [observacionesPago, setObservacionesPago] = useState('');
+    const [registrandoPago, setRegistrandoPago] = useState(false);
 
     useEffect(() => {
         document.title = 'Grupo Vicorsa | Ver Ventas';
@@ -59,13 +64,60 @@ export default function VerVentas() {
         }
     };
 
+    const handleOpenPagoModal = async (venta: Venta) => {
+        try {
+            const pagos = await getPagosByVenta(venta.venta_id, auth?.token);
+            setPagoModal({ venta, pagos });
+            setMontoPago(0);
+            setObservacionesPago('');
+        } catch (err) {
+            setError('Error al cargar los pagos');
+            console.error(err);
+        }
+    };
+
+    const handleRegistrarPago = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pagoModal.venta || montoPago <= 0) return;
+
+        setRegistrandoPago(true);
+        try {
+            const pagoDto: CreatePagoDto = {
+                venta_id: pagoModal.venta.venta_id,
+                monto: montoPago,
+                fecha_pago: new Date().toISOString(),
+                observaciones: observacionesPago || undefined,
+            };
+
+            await createPago(pagoDto, auth?.token);
+            
+            // Recargar ventas para actualizar montos
+            await loadVentas();
+            
+            // Cerrar modal
+            setPagoModal({ venta: null, pagos: [] });
+            setMontoPago(0);
+            setObservacionesPago('');
+            
+            alert('¡Pago registrado exitosamente!');
+        } catch (err: any) {
+            setError(err?.message || 'Error al registrar el pago');
+            console.error(err);
+        } finally {
+            setRegistrandoPago(false);
+        }
+    };
+
     const exportToExcel = () => {
         const dataToExport = ventas.map(venta => ({
             'ID': venta.venta_id,
             'Cliente': venta.cliente?.nombre || 'N/A',
             'Tipo': venta.tipo_venta,
+            'Estado': venta.estado,
             'Fecha': new Date(venta.fecha_venta).toLocaleDateString('es-ES'),
             'Total (Bs.)': parseFloat(venta.total as any).toFixed(2),
+            'Pagado (Bs.)': parseFloat(venta.monto_pagado as any).toFixed(2),
+            'Adeudado (Bs.)': parseFloat(venta.monto_adeudado as any).toFixed(2),
             'Artículos': venta.detalles?.length || 0,
             'Observaciones': venta.observaciones || '-'
         }));
@@ -75,7 +127,7 @@ export default function VerVentas() {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventas');
 
         worksheet['!cols'] = [
-            { wch: 8 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
+            { wch: 8 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
         ];
 
         const today = new Date();
@@ -151,8 +203,10 @@ export default function VerVentas() {
                                 <th>ID</th>
                                 <th>Cliente</th>
                                 <th>Tipo</th>
+                                <th>Estado</th>
                                 <th>Fecha</th>
                                 <th>Total (Bs.)</th>
+                                <th>Adeudado (Bs.)</th>
                                 <th>Artículos</th>
                                 <th className="actions-col">Acciones</th>
                             </tr>
@@ -167,11 +221,24 @@ export default function VerVentas() {
                                             {venta.tipo_venta}
                                         </span>
                                     </td>
+                                    <td>
+                                        <span className={`badge ${venta.estado === 'COMPLETADO' ? 'badge-success' : 'badge-warning'}`}>
+                                            {venta.estado === 'COMPLETADO' ? '✓ Completado' : '⏳ Pendiente'}
+                                        </span>
+                                    </td>
                                     <td>{new Date(venta.fecha_venta).toLocaleDateString('es-ES')}</td>
                                     <td className="text-right">{parseFloat(venta.total as any).toFixed(2)}</td>
+                                    <td className="text-right" style={{ color: venta.monto_adeudado > 0 ? 'var(--warning)' : 'var(--success)' }}>
+                                        <strong>{parseFloat(venta.monto_adeudado as any).toFixed(2)}</strong>
+                                    </td>
                                     <td className="text-center">{venta.detalles?.length || 0}</td>
                                     <td className="actions-col">
-                                        <button className="action-btn view" onClick={() => setSelectedVenta(venta)} title="Ver detalles">
+                                        {venta.estado === 'PENDIENTE' && (
+                                            <button className="action-btn success" onClick={() => handleOpenPagoModal(venta)} title="Registrar pago">
+                                                <DollarSign size={16} />
+                                            </button>
+                                        )}
+                                        <button className="action-btn view" onClick={() => navigate(`/ventas/${venta.venta_id}`)} title="Ver detalles">
                                             <Eye size={16} />
                                         </button>
                                         <button className="action-btn delete" onClick={() => setDeleteVentaState(venta)} title="Eliminar">
@@ -191,71 +258,6 @@ export default function VerVentas() {
                 />
             </div>
 
-            {selectedVenta && (
-                <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setSelectedVenta(null)}>
-                    <div className="modal-large" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>Detalles de Venta #{selectedVenta.venta_id}</h3>
-                            <button className="modal-close" onClick={() => setSelectedVenta(null)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-grid">
-                                <label className="form-field">
-                                    <span className="label-text">Cliente</span>
-                                    <input type="text" className="form-input" value={selectedVenta.cliente?.nombre || 'Cliente General'} disabled />
-                                </label>
-                                <label className="form-field">
-                                    <span className="label-text">Tipo de Venta</span>
-                                    <input type="text" className="form-input" value={selectedVenta.tipo_venta} disabled />
-                                </label>
-                                <label className="form-field">
-                                    <span className="label-text">Fecha</span>
-                                    <input type="text" className="form-input" value={new Date(selectedVenta.fecha_venta).toLocaleDateString('es-ES')} disabled />
-                                </label>
-                                <label className="form-field">
-                                    <span className="label-text">Total (Bs.)</span>
-                                    <input type="text" className="form-input" value={parseFloat(selectedVenta.total as any).toFixed(2)} disabled />
-                                </label>
-                                <label className="form-field span-2">
-                                    <span className="label-text">Observaciones</span>
-                                    <textarea className="form-input" value={selectedVenta.observaciones || 'Sin observaciones'} disabled rows={3} />
-                                </label>
-                            </div>
-                            {selectedVenta.detalles && selectedVenta.detalles.length > 0 && (
-                                <div style={{ marginTop: '1.5rem' }}>
-                                    <h4 style={{ marginBottom: '1rem', color: 'var(--text)' }}>Productos Vendidos</h4>
-                                    <table className="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Producto</th>
-                                                <th>Lote</th>
-                                                <th>Cantidad</th>
-                                                <th>Precio Unit.</th>
-                                                <th>Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {selectedVenta.detalles.map((detalle: any, idx: number) => (
-                                                <tr key={idx}>
-                                                    <td>{detalle.lote?.producto?.nombre || 'N/A'}</td>
-                                                    <td>Lote #{detalle.lote_id}</td>
-                                                    <td>{detalle.cantidad}</td>
-                                                    <td>Bs {parseFloat(detalle.precio_venta_real).toFixed(2)}</td>
-                                                    <td>Bs {parseFloat(detalle.subtotal).toFixed(2)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn-secondary" onClick={() => setSelectedVenta(null)}>Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {deleteVentaState && (
                 <div className="modal-overlay" role="dialog" aria-modal="true">
                     <div className="modal">
@@ -266,6 +268,108 @@ export default function VerVentas() {
                             <button className="btn danger" onClick={handleDelete} disabled={deleting}>
                                 {deleting ? 'Eliminando...' : 'Eliminar'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {pagoModal.venta && (
+                <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setPagoModal({ venta: null, pagos: [] })}>
+                    <div className="modal-large" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Registrar Pago - Venta #{pagoModal.venta.venta_id}</h3>
+                            <button className="modal-close" onClick={() => setPagoModal({ venta: null, pagos: [] })}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-2)', borderRadius: '8px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>Bs {parseFloat(pagoModal.venta.total as any).toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Pagado</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--success)' }}>Bs {parseFloat(pagoModal.venta.monto_pagado as any).toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Adeudado</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--warning)' }}>Bs {parseFloat(pagoModal.venta.monto_adeudado as any).toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {pagoModal.pagos.length > 0 && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h4 style={{ marginBottom: '1rem', color: 'var(--text)' }}>Historial de Pagos</h4>
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Monto (Bs.)</th>
+                                                <th>Observaciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pagoModal.pagos.map((pago, idx) => (
+                                                <tr key={idx}>
+                                                    <td>{new Date(pago.fecha_pago).toLocaleDateString('es-ES')}</td>
+                                                    <td>Bs {parseFloat(pago.monto as any).toFixed(2)}</td>
+                                                    <td>{pago.observaciones || '-'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleRegistrarPago}>
+                                <h4 style={{ marginBottom: '1rem', color: 'var(--text)' }}>Nuevo Pago</h4>
+                                <div className="form-grid">
+                                    <label className="form-field">
+                                        <span className="label-text">Monto a Pagar (Bs.) *</span>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            value={montoPago}
+                                            onChange={(e) => setMontoPago(parseFloat(e.target.value) || 0)}
+                                            min="0.01"
+                                            max={pagoModal.venta.monto_adeudado}
+                                            step="0.01"
+                                            required
+                                            placeholder="0.00"
+                                        />
+                                        {montoPago > pagoModal.venta.monto_adeudado && (
+                                            <small style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
+                                                El monto no puede exceder la deuda
+                                            </small>
+                                        )}
+                                    </label>
+                                    <label className="form-field span-2">
+                                        <span className="label-text">Observaciones</span>
+                                        <textarea
+                                            className="form-input"
+                                            value={observacionesPago}
+                                            onChange={(e) => setObservacionesPago(e.target.value)}
+                                            rows={3}
+                                            placeholder="Notas sobre el pago..."
+                                        />
+                                    </label>
+                                </div>
+                                <div className="modal-footer" style={{ marginTop: '1.5rem' }}>
+                                    <button type="button" className="btn-secondary" onClick={() => setPagoModal({ venta: null, pagos: [] })}>
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn-primary"
+                                        disabled={registrandoPago || montoPago <= 0 || montoPago > pagoModal.venta.monto_adeudado}
+                                    >
+                                        {registrandoPago ? 'Registrando...' : 'Registrar Pago'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

@@ -62,15 +62,18 @@ export function useExcelImport() {
 
   const validateRow = (row: ClienteImportRow): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
+    const diasValidos = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
     if (!row.sub_canal?.toString().trim()) errors.push('Sub Canal requerido');
     if (!row.nombre?.toString().trim()) errors.push('Nombre requerido');
     if (!row.direccion?.toString().trim()) errors.push('Dirección requerida');
 
     if (row.nit_ci && isNaN(Number(row.nit_ci))) errors.push('NIT/CI debe ser un número');
-    if (row.dia_visita) {
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(row.dia_visita)) errors.push('Fecha debe estar en formato YYYY-MM-DD');
+    if (row.dia_visita && row.dia_visita.toString().trim() !== '') {
+      const dia = row.dia_visita.toString().trim();
+      if (!diasValidos.includes(dia)) {
+        errors.push(`Día de visita inválido. Valores permitidos: ${diasValidos.join(', ')}`);
+      }
     }
 
     return { valid: errors.length === 0, errors };

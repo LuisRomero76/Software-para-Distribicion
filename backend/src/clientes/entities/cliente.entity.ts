@@ -1,5 +1,6 @@
 import { CategoriaCliente } from "src/categoria_clientes/entities/categoria_cliente.entity";
 import { Visita } from "src/common/enums/visita.enum";
+import { DiaVisita } from "src/common/enums/dia-visita.enum";
 import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { TelefonoReferencia } from "./telefono-referencia.entity";
 
@@ -14,6 +15,9 @@ export class Cliente {
 
     @Column({ type: 'enum', enum: Visita, default: Visita.DIA, nullable: true })
     visita?: Visita;
+
+    @Column({ type: 'enum', enum: DiaVisita, nullable: true })
+    dia_visita?: DiaVisita;
 
     @Column({ type: 'bigint', unique: true, nullable: true })
     nit_ci?: number;
@@ -30,7 +34,7 @@ export class Cliente {
     @Column({ type: 'varchar', length: 200, nullable: true })
     coordenadas?: string;
 
-    @Column({ type: 'varchar', length: 20, nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     telefono?: string;
 
     @OneToMany(() => TelefonoReferencia, telefono => telefono.cliente, {

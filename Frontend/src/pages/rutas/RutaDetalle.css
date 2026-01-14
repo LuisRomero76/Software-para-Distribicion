@@ -153,11 +153,6 @@
   transition: color 0.2s;
 }
 
-.phone-link:hover {
-  color: var(--primary-color, #4f46e5);
-  text-decoration: underline;
-}
-
 /* Full width sections */
 .full-width-section {
   grid-column: 1 / -1;

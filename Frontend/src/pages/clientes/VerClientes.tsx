@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
 import { useCategoriasClientes } from './hooks/useCategoriasClientes';
-import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload, MapPin } from 'lucide-react';
+import { Visita } from './types/visita';
+import { DiaVisita } from './types/dia-visita';
+import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload, MapPin, X, Plus } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Pagination from '../../components/Pagination';
@@ -256,7 +258,7 @@ export default function VerClientes() {
                 <th>Nombre</th>
                 <th>Nit/CI</th>
                 <th>Teléfono</th>
-                <th>Categorías</th>
+                <th>Día de Visita</th>
                 <th>Ciudad</th>
                 <th className="actions-col">Acciones</th>
               </tr>
@@ -269,13 +271,7 @@ export default function VerClientes() {
                   <td>{c.nombre}</td>
                   <td>{c.nit_ci}</td>
                   <td>{c.telefono}</td>
-                  <td>
-                    <div className="tags-cell">
-                      {c.categorias.map(k => (
-                        <span key={k.cliente_categoria_id} className="tag">{k.nombre}</span>
-                      ))}
-                    </div>
-                  </td>
+                  <td>{c.dia_visita}</td>
                   <td>{c.ciudad}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => navigate(`/clientes/${c.cliente_id}`)} title="Ver detalles">
@@ -312,10 +308,12 @@ export default function VerClientes() {
 
       {showEditModal && editingCliente && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal modal-large">
+          <div className="modal modal-large edit-client-modal">
             <div className="modal-header">
-              <h3>Editar Cliente</h3>
-              <button className="modal-close" onClick={handleCancelEdit}>×</button>
+              <h3>Editar Cliente: {editingCliente.nombre}</h3>
+              <button className="modal-close" onClick={handleCancelEdit} type="button">
+                <X size={24} />
+              </button>
             </div>
             <form className="modal-form" onSubmit={handleSaveEdit}>
               {/* Alertas de error y éxito */}
@@ -330,81 +328,192 @@ export default function VerClientes() {
                 </div>
               )}
 
-              <div className="form-grid">
-                <div className="form-row">
-                  <label>Sub Canal</label>
-                  <input value={editForm.sub_canal || ''} onChange={e => updateEditForm('sub_canal', e.target.value)} maxLength={100} required />
-                </div>
-                <div className="form-row">
-                  <label>Nombre</label>
-                  <input value={editForm.nombre || ''} onChange={e => updateEditForm('nombre', e.target.value)} maxLength={100} required />
-                </div>
-                <div className="form-row">
-                  <label>NIT/CI {errorField === 'nit_ci' && <span style={{ color: '#ef4444', fontSize: '0.875rem', marginLeft: '8px' }}>⚠ Este campo está duplicado</span>}</label>
-                  <input 
-                    type="number" 
-                    value={editForm.nit_ci || ''} 
-                    onChange={e => updateEditForm('nit_ci', e.target.value ? parseInt(e.target.value, 10) : undefined)} 
-                    style={errorField === 'nit_ci' ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
-                  />
-                </div>
-                <div className="form-row">
-                  <label>Dirección</label>
-                  <input value={editForm.direccion || ''} onChange={e => updateEditForm('direccion', e.target.value)} maxLength={200} required />
-                </div>
-                <div className="form-row">
-                  <label>Ciudad</label>
-                  <input value={editForm.ciudad || ''} onChange={e => updateEditForm('ciudad', e.target.value)} maxLength={100} />
-                </div>
-                <div className="form-row">
-                  <label>Teléfono</label>
-                  <input value={editForm.telefono || ''} onChange={e => updateEditForm('telefono', e.target.value)} maxLength={20} />
-                </div>
-                <div className="form-row">
-                  <label>Ruta</label>
-                  <input value={editForm.ruta || ''} onChange={e => updateEditForm('ruta', e.target.value)} maxLength={100} />
-                </div>
-                <div className="form-row">
-                  <label>Día de Visita</label>
-                  <input type="date" value={editForm.dia_visita || ''} onChange={e => updateEditForm('dia_visita', e.target.value)} />
-                </div>
-                <div className="form-row">
-                  <label>Coordenadas</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input 
-                      value={editForm.coordenadas || ''} 
-                      onChange={e => updateEditForm('coordenadas', e.target.value)} 
-                      maxLength={200}
-                      placeholder="-16.5,-68.15"
-                      style={{ flex: 1 }}
+              {/* Información General */}
+              <div className="form-section">
+                <h4 className="form-section-title">Información General</h4>
+                <div className="form-grid">
+                  <div className="form-row">
+                    <label>Nombre del Contribuyente *</label>
+                    <input
+                      value={editForm.nombre || ''}
+                      onChange={e => updateEditForm('nombre', e.target.value)}
+                      maxLength={100}
+                      required
                     />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowMapModal(true)}
-                      title="Seleccionar en el mapa"
-                      style={{ whiteSpace: 'nowrap' }}
+                  </div>
+                  <div className="form-row">
+                    <label>NIT/CI {errorField === 'nit_ci' && <span style={{ color: '#ef4444', fontSize: '0.875rem', marginLeft: '8px' }}>⚠ Este campo está duplicado</span>}</label>
+                    <input
+                      type="number"
+                      value={editForm.nit_ci || ''}
+                      onChange={e => updateEditForm('nit_ci', e.target.value ? Number(e.target.value) : undefined)}
+                      style={errorField === 'nit_ci' ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label>Sub Canal *</label>
+                    <input
+                      value={editForm.sub_canal || ''}
+                      onChange={e => updateEditForm('sub_canal', e.target.value)}
+                      maxLength={100}
+                      required
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label>Visita</label>
+                    <select
+                      value={editForm.visita || ''}
+                      onChange={e => updateEditForm('visita', e.target.value as any)}
                     >
-                      <MapPin size={18} /> Mapa
-                    </button>
+                      <option value="">Sin especificar</option>
+                      <option value={Visita.DIA}>{Visita.DIA}</option>
+                      <option value={Visita.NOCHE}>{Visita.NOCHE}</option>
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label>Día de Visita</label>
+                    <select
+                      value={editForm.dia_visita || ''}
+                      onChange={e => updateEditForm('dia_visita', e.target.value || undefined)}
+                    >
+                      <option value="">Sin especificar</option>
+                      <option value={DiaVisita.LUNES}>{DiaVisita.LUNES}</option>
+                      <option value={DiaVisita.MARTES}>{DiaVisita.MARTES}</option>
+                      <option value={DiaVisita.MIERCOLES}>{DiaVisita.MIERCOLES}</option>
+                      <option value={DiaVisita.JUEVES}>{DiaVisita.JUEVES}</option>
+                      <option value={DiaVisita.VIERNES}>{DiaVisita.VIERNES}</option>
+                      <option value={DiaVisita.SABADO}>{DiaVisita.SABADO}</option>
+                      <option value={DiaVisita.DOMINGO}>{DiaVisita.DOMINGO}</option>
+                    </select>
                   </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <label>Categorías</label>
-                <div className="checkbox-group">
-                  {categorias.map(cat => (
-                    <label key={cat.cliente_categoria_id} className="checkbox-label">
+              {/* Ubicación y Contacto */}
+              <div className="form-section">
+                <h4 className="form-section-title">Ubicación y Contacto</h4>
+                <div className="form-grid">
+                  <div className="form-row full-width">
+                    <label>Dirección *</label>
+                    <input
+                      value={editForm.direccion || ''}
+                      onChange={e => updateEditForm('direccion', e.target.value)}
+                      maxLength={200}
+                      required
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label>Ciudad</label>
+                    <input
+                      value={editForm.ciudad || ''}
+                      onChange={e => updateEditForm('ciudad', e.target.value || undefined)}
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="form-row">
+                    <label>Teléfono Principal</label>
+                    <input
+                      value={editForm.telefono || ''}
+                      onChange={e => updateEditForm('telefono', e.target.value || undefined)}
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="form-row full-width">
+                    <label>Coordenadas</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <input
-                        type="checkbox"
-                        checked={editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) || false}
-                        onChange={() => toggleCategoria(cat.cliente_categoria_id)}
+                        value={editForm.coordenadas || ''}
+                        onChange={e => updateEditForm('coordenadas', e.target.value || undefined)}
+                        maxLength={200}
+                        placeholder="-16.5,-68.15"
+                        style={{ flex: 1 }}
                       />
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowMapModal(true)}
+                        title="Seleccionar en el mapa"
+                        style={{ whiteSpace: 'nowrap' }}
+                      >
+                        <MapPin size={18} /> Mapa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categorías */}
+              <div className="form-section">
+                <h4 className="form-section-title">Categorías</h4>
+                <div className="chips-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {categorias.map(cat => (
+                    <button
+                      type="button"
+                      key={cat.cliente_categoria_id}
+                      className={`chip ${editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'active' : ''}`}
+                      onClick={() => toggleCategoria(cat.cliente_categoria_id)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '20px',
+                        border: '1px solid var(--border)',
+                        background: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'var(--primary)' : 'var(--card)',
+                        color: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'white' : 'var(--text)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
                       {cat.nombre}
-                    </label>
+                    </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Teléfonos de Referencia */}
+              <div className="form-section">
+                <h4 className="form-section-title">Teléfonos de Referencia</h4>
+                {telefonos.map((tel, idx) => (
+                  <div key={idx} className="form-grid" style={{ marginBottom: '1rem', alignItems: 'end' }}>
+                    <div className="form-row">
+                      <label>Número</label>
+                      <input
+                        value={tel.numero}
+                        onChange={e => {
+                          const newTels = [...telefonos];
+                          newTels[idx].numero = e.target.value;
+                          setTelefonos(newTels);
+                        }}
+                        placeholder="Número de referencia"
+                      />
+                    </div>
+                    <div className="form-row">
+                      <label>Nombre Contacto</label>
+                      <input
+                        value={tel.nombre_contacto || ''}
+                        onChange={e => {
+                          const newTels = [...telefonos];
+                          newTels[idx].nombre_contacto = e.target.value;
+                          setTelefonos(newTels);
+                        }}
+                        placeholder="Nombre del contacto"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon btn-icon-danger"
+                      onClick={() => setTelefonos(telefonos.filter((_, i) => i !== idx))}
+                      style={{ marginBottom: '2px', height: '42px', width: '42px' }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setTelefonos([...telefonos, { numero: '' }])}
+                >
+                  <Plus size={16} /> Añadir teléfono
+                </button>
               </div>
 
               <div className="modal-footer">

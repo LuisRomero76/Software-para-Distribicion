@@ -768,6 +768,12 @@
   color: #fff;
 }
 
+.action-btn.success:hover {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
 .action-btn.delete:hover {
   background: var(--danger);
   border-color: var(--danger);

@@ -39,8 +39,22 @@ export interface Venta {
     fecha_venta: string;
     tipo_venta: 'CONTADO' | 'CREDITO';
     total: number;
+    estado: 'PENDIENTE' | 'COMPLETADO';
+    monto_pagado: number;
+    monto_adeudado: number;
     observaciones?: string;
     detalles?: DetalleVenta[];
+    pagos?: Pago[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface Pago {
+    pago_id: number;
+    venta_id: number;
+    monto: number;
+    fecha_pago: string;
+    observaciones?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -49,11 +63,19 @@ export interface CreateVentaDto {
     cliente_id?: number;
     fecha_venta?: string;
     tipo_venta?: 'CONTADO' | 'CREDITO';
+    monto_pagado?: number;
     observaciones?: string;
     detalles: Array<{
         lote_id: number;
         cantidad: number;
     }>;
+}
+
+export interface CreatePagoDto {
+    venta_id: number;
+    monto: number;
+    fecha_pago?: string;
+    observaciones?: string;
 }
 
 export interface UpdateVentaDto {
@@ -101,4 +123,23 @@ export const getAllLotes = async (token?: string): Promise<Lote[]> => {
 
 export const getLotesByProducto = async (productId: number, token?: string): Promise<Lote[]> => {
     return request<Lote[]>(`/lote/producto/${productId}`, {}, token);
+};
+
+// Pago Services
+export const createPago = async (data: CreatePagoDto, token?: string): Promise<Pago> => {
+    return request<Pago>('/pago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }, token);
+};
+
+export const getPagosByVenta = async (ventaId: number, token?: string): Promise<Pago[]> => {
+    return request<Pago[]>(`/pago/venta/${ventaId}`, {}, token);
+};
+
+export const deletePago = async (pagoId: number, token?: string): Promise<void> => {
+    return request<void>(`/pago/${pagoId}`, {
+        method: 'DELETE',
+    }, token);
 };

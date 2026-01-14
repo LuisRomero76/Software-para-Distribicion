@@ -24,6 +24,7 @@ import ClientDetails from './pages/clientes/ClientDetails'
 import ImportarClientes from './pages/clientes/ImportarClientes'
 import { VerCompras, RealizarCompra, VerProveedores } from './pages/compras'
 import { VerVentas, RealizarVenta } from './pages/ventas'
+import VentaDetails from './pages/ventas/VentaDetails'
 import IngresosEgresos from './pages/finanzas/IngresosEgresos'
 import RegistroIngresosEgresos from './pages/finanzas/RegistroIngresosEgresos'
 import ReporteIngresosEgresos from './pages/finanzas/ReporteIngresosEgresos'
@@ -78,6 +79,7 @@ function App() {
               <Route path="compras/proveedores" element={<VerProveedores />} />
               <Route path="ventas" element={<VerVentas />} />
               <Route path="ventas/realizar" element={<RealizarVenta />} />
+              <Route path="ventas/:id" element={<VentaDetails />} />
               <Route path="finanzas/ingresos-egresos" element={<IngresosEgresos />} />
               <Route path="finanzas/registro-ingresos-egresos" element={<RegistroIngresosEgresos />} />
               <Route path="finanzas/reporte-ingresos-egresos" element={<ReporteIngresosEgresos />} />

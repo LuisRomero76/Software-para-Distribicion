@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useClientes, type CreateClientePayload } from './hooks/useClientes';
 import { useCategoriasClientes } from './hooks/useCategoriasClientes';
 import { Visita } from './types/visita';
+import { DiaVisita } from './types/dia-visita';
 import { UserPlus, Trash2, Plus, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MapSelector from './components/MapSelector';
@@ -123,13 +124,13 @@ export default function NuevoCliente() {
 
             <div className="form-grid">
               <div className="form-group">
-                <label>Nombre del Cliente *</label>
+                <label>Nombre del Contribuyente *</label>
                 <input
                   className="form-input"
                   value={form.nombre}
                   onChange={e => update('nombre', e.target.value)}
                   maxLength={100}
-                  placeholder="Ej. Tienda Doña María"
+                  placeholder="Ej. María Rosales"
                 />
               </div>
 
@@ -168,6 +169,24 @@ export default function NuevoCliente() {
                   <option value={Visita.NOCHE}>{Visita.NOCHE}</option>
                 </select>
               </div>
+
+              <div className="form-group">
+                <label>Día de visita</label>
+                <select
+                  className="form-input"
+                  value={form.dia_visita || ''}
+                  onChange={e => update('dia_visita', e.target.value || undefined)}
+                >
+                  <option value="">Sin especificar</option>
+                  <option value={DiaVisita.LUNES}>{DiaVisita.LUNES}</option>
+                  <option value={DiaVisita.MARTES}>{DiaVisita.MARTES}</option>
+                  <option value={DiaVisita.MIERCOLES}>{DiaVisita.MIERCOLES}</option>
+                  <option value={DiaVisita.JUEVES}>{DiaVisita.JUEVES}</option>
+                  <option value={DiaVisita.VIERNES}>{DiaVisita.VIERNES}</option>
+                  <option value={DiaVisita.SABADO}>{DiaVisita.SABADO}</option>
+                  <option value={DiaVisita.DOMINGO}>{DiaVisita.DOMINGO}</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -202,7 +221,7 @@ export default function NuevoCliente() {
                   className="form-input"
                   value={form.telefono || ''}
                   onChange={e => update('telefono', e.target.value || undefined)}
-                  maxLength={20}
+                  maxLength={50}
                 />
               </div>
 

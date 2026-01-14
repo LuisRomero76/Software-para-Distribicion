@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, User, Hash, Tag, Edit2, Calendar, Map, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Tag, Edit2, Calendar, Map, Trash2, Plus, X } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import { apiGet } from './services/api';
 import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
 import { useCategoriasClientes } from './hooks/useCategoriasClientes';
 import { Visita } from './types/visita';
+import { DiaVisita } from './types/dia-visita';
 import MapSelector from './components/MapSelector';
 import './ClientDetails.css';
 
@@ -96,6 +97,7 @@ export default function ClientDetails() {
     setEditForm({
       sub_canal: cliente.sub_canal,
       visita: cliente.visita,
+      dia_visita: cliente.dia_visita,
       nit_ci: cliente.nit_ci,
       nombre: cliente.nombre,
       direccion: cliente.direccion,
@@ -140,6 +142,7 @@ export default function ClientDetails() {
     const payload: Partial<CreateClientePayload> = {
       sub_canal: editForm.sub_canal,
       visita: editForm.visita,
+      dia_visita: editForm.dia_visita,
       nombre: editForm.nombre,
       direccion: editForm.direccion,
       ciudad: editForm.ciudad,
@@ -215,10 +218,7 @@ export default function ClientDetails() {
       <div className="client-details-header">
         <div className="client-details-title-section">
           <h1>{cliente.nombre}</h1>
-          <span className="client-badge">{cliente.sub_canal}</span>
-          <span className="client-id-badge">
-            <Hash size={16} /> ID: {cliente.cliente_id}
-          </span>
+          <span className="client-badge">Nit/CI: {cliente.nit_ci}</span>
         </div>
         <div className="client-actions">
           <button onClick={() => navigate('/clientes')} className="btn-back">
@@ -260,25 +260,44 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* Categorías */}
+        {/* Contacto y Programación */}
         <div className="detail-section">
           <div className="detail-section-header">
             <div className="detail-section-icon">
-              <Tag size={20} />
+              <Phone size={20} />
             </div>
-            <h3>Categorías</h3>
+            <h3>Contacto</h3>
           </div>
-          {cliente.categorias.length > 0 ? (
-            <div className="categories-list">
-              {cliente.categorias.map(cat => (
-                <span key={cat.cliente_categoria_id} className="category-tag">
-                  {cat.nombre}
-                </span>
-              ))}
+          <div className="info-grid">
+            <div className="info-field full-width">
+              <span className="info-field-label">Teléfono Principal</span>
+              <span className="info-field-value phone-value">
+                {cliente.telefono ? (
+                  <span className="phone-link">
+                    <Phone size={16} />
+                    {cliente.telefono}
+                  </span>
+                ) : (
+                  <span className="empty">No registrado</span>
+                )}
+              </span>
             </div>
-          ) : (
-            <p className="empty-state">Sin categorías asignadas</p>
-          )}
+          </div>
+
+          <div className="detail-section-header" style={{ marginTop: '1.5rem' }}>
+            <div className="detail-section-icon">
+              <Calendar size={20} />
+            </div>
+            <h3>Programación</h3>
+          </div>
+          <div className="info-grid">
+            <div className="info-field full-width">
+              <span className="info-field-label">Día de Visita</span>
+              <span className="info-field-value">
+                {cliente.dia_visita ? (cliente.dia_visita) : <span className="empty">No asignado</span>}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -345,79 +364,56 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* Contacto y Programación */}
+        {/* Categorías */}
         <div className="detail-section">
           <div className="detail-section-header">
             <div className="detail-section-icon">
-              <Phone size={20} />
+              <Tag size={20} />
             </div>
-            <h3>Contacto</h3>
+            <h3>Categorías</h3>
           </div>
-          <div className="info-grid">
-            <div className="info-field full-width">
-              <span className="info-field-label">Teléfono Principal</span>
-              <span className="info-field-value phone-value">
-                {cliente.telefono ? (
-                  <span className="phone-link">
-                    <Phone size={16} />
-                    {cliente.telefono}
-                  </span>
-                ) : (
-                  <span className="empty">No registrado</span>
-                )}
-              </span>
+          {cliente.categorias.length > 0 ? (
+            <div className="categories-list">
+              {cliente.categorias.map(cat => (
+                <span key={cat.cliente_categoria_id} className="category-tag">
+                  {cat.nombre}
+                </span>
+              ))}
             </div>
-          </div>
-
-          <div className="detail-section-header" style={{ marginTop: '1.5rem' }}>
-            <div className="detail-section-icon">
-              <Calendar size={20} />
-            </div>
-            <h3>Programación</h3>
-          </div>
-          <div className="info-grid">
-            <div className="info-field full-width">
-              <span className="info-field-label">Día de Visita</span>
-              <span className="info-field-value">
-                {cliente.dia_visita ? new Date(cliente.dia_visita + 'T00:00:00').toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                }) : <span className="empty">No asignado</span>}
-              </span>
-            </div>
-          </div>
+          ) : (
+            <p className="empty-state">Sin categorías asignadas</p>
+          )}
         </div>
+        {/* Teléfonos de Referencia */}
+        {cliente.telefonos_referencia.length > 0 && (
+          <div className="detail-section full-width-section">
+            <div className="detail-section-header">
+              <div className="detail-section-icon">
+                <Phone size={20} />
+              </div>
+              <h3>Teléfonos de Referencia</h3>
+            </div>
+            <table className="phones-table">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Nombre de Contacto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cliente.telefonos_referencia.map((tel, idx) => (
+                  <tr key={tel.telefono_referencia_id || idx}>
+                    <td>{tel.numero}</td>
+                    <td>{tel.nombre_contacto || <span className="empty">Sin nombre</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Teléfonos de Referencia */}
-      {cliente.telefonos_referencia.length > 0 && (
-        <div className="detail-section full-width-section">
-          <div className="detail-section-header">
-            <div className="detail-section-icon">
-              <Phone size={20} />
-            </div>
-            <h3>Teléfonos de Referencia</h3>
-          </div>
-          <table className="phones-table">
-            <thead>
-              <tr>
-                <th>Número</th>
-                <th>Nombre de Contacto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cliente.telefonos_referencia.map((tel, idx) => (
-                <tr key={tel.telefono_referencia_id || idx}>
-                  <td>{tel.numero}</td>
-                  <td>{tel.nombre_contacto || <span className="empty">Sin nombre</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      
 
       {/* Modal de Edición */}
       {showEditModal && (
@@ -447,7 +443,7 @@ export default function ClientDetails() {
                 <h4 className="form-section-title">Información General</h4>
                 <div className="form-grid">
                   <div className="form-row">
-                    <label>Nombre del Cliente *</label>
+                    <label>Nombre del Contribuyente *</label>
                     <input
                       value={editForm.nombre || ''}
                       onChange={e => updateEditForm('nombre', e.target.value)}
@@ -483,6 +479,22 @@ export default function ClientDetails() {
                       <option value={Visita.NOCHE}>{Visita.NOCHE}</option>
                     </select>
                   </div>
+                  <div className="form-row">
+                    <label>Día de Visita</label>
+                    <select
+                      value={editForm.dia_visita || ''}
+                      onChange={e => updateEditForm('dia_visita', e.target.value || undefined)}
+                    >
+                      <option value="">Sin especificar</option>
+                      <option value={DiaVisita.LUNES}>{DiaVisita.LUNES}</option>
+                      <option value={DiaVisita.MARTES}>{DiaVisita.MARTES}</option>
+                      <option value={DiaVisita.MIERCOLES}>{DiaVisita.MIERCOLES}</option>
+                      <option value={DiaVisita.JUEVES}>{DiaVisita.JUEVES}</option>
+                      <option value={DiaVisita.VIERNES}>{DiaVisita.VIERNES}</option>
+                      <option value={DiaVisita.SABADO}>{DiaVisita.SABADO}</option>
+                      <option value={DiaVisita.DOMINGO}>{DiaVisita.DOMINGO}</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -512,7 +524,7 @@ export default function ClientDetails() {
                     <input
                       value={editForm.telefono || ''}
                       onChange={e => updateEditForm('telefono', e.target.value || undefined)}
-                      maxLength={20}
+                      maxLength={50}
                     />
                   </div>
                   <div className="form-row full-width">

@@ -1,6 +1,7 @@
 import { Transform, Type } from "class-transformer";
 import { ArrayNotEmpty, ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Length, Min, ValidateNested } from "class-validator";
 import { Visita } from "src/common/enums/visita.enum";
+import { DiaVisita } from "src/common/enums/dia-visita.enum";
 import { TelefonoReferenciaDto } from "./telefono-referencia.dto";
 
 export class CreateClienteDto {
@@ -14,6 +15,10 @@ export class CreateClienteDto {
 	@IsOptional()
 	@IsEnum(Visita)
 	visita?: Visita;
+
+	@IsOptional()
+	@IsEnum(DiaVisita)
+	dia_visita?: DiaVisita;
 
 	@IsOptional()
 	@IsInt()
@@ -45,7 +50,7 @@ export class CreateClienteDto {
 
 	@IsString()
 	@IsOptional()
-	@Length(0, 20)
+	@Length(0, 50)
 	@Transform(({ value }) => value?.toString().trim())
 	telefono?: string;
 
