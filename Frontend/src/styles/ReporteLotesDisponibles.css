@@ -1,0 +1,364 @@
+.reporte-lotes-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.reporte-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-title h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.btn-exportar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-exportar:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.resumen-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.resumen-card {
+    background: var(--card-bg, white);
+    border-radius: 12px;
+    padding: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+.resumen-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-icon {
+    width: 56px;
+    height: 56px;
+    background: #3b82f6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    position: relative;
+    z-index: 1;
+}
+
+.card-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.filtros-section {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.filtro-input,
+.filtro-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--card-bg, white);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.filtro-input {
+    flex: 1;
+    min-width: 250px;
+}
+
+.filtro-select {
+    min-width: 200px;
+}
+
+.filtro-input:focus,
+.filtro-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: var(--card-bg, white);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Estilo para las opciones del select */
+.filtro-select option {
+    background: var(--card-bg, white);
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+.tabla-container {
+    background: var(--card-bg, white);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.lotes-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lotes-table thead {
+    background: #3b82f6;
+}
+
+.lotes-table thead th {
+    padding: 1.25rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+}
+
+.lotes-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.lotes-table tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.06);
+    transform: scale(1.001);
+}
+
+.lotes-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.lotes-table tbody td {
+    padding: 1.125rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.925rem;
+    vertical-align: middle;
+}
+
+.producto-nombre {
+    font-weight: 500;
+}
+
+.producto-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.producto-info .nombre {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.producto-info .categoria {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--background);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.valor-total {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.fecha-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.sin-fecha {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.813rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.estado-badge.vencido {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.estado-badge.critico {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.estado-badge.proximo {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.no-data {
+    text-align: center;
+    padding: 3rem !important;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.loading-message,
+.error-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.error-message {
+    color: #dc2626;
+    background: #fee2e2;
+    border-radius: 12px;
+    margin: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .reporte-lotes-container {
+        padding: 1rem;
+    }
+
+    .reporte-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .resumen-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros-section {
+        flex-direction: column;
+    }
+
+    .filtro-input,
+    .filtro-select {
+        width: 100%;
+        background-color: var(--background);
+    }
+
+    .tabla-container {
+        overflow-x: auto;
+    }
+
+    .lotes-table {
+        min-width: 1000px;
+    }
+}
+
+/* Tema oscuro */
+[data-theme="dark"] .reporte-lotes-container {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .resumen-card {
+    background: var(--card-bg);
+    border-color: var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .resumen-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .tabla-container,
+[data-theme="dark"] .filtro-input,
+[data-theme="dark"] .filtro-select {
+    background: var(--card-bg);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .filtro-select option {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .lotes-table tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="dark"] .producto-info .categoria {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .error-message {
+    background: rgba(220, 38, 38, 0.1);
+    color: #fca5a5;
+}

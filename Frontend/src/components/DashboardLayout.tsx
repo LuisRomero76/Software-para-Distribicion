@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet, ShoppingBag } from 'lucide-react';
+import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet, ShoppingBag, FileText } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +21,7 @@ export default function DashboardLayout() {
     const isComprasRoute = location.pathname.startsWith('/compras');
     const isVentasRoute = location.pathname.startsWith('/ventas');
     const isFinanzasRoute = location.pathname.startsWith('/finanzas');
+    const isInventarioRoute = location.pathname.startsWith('/inventario');
     
     const [adminMenuOpen, setAdminMenuOpen] = useState(isAdminRoute);
     const [collaboratorMenuOpen, setCollaboratorMenuOpen] = useState(isCollaboratorRoute);
@@ -31,6 +32,7 @@ export default function DashboardLayout() {
     const [comprasMenuOpen, setComprasMenuOpen] = useState(isComprasRoute);
     const [ventasMenuOpen, setVentasMenuOpen] = useState(isVentasRoute);
     const [finanzasMenuOpen, setFinanzasMenuOpen] = useState(isFinanzasRoute);
+    const [inventarioMenuOpen, setInventarioMenuOpen] = useState(isInventarioRoute);
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -45,6 +47,7 @@ export default function DashboardLayout() {
         setComprasMenuOpen(isComprasRoute);
         setVentasMenuOpen(isVentasRoute);
         setFinanzasMenuOpen(isFinanzasRoute);
+        setInventarioMenuOpen(isInventarioRoute);
     }, [location.pathname]);
 
     return (
@@ -214,6 +217,23 @@ export default function DashboardLayout() {
                                 </Link>
                             </div>
                             
+                        )}
+
+                        <button className="sidebar-group" onClick={() => setInventarioMenuOpen(v => !v)} title="Inventario">
+                            <FileText size={20} />
+                            {!sidebarCollapsed && (
+                                <>
+                                    <span>Inventario</span>
+                                    {inventarioMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </>
+                            )}
+                        </button>
+                        {inventarioMenuOpen && !sidebarCollapsed && (
+                            <div className="sidebar-submenu">
+                                <Link to="/inventario/lotes-disponibles" className={location.pathname === '/inventario/lotes-disponibles' ? 'active' : ''}>
+                                    <Package size={16} /> Reporte de Lotes Disponibles
+                                </Link>
+                            </div>
                         )}
 
                         <button className="sidebar-group" onClick={() => setDistributionMenuOpen(v => !v)} title="Distribución">
