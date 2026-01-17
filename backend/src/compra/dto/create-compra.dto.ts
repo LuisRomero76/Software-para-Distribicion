@@ -1,6 +1,7 @@
-import { IsInt, IsDate, IsOptional, IsString, IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsInt, IsDate, IsOptional, IsString, IsArray, ValidateNested, ArrayMinSize, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDetalleCompraDto } from 'src/detalle_compra/dto/create-detalle_compra.dto';
+import { TipoCompra } from '../entities/compra.entity';
 
 export class CreateCompraDto {
   @IsOptional()
@@ -11,6 +12,14 @@ export class CreateCompraDto {
   @Type(() => Date)
   @IsDate()
   fecha_compra?: Date;
+
+  @IsEnum(TipoCompra)
+  tipo_compra: TipoCompra;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0, { message: 'El monto pagado no puede ser negativo' })
+  monto_pagado?: number;
 
   @IsOptional()
   @IsString()

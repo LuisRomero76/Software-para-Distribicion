@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateCompraDto } from './dto/create-compra.dto';
 import { UpdateCompraDto } from './dto/update-compra.dto';
-import { Compra } from './entities/compra.entity';
+import { Compra, TipoCompra, EstadoCompra } from './entities/compra.entity';
 import { DetalleCompra } from 'src/detalle_compra/entities/detalle_compra.entity';
 import { Lote } from 'src/lote/entities/lote.entity';
 import { Product } from 'src/product/entities/product.entity';
@@ -67,11 +67,20 @@ export class CompraService {
         0
       );
 
+      // Calcular montos según el tipo de compra
+      const montoPagado = createCompraDto.monto_pagado || 0;
+      const estado = createCompraDto.tipo_compra === TipoCompra.CONTADO ? EstadoCompra.COMPLETADO : EstadoCompra.PENDIENTE;
+      const montoAdeudado = total - montoPagado;
+
       // Crear la compra
       const compra = this.compraRepository.create({
         proveedor_id: proveedor ? proveedor.proveedor_id : null,
         fecha_compra: createCompraDto.fecha_compra ?? new Date(),
+        tipo_compra: createCompraDto.tipo_compra,
         total,
+        monto_pagado: montoPagado,
+        monto_adeudado: createCompraDto.tipo_compra === TipoCompra.CREDITO ? montoAdeudado : 0,
+        estado: estado,
         observaciones: createCompraDto.observaciones,
       });
 

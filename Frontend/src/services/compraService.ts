@@ -34,16 +34,32 @@ export interface Compra {
     proveedor_id: number;
     proveedor?: Proveedor;
     fecha_compra: string;
+    tipo_compra: 'CONTADO' | 'CREDITO';
+    estado: 'PENDIENTE' | 'COMPLETADO';
     total: number;
+    monto_pagado: number;
+    monto_adeudado: number;
     observaciones?: string;
     detalles?: DetalleCompra[];
     createdAt?: string;
     updatedAt?: string;
 }
 
+export interface PagoCompra {
+    pago_compra_id: number;
+    compra_id: number;
+    compra?: Compra;
+    monto: number;
+    fecha_pago: string;
+    observaciones?: string;
+    createdAt?: string;
+}
+
 export interface CreateCompraDto {
     proveedor_id?: number; // opcional
     fecha_compra?: string; // opcional; se genera en backend si falta
+    tipo_compra: 'CONTADO' | 'CREDITO';
+    monto_pagado?: number;
     observaciones?: string;
     detalles: Array<{
         product_id: number;
@@ -51,6 +67,13 @@ export interface CreateCompraDto {
         precio_unitario: number;
         fecha_vencimiento?: string;
     }>;
+}
+
+export interface CreatePagoCompraDto {
+    compra_id: number;
+    monto: number;
+    fecha_pago: string;
+    observaciones?: string;
 }
 
 export interface UpdateCompraDto {
@@ -85,3 +108,20 @@ export const updateCompra = async (id: number, data: UpdateCompraDto): Promise<C
 export const deleteCompra = async (id: number): Promise<void> => {
     return request<void>(`/compra/${id}`, { method: 'DELETE' });
 };
+
+// Pago Compra Services
+export const getPagosByCompra = async (compraId: number): Promise<PagoCompra[]> => {
+    return request<PagoCompra[]>(`/pago-compra/compra/${compraId}`, { method: 'GET' });
+};
+
+export const createPagoCompra = async (data: CreatePagoCompraDto): Promise<PagoCompra> => {
+    return request<PagoCompra>('/pago-compra', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+};
+
+export const deletePagoCompra = async (id: number): Promise<void> => {
+    return request<void>(`/pago-compra/${id}`, { method: 'DELETE' });
+};
+

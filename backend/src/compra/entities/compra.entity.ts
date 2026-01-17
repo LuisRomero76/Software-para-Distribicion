@@ -1,6 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Proveedor } from 'src/proveedor/entities/proveedor.entity';
 import { DetalleCompra } from 'src/detalle_compra/entities/detalle_compra.entity';
+import { PagoCompra } from 'src/pago_compra/entities/pago_compra.entity';
+
+export enum TipoCompra {
+  CONTADO = 'CONTADO',
+  CREDITO = 'CREDITO'
+}
+
+export enum EstadoCompra {
+  PENDIENTE = 'PENDIENTE',
+  COMPLETADO = 'COMPLETADO'
+}
 
 @Entity()
 export class Compra {
@@ -13,8 +24,20 @@ export class Compra {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fecha_compra: Date;
 
+  @Column({ type: 'enum', enum: TipoCompra, default: TipoCompra.CONTADO })
+  tipo_compra: TipoCompra;
+
+  @Column({ type: 'enum', enum: EstadoCompra, default: EstadoCompra.COMPLETADO })
+  estado: EstadoCompra;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  monto_pagado: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  monto_adeudado: number;
 
   @Column({ type: 'text', nullable: true })
   observaciones: string;
@@ -28,4 +51,7 @@ export class Compra {
 
   @OneToMany(() => DetalleCompra, (detalle) => detalle.compra, { cascade: true })
   detalles: DetalleCompra[];
+
+  @OneToMany(() => PagoCompra, (pago) => pago.compra, { cascade: true })
+  pagos: PagoCompra[];
 }

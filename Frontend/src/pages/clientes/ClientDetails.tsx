@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, User, Tag, Edit2, Calendar, Map, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Edit2, Calendar, Map, Trash2, Plus, X } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -219,6 +219,17 @@ export default function ClientDetails() {
         <div className="client-details-title-section">
           <h1>{cliente.nombre}</h1>
           <span className="client-badge">Nit/CI: {cliente.nit_ci}</span>
+          
+          {cliente.categorias.length > 0 ? (
+            <div className="categories-list">
+              {cliente.categorias.map(cat => (
+                <span key={cat.cliente_categoria_id} className="category-tag">
+                  {cat.nombre}
+                </span>
+              ))}
+            </div>
+          ) : (<span className="empty">Sin categorías asignadas</span>)}
+          
         </div>
         <div className="client-actions">
           <button onClick={() => navigate('/clientes')} className="btn-back">
@@ -364,26 +375,6 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* Categorías */}
-        <div className="detail-section">
-          <div className="detail-section-header">
-            <div className="detail-section-icon">
-              <Tag size={20} />
-            </div>
-            <h3>Categorías</h3>
-          </div>
-          {cliente.categorias.length > 0 ? (
-            <div className="categories-list">
-              {cliente.categorias.map(cat => (
-                <span key={cat.cliente_categoria_id} className="category-tag">
-                  {cat.nombre}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="empty-state">Sin categorías asignadas</p>
-          )}
-        </div>
         {/* Teléfonos de Referencia */}
         {cliente.telefonos_referencia.length > 0 && (
           <div className="detail-section full-width-section">

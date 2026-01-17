@@ -36,6 +36,11 @@ export default function RealizarCompra() {
         telefono: '',
         ciudad: '',
     });
+    
+    // Tipo de compra y pago
+    const [tipoCompra, setTipoCompra] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
+    const [montoPagado, setMontoPagado] = useState<number>(0);
+    
     // Fecha se define automáticamente al registrar
     const [observaciones, setObservaciones] = useState('');
     
@@ -218,7 +223,8 @@ export default function RealizarCompra() {
 
             await createCompra({
                 proveedor_id: proveedorFinalId,
-                // fecha_compra: omitida para que el backend asigne el momento actual
+                tipo_compra: tipoCompra,
+                monto_pagado: tipoCompra === 'CONTADO' ? calcularTotal() : montoPagado,
                 observaciones,
                 detalles,
             });
@@ -414,6 +420,47 @@ export default function RealizarCompra() {
                                                 )}
                     </div>
 
+                    {/* Tipo de Compra y Monto Pagado */}
+                    <div className="grid-2">
+                        <div className="form-group">
+                            <label htmlFor="tipo-compra">Tipo de Compra *</label>
+                            <select
+                                id="tipo-compra"
+                                value={tipoCompra}
+                                onChange={(e) => {
+                                    const tipo = e.target.value as 'CONTADO' | 'CREDITO';
+                                    setTipoCompra(tipo);
+                                    if (tipo === 'CONTADO') {
+                                        setMontoPagado(0);
+                                    }
+                                }}
+                                required
+                            >
+                                <option value="CONTADO">Contado</option>
+                                <option value="CREDITO">Crédito</option>
+                            </select>
+                        </div>
+
+                        {tipoCompra === 'CREDITO' && (
+                            <div className="form-group">
+                                <label htmlFor="monto-pagado">Monto Pagado (Bs.)</label>
+                                <input
+                                    id="monto-pagado"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max={calcularTotal()}
+                                    value={montoPagado || ''}
+                                    onChange={(e) => setMontoPagado(parseFloat(e.target.value) || 0)}
+                                    placeholder="0.00"
+                                />
+                                <small style={{ color: 'var(--text-secondary)' }}>
+                                    Máximo: Bs {calcularTotal().toFixed(2)}
+                                </small>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="form-group">
                         <label htmlFor="observaciones">Observaciones</label>
                         <textarea
@@ -561,6 +608,18 @@ export default function RealizarCompra() {
                     <div className="total-display">
                         <h3>Total de la Compra</h3>
                         <p className="total-amount">BS. {total.toFixed(2)}</p>
+                        {tipoCompra === 'CREDITO' && (
+                            <div style={{ marginTop: '1rem', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <span>Monto a pagar ahora:</span>
+                                    <strong style={{ color: 'var(--success)' }}>Bs {montoPagado.toFixed(2)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Monto adeudado:</span>
+                                    <strong style={{ color: 'var(--warning)' }}>Bs {(total - montoPagado).toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
