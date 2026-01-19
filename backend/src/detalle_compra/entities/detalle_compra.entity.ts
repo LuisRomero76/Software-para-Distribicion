@@ -26,6 +26,9 @@ export class DetalleCompra {
   @Column({ type: 'date', nullable: true })
   fecha_vencimiento: Date;
 
+  @Column({ type: 'varchar', length: 20, default: 'unidad' })
+  modo: string;
+
   @ManyToOne(() => Compra, (compra) => compra.detalles)
   @JoinColumn({ name: 'compra_id' })
   compra: Compra;

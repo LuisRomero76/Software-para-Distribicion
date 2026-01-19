@@ -139,6 +139,8 @@
   bottom: 0;
   z-index: 500;
   flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar.collapsed {
@@ -204,6 +206,7 @@
   gap: 0.5rem;
   padding: 1rem 0.75rem;
   flex: 1;
+  min-height: min-content;
 }
 
 .sidebar-group {

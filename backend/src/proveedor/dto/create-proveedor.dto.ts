@@ -11,7 +11,7 @@ export class CreateProveedorDto {
   nit_ci?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'El email debe ser válido' })
   @MaxLength(100)
   email?: string;
 

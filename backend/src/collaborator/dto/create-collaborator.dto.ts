@@ -10,7 +10,7 @@ export class CreateCollaboratorDto {
   apellido: string;
 
   @IsNotEmpty()
-  @IsEmail()
+  @IsEmail({}, { message: 'El email debe ser válido' })
   email: string;
 
   @IsOptional()

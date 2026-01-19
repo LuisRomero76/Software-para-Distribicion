@@ -29,6 +29,7 @@ export default function VerCompras() {
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteCompra, setDeleteCompra] = useState<Compra | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
     
     // Estados para modal de pagos
     const [pagoModal, setPagoModal] = useState<{ compra: Compra | null; pagos: PagoCompra[] }>({ compra: null, pagos: [] });
@@ -58,13 +59,14 @@ export default function VerCompras() {
     const handleDelete = async () => {
         if (!deleteCompra) return;
         setDeleting(true);
+        setDeleteError(null);
         try {
             await deleteCompraService(deleteCompra.compra_id);
             setCompras(compras.filter(c => c.compra_id !== deleteCompra.compra_id));
             setDeleteCompra(null);
-        } catch (err) {
-            setError('Error al eliminar la compra');
-            console.error(err);
+        } catch (err: any) {
+            const errorMessage = err?.message || err?.response?.data?.message || 'Error al eliminar la compra';
+            setDeleteError(errorMessage);
         } finally {
             setDeleting(false);
         }
@@ -375,14 +377,35 @@ export default function VerCompras() {
             {deleteCompra && (
                 <div className="modal-overlay" role="dialog" aria-modal="true">
                     <div className="modal">
-                        <h3>¿Eliminar compra?</h3>
-                        <p>Se eliminará la compra #{deleteCompra.compra_id} del sistema.</p>
-                        <div className="modal-actions">
-                            <button className="btn outline" onClick={() => setDeleteCompra(null)}>Cancelar</button>
-                            <button className="btn danger" onClick={handleDelete} disabled={deleting}>
-                                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
-                            </button>
-                        </div>
+                        <h3>{deleteError ? 'Error al Eliminar' : '¿Eliminar compra?'}</h3>
+                        
+                        {deleteError ? (
+                            <>
+                                <div className="alert alert-error" style={{ marginTop: '1rem' }}>
+                                    <span>{deleteError}</span>
+                                </div>
+                                <div className="modal-actions">
+                                    <button className="btn primary" onClick={() => {
+                                        setDeleteCompra(null);
+                                        setDeleteError(null);
+                                    }}>
+                                        Entendido
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p>Se eliminará la compra #{deleteCompra.compra_id} del sistema.</p>
+                                <div className="modal-actions">
+                                    <button className="btn outline" onClick={() => setDeleteCompra(null)} disabled={deleting}>
+                                        Cancelar
+                                    </button>
+                                    <button className="btn danger" onClick={handleDelete} disabled={deleting}>
+                                        {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

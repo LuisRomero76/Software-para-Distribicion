@@ -5,6 +5,7 @@ import { createVenta, getAllLotes, type Lote } from '../../services/ventaService
 import { getAllProducts, type Producto } from '../../services/productService';
 import { useAuth } from '../../context/AuthContext';
 import { apiGet } from '../clientes/services/api';
+import Autocomplete from '../../components/Autocomplete';
 import '../compras/compras.css';
 import '../../styles/page.css';
 
@@ -368,19 +369,17 @@ export default function RealizarVenta() {
                         <div className="grid-2">
                             <div className="form-group span-2">
                                 <label>Seleccionar Cliente *</label>
-                                <select
-                                    className="form-input"
-                                    value={clienteId || ''}
-                                    onChange={(e) => handleClienteChange(Number(e.target.value))}
+                                <Autocomplete
+                                    options={clientes.map(cliente => ({
+                                        value: cliente.cliente_id,
+                                        label: cliente.nombre,
+                                        subtitle: cliente.nit_ci ? `NIT/CI: ${cliente.nit_ci}` : undefined
+                                    }))}
+                                    value={clienteId ?? 0}
+                                    onChange={(value) => handleClienteChange(typeof value === 'number' ? value : parseInt(value as string))}
+                                    placeholder="Buscar cliente..."
                                     required={usarClienteExistente}
-                                >
-                                    <option value="">-- Seleccionar cliente --</option>
-                                    {clientes.map(cliente => (
-                                        <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                                            {cliente.nombre}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </div>
 
                             {clienteSeleccionado && (
@@ -438,18 +437,17 @@ export default function RealizarVenta() {
                                 <div key={item.id} className="product-card">
                                     <div className="product-form-group">
                                         <label>Producto *</label>
-                                        <select
+                                        <Autocomplete
+                                            options={productos.map(prod => ({
+                                                value: prod.product_id,
+                                                label: prod.nombre,
+                                                subtitle: prod.categoria ? `Categoría: ${prod.categoria.nombre}` : undefined
+                                            }))}
                                             value={item.product_id}
-                                            onChange={(e) => handleProductoChange(index, 'product_id', Number(e.target.value))}
+                                            onChange={(value) => handleProductoChange(index, 'product_id', typeof value === 'number' ? value : parseInt(value as string))}
+                                            placeholder="Buscar producto..."
                                             required
-                                        >
-                                            <option value={0}>-- Selecciona un producto --</option>
-                                            {productos.map(prod => (
-                                                <option key={prod.product_id} value={prod.product_id}>
-                                                    {prod.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        />
                                     </div>
 
                                     <div className="product-form-group">

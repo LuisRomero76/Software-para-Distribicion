@@ -37,6 +37,10 @@ import { PagoCompraModule } from './pago_compra/pago_compra.module';
       database: process.env.BD_DATABASE,
       autoLoadEntities: true,
       synchronize: true,
+      charset: 'utf8mb4',
+      extra: {
+        charset: 'utf8mb4_unicode_ci',
+      },
     }),
     AuthModule,
     AdminModule,

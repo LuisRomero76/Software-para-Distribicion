@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateCompraDto } from './dto/create-compra.dto';
@@ -113,6 +113,7 @@ export class CompraService {
           precio_unitario: detalleDto.precio_unitario,
           subtotal,
           fecha_vencimiento: detalleDto.fecha_vencimiento,
+          modo: detalleDto.modo || 'unidad',
         });
 
         const detalleSaved = await queryRunner.manager.save(detalle);
@@ -156,6 +157,14 @@ export class CompraService {
     });
   }
 
+  async findByProveedor(proveedorId: number): Promise<Compra[]> {
+    return this.compraRepository.find({
+      where: { proveedor: { proveedor_id: proveedorId } },
+      relations: ['proveedor', 'detalles', 'detalles.producto'],
+      order: { fecha_compra: 'DESC' },
+    });
+  }
+
   async findOne(id: number): Promise<Compra> {
     const compra = await this.compraRepository.findOne({
       where: { compra_id: id },
@@ -183,6 +192,22 @@ export class CompraService {
 
     if (!compra) {
       throw new NotFoundException(`Compra con ID ${id} no encontrada`);
+    }
+
+    // Verificar si algún lote de esta compra tiene ventas asociadas
+    for (const detalle of compra.detalles) {
+      const lotes = await this.loteRepository.find({
+        where: { detalle_compra_id: detalle.detalle_compra_id },
+        relations: ['detallesVenta'],
+      });
+
+      for (const lote of lotes) {
+        if (lote.detallesVenta && lote.detallesVenta.length > 0) {
+          throw new ConflictException(
+            `No se puede eliminar esta compra porque tiene ${lote.detallesVenta.length} venta${lote.detallesVenta.length > 1 ? 's' : ''} registrada${lote.detallesVenta.length > 1 ? 's' : ''}.`
+          );
+        }
+      }
     }
 
     // Iniciar transacción para eliminar en orden correcto

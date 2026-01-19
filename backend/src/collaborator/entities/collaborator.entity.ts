@@ -15,7 +15,7 @@ export class Collaborator {
   @Column()
   telefono: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 150, charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
   email: string;
 
   @Column()

@@ -15,7 +15,7 @@ export class Admin {
     @Column({ type: 'varchar', length: 20, nullable: false })
     telefono: string;
 
-    @Column({ type: 'varchar', length: 150, nullable: false, unique: true })
+    @Column({ type: 'varchar', length: 150, nullable: false, unique: true, charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
     email: string;
 
     @Column({ type: 'varchar', length: 100, nullable: false, select: false })

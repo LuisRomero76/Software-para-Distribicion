@@ -3,7 +3,7 @@ import { Transform } from "class-transformer";
 
 export class ChangePasswordDto {
 
-    @IsEmail()
+    @IsEmail({}, { message: 'El email debe ser válido' })
     @IsNotEmpty()
     @Transform(({ value }) => value.trim())
     email: string;

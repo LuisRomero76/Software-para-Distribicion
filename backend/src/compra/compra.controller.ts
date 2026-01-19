@@ -19,6 +19,11 @@ export class CompraController {
     return this.compraService.findAll();
   }
 
+  @Get('proveedor/:proveedorId')
+  findByProveedor(@Param('proveedorId') proveedorId: string) {
+    return this.compraService.findByProveedor(+proveedorId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.compraService.findOne(+id);

@@ -22,7 +22,7 @@ import VerClientes from './pages/clientes/VerClientes'
 import NuevoCliente from './pages/clientes/NuevoCliente'
 import ClientDetails from './pages/clientes/ClientDetails'
 import ImportarClientes from './pages/clientes/ImportarClientes'
-import { VerCompras, RealizarCompra, VerProveedores, CompraDetails } from './pages/compras'
+import { VerCompras, RealizarCompra, VerProveedores, CompraDetails, ProveedorDetails } from './pages/compras'
 import { VerVentas, RealizarVenta } from './pages/ventas'
 import VentaDetails from './pages/ventas/VentaDetails'
 import IngresosEgresos from './pages/finanzas/IngresosEgresos'
@@ -78,6 +78,7 @@ function App() {
               <Route path="compras" element={<VerCompras />} />
               <Route path="compras/realizar" element={<RealizarCompra />} />
               <Route path="compras/proveedores" element={<VerProveedores />} />
+              <Route path="compras/proveedores/:id" element={<ProveedorDetails />} />
               <Route path="compras/:id" element={<CompraDetails />} />
               <Route path="ventas" element={<VerVentas />} />
               <Route path="ventas/realizar" element={<RealizarVenta />} />

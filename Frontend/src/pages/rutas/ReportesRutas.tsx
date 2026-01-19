@@ -9,11 +9,11 @@ import type { Ruta, Cliente, Colaborador } from './types';
 import '../../styles/page.css';
 import './ReportesRutas.css';
 
-type TipoReporte = 'colaborador' | 'cliente';
+type TipoReporte = 'todos' | 'colaborador' | 'cliente';
 
 export default function ReportesRutas() {
   const { auth } = useAuth();
-  const [tipoReporte, setTipoReporte] = useState<TipoReporte>('colaborador');
+  const [tipoReporte, setTipoReporte] = useState<TipoReporte>('todos');
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -58,6 +58,7 @@ export default function ReportesRutas() {
     } else if (tipoReporte === 'cliente' && selectedCliente > 0) {
       filtered = filtered.filter(r => r.cliente_id === selectedCliente);
     }
+    // Si es 'todos', no se filtra por colaborador ni cliente
 
     // Filtrar por estado
     if (selectedEstado !== 'todos') {
@@ -174,7 +175,8 @@ export default function ReportesRutas() {
     setFechaFin('');
   };
 
-  const mostrarReporte = (tipoReporte === 'colaborador' && selectedColaborador > 0) ||
+  const mostrarReporte = tipoReporte === 'todos' ||
+                         (tipoReporte === 'colaborador' && selectedColaborador > 0) ||
                          (tipoReporte === 'cliente' && selectedCliente > 0);
 
   return (
@@ -184,7 +186,6 @@ export default function ReportesRutas() {
           <h2 className="page-title">
             <BarChart3 size={24} /> Reportes de Rutas
           </h2>
-          <p className="page-subtitle">Genera reportes detallados por colaborador o cliente</p>
         </div>
       </div>
 
@@ -199,32 +200,28 @@ export default function ReportesRutas() {
           {/* Tipo de Reporte */}
           <div className="filter-group">
             <label className="filter-label">Tipo de Reporte</label>
-            <div className="report-type-tabs">
-              <button
-                className={`report-tab ${tipoReporte === 'colaborador' ? 'active' : ''}`}
-                onClick={() => {
-                  setTipoReporte('colaborador');
-                  setSelectedCliente(0);
-                }}
-              >
-                <User size={18} />
-                Por Colaborador
-              </button>
-              <button
-                className={`report-tab ${tipoReporte === 'cliente' ? 'active' : ''}`}
-                onClick={() => {
-                  setTipoReporte('cliente');
+            <select
+              className="filter-select"
+              value={tipoReporte}
+              onChange={(e) => {
+                const tipo = e.target.value as TipoReporte;
+                setTipoReporte(tipo);
+                if (tipo === 'todos' || tipo === 'cliente') {
                   setSelectedColaborador(0);
-                }}
-              >
-                <Users size={18} />
-                Por Cliente
-              </button>
-            </div>
+                }
+                if (tipo === 'todos' || tipo === 'colaborador') {
+                  setSelectedCliente(0);
+                }
+              }}
+            >
+              <option value="todos">Todos</option>
+              <option value="colaborador">Por Colaborador</option>
+              <option value="cliente">Por Cliente</option>
+            </select>
           </div>
 
           {/* Selector según tipo */}
-          {tipoReporte === 'colaborador' ? (
+          {tipoReporte === 'colaborador' && (
             <div className="filter-group">
               <label className="filter-label">Seleccionar Colaborador *</label>
               <select
@@ -240,7 +237,9 @@ export default function ReportesRutas() {
                 ))}
               </select>
             </div>
-          ) : (
+          )}
+
+          {tipoReporte === 'cliente' && (
             <div className="filter-group">
               <label className="filter-label">Seleccionar Cliente *</label>
               <select
@@ -322,7 +321,7 @@ export default function ReportesRutas() {
         <div className="empty-report-state">
           <BarChart3 size={64} />
           <h3>Selecciona los filtros para generar un reporte</h3>
-          <p>Elige un colaborador o cliente para ver sus rutas asignadas</p>
+          <p>Elige un colaborador o cliente específico, o selecciona "Todos" para ver todas las rutas</p>
         </div>
       ) : (
         <>
@@ -396,7 +395,14 @@ export default function ReportesRutas() {
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>{tipoReporte === 'colaborador' ? 'Cliente' : 'Colaborador'}</th>
+                      {tipoReporte === 'todos' ? (
+                        <>
+                          <th>Cliente</th>
+                          <th>Colaborador</th>
+                        </>
+                      ) : (
+                        <th>{tipoReporte === 'colaborador' ? 'Cliente' : 'Colaborador'}</th>
+                      )}
                       <th>Dirección</th>
                       <th>Día de Visita</th>
                       <th>Estado</th>
@@ -407,12 +413,19 @@ export default function ReportesRutas() {
                     {rutasFiltradas.map(ruta => (
                       <tr key={ruta.ruta_id}>
                         <td className="id-col">{ruta.ruta_id}</td>
-                        <td className="name-col">
-                          {tipoReporte === 'colaborador' 
-                            ? (ruta.cliente?.nombre || 'N/A')
-                            : (ruta.colaborador ? `${ruta.colaborador.nombre} ${ruta.colaborador.apellido}` : 'N/A')
-                          }
-                        </td>
+                        {tipoReporte === 'todos' ? (
+                          <>
+                            <td className="name-col">{ruta.cliente?.nombre || 'N/A'}</td>
+                            <td>{ruta.colaborador ? `${ruta.colaborador.nombre} ${ruta.colaborador.apellido}` : 'N/A'}</td>
+                          </>
+                        ) : (
+                          <td className="name-col">
+                            {tipoReporte === 'colaborador' 
+                              ? (ruta.cliente?.nombre || 'N/A')
+                              : (ruta.colaborador ? `${ruta.colaborador.nombre} ${ruta.colaborador.apellido}` : 'N/A')
+                            }
+                          </td>
+                        )}
                         <td>{ruta.cliente?.direccion || '-'}</td>
                         <td>{formatDateLocal(ruta.dia_visita)}</td>
                         <td>

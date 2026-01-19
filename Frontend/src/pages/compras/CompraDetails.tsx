@@ -230,6 +230,7 @@ export default function CompraDetails() {
                         <thead>
                             <tr>
                                 <th>Producto</th>
+                                <th>Modo</th>
                                 <th className="text-center">Cantidad</th>
                                 <th className="text-right">Precio Unitario</th>
                                 <th className="text-center">Fecha Vencimiento</th>
@@ -238,13 +239,32 @@ export default function CompraDetails() {
                         </thead>
                         <tbody>
                             {compra.detalles.map((detalle: any, idx: number) => {
+                                const producto = detalle.producto;
+                                const cantPorPaquete = producto?.cant_por_paquete || 1;
+                                
+                                // Usar el modo que viene del backend
+                                const esPaquete = detalle.modo === 'paquete';
+                                const cantidadMostrar = esPaquete 
+                                    ? `${detalle.cantidad} paquete${detalle.cantidad !== 1 ? 's' : ''}`
+                                    : `${detalle.cantidad} unidad${detalle.cantidad !== 1 ? 'es' : ''}`;
+                                
                                 return (
                                     <tr key={idx}>
                                         <td>
-                                            <strong>{detalle.producto?.nombre || 'N/A'}</strong>
+                                            <strong>{producto?.nombre || 'N/A'}</strong>
+                                            {esPaquete && (
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                    {cantPorPaquete} unidades/paquete
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${esPaquete ? 'badge-warning' : 'badge-success'}`}>
+                                                {esPaquete ? '📦 Paquete' : '🔢 Unidad'}
+                                            </span>
                                         </td>
                                         <td className="text-center">
-                                            <strong>{detalle.cantidad}</strong>
+                                            <strong>{cantidadMostrar}</strong>
                                         </td>
                                         <td className="text-right">Bs {parseFloat(detalle.precio_unitario).toFixed(2)}</td>
                                         <td className="text-center">
@@ -263,7 +283,7 @@ export default function CompraDetails() {
                                 );
                             })}
                             <tr style={{ fontWeight: '600', background: 'var(--bg-2)' }}>
-                                <td colSpan={4} className="text-right">TOTAL:</td>
+                                <td colSpan={5} className="text-right">TOTAL:</td>
                                 <td className="text-right" style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>
                                     Bs {parseFloat(compra.total as any).toFixed(2)}
                                 </td>

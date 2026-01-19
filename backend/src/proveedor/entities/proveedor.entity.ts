@@ -12,7 +12,7 @@ export class Proveedor {
   @Column({ type: 'varchar', length: 20, nullable: true })
   nit_ci: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true, charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
   email: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })

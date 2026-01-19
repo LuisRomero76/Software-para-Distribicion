@@ -18,7 +18,7 @@ export class RegisterDto {
     @Transform(({ value }) => value.trim())
     telefono: string;
 
-    @IsEmail()
+    @IsEmail({}, { message: 'El email debe ser válido' })
     @IsNotEmpty()
     @Transform(({ value }) => value.trim())
     email: string;

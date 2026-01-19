@@ -36,6 +36,7 @@ export default function ViewProducts() {
   const [itemsPerPage] = useState(10);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [editForm, setEditForm] = useState({
@@ -113,12 +114,16 @@ export default function ViewProducts() {
   const handleDelete = async () => {
     if (!deleteProduct) return;
     setDeleting(true);
+    setDeleteError(null);
     try {
       await request(`/product/${deleteProduct.product_id}`, { method: 'DELETE' }, auth?.token);
       setProducts(products.filter(p => p.product_id !== deleteProduct.product_id));
       setDeleteProduct(null);
+      setError(null);
     } catch (e: any) {
-      alert(e?.message ?? 'No se pudo eliminar el producto');
+      // Capturar el mensaje de error del servidor y mostrarlo en el modal
+      const errorMessage = e?.message || e?.response?.data?.message || 'No se pudo eliminar el producto';
+      setDeleteError(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -485,14 +490,35 @@ export default function ViewProducts() {
       {deleteProduct && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal">
-            <h3>¿Eliminar producto?</h3>
-            <p>Se eliminará el producto "{deleteProduct.nombre}" del sistema.</p>
-            <div className="modal-actions">
-              <button className="btn outline" onClick={() => setDeleteProduct(null)}>Cancelar</button>
-              <button className="btn danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
-              </button>
-            </div>
+            <h3>{deleteError ? 'Error al Eliminar' : '¿Eliminar producto?'}</h3>
+            
+            {deleteError ? (
+              <>
+                <div className="alert alert-error" style={{ marginTop: '1rem' }}>
+                  <span>{deleteError}</span>
+                </div>
+                <div className="modal-actions">
+                  <button className="btn primary" onClick={() => {
+                    setDeleteProduct(null);
+                    setDeleteError(null);
+                  }}>
+                    Entendido
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Se eliminará el producto "{deleteProduct.nombre}" del sistema.</p>
+                <div className="modal-actions">
+                  <button className="btn outline" onClick={() => setDeleteProduct(null)} disabled={deleting}>
+                    Cancelar
+                  </button>
+                  <button className="btn danger" onClick={handleDelete} disabled={deleting}>
+                    {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

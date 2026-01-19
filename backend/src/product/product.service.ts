@@ -4,12 +4,21 @@ import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { DetalleCompra } from '../detalle_compra/entities/detalle_compra.entity';
+import { DetalleVenta } from '../detalle_venta/entities/detalle_venta.entity';
+import { Lote } from '../lote/entities/lote.entity';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    @InjectRepository(DetalleCompra)
+    private detalleCompraRepository: Repository<DetalleCompra>,
+    @InjectRepository(DetalleVenta)
+    private detalleVentaRepository: Repository<DetalleVenta>,
+    @InjectRepository(Lote)
+    private loteRepository: Repository<Lote>,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -95,6 +104,45 @@ export class ProductService {
 
   async remove(id: number): Promise<void> {
     const product = await this.findOne(id);
+
+    // Verificar si el producto tiene registros de compras
+    const comprasCount = await this.detalleCompraRepository.count({
+      where: { product_id: id },
+    });
+
+    if (comprasCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar este producto porque tiene ${comprasCount} compra${comprasCount > 1 ? 's' : ''} registrada${comprasCount > 1 ? 's' : ''}.`
+      );
+    }
+
+    // Verificar si tiene lotes en inventario con ventas
+    const lotes = await this.loteRepository.find({
+      where: { product_id: id },
+      relations: ['detallesVenta'],
+    });
+
+    let ventasCount = 0;
+    for (const lote of lotes) {
+      if (lote.detallesVenta && lote.detallesVenta.length > 0) {
+        ventasCount += lote.detallesVenta.length;
+      }
+    }
+
+    if (ventasCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar este producto porque tiene ${ventasCount} venta${ventasCount > 1 ? 's' : ''} registrada${ventasCount > 1 ? 's' : ''}.`
+      );
+    }
+
+    // Verificar si tiene lotes en inventario
+    if (lotes.length > 0) {
+      throw new ConflictException(
+        `No se puede eliminar este producto porque tiene ${lotes.length} lote${lotes.length > 1 ? 's' : ''} en inventario.`
+      );
+    }
+
+    // Si no tiene relaciones, proceder con la eliminación
     await this.productRepository.remove(product);
   }
 

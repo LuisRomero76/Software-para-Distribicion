@@ -27,6 +27,8 @@ export interface DetalleCompra {
     cantidad: number;
     precio_compra: number;
     subtotal?: number;
+    modo?: 'unidad' | 'paquete';
+    fecha_vencimiento?: string;
 }
 
 export interface Compra {

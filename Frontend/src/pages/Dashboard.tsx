@@ -32,11 +32,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <div className="dashboard-header">
-        <h1>Estadísticas</h1>
-        <p className="dashboard-subtitle">Resumen de ventas y estadísticas</p>
-      </div>
-
+      
       {/* Tarjetas de métricas */}
       <div className="metrics-grid">
         <div className="metric-card">

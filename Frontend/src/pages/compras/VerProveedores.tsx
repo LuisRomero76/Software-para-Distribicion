@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
     getAllProveedores, 
     createProveedor, 
@@ -7,13 +8,14 @@ import {
     type Proveedor,
     type CreateProveedorDto 
 } from '../../services/proveedorService';
-import { Search, Trash2, Edit2, Plus, RefreshCw, Download } from 'lucide-react';
+import { Search, Trash2, Edit2, Plus, RefreshCw, Download, Eye } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 import '../../styles/page.css';
 import '../../styles/table.css';
 
 export default function VerProveedores() {
+    const navigate = useNavigate();
     const [proveedores, setProveedores] = useState<Proveedor[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -235,6 +237,13 @@ export default function VerProveedores() {
                                         <td>{proveedor.ciudad || '-'}</td>
                                         <td className='actions-col'>
                                             <button 
+                                                className="action-btn view"
+                                                onClick={() => navigate(`/compras/proveedores/${proveedor.proveedor_id}`)}
+                                                title="Ver detalles"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            <button 
                                                 className="action-btn edit"
                                                 onClick={() => handleEdit(proveedor)}
                                                 title="Editar"
@@ -266,62 +275,72 @@ export default function VerProveedores() {
 
             {/* Modal de agregar proveedor */}
             {showAddModal && (
-                <div className="modal-overlay">
-                    <div className="modal-large">
+                <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => !saving && setShowAddModal(false)}>
+                    <div className="modal-large" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Agregar Nuevo Proveedor</h3>
-                            <button className='modal-close' onClick={() => setShowAddModal(false)}>×</button>
+                            <h3>Agregar nuevo proveedor</h3>
+                            <button className="modal-close" onClick={() => setShowAddModal(false)}>×</button>
                         </div>
-                        <form className='modal-form' onSubmit={handleSubmit}>
+                        <form className="modal-form" onSubmit={handleSubmit}>
                             <div className="form-grid">
-                                <div className="form-group">
-                                    <label>Nombre del proveedor/empresa *</label>
+                                <label>
+                                    <span className="label-text">Nombre del proveedor/empresa *</span>
                                     <input
                                         type="text"
                                         value={formData.nombre}
                                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                        className="form-input"
+                                        placeholder="Ej: Distribuidora XYZ"
                                         required
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>NIT/CI</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">NIT/CI</span>
                                     <input
                                         type="text"
                                         value={formData.nit_ci}
                                         onChange={(e) => setFormData({...formData, nit_ci: e.target.value})}
+                                        className="form-input"
+                                        placeholder="123456789"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Email</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Email</span>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className="form-input"
+                                        placeholder="contacto@ejemplo.com"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Teléfono</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Teléfono</span>
                                     <input
                                         type="text"
                                         value={formData.telefono}
                                         onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                                        className="form-input"
+                                        placeholder="71234567"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Ciudad</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Ciudad</span>
                                     <input
                                         type="text"
                                         value={formData.ciudad}
                                         onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
+                                        className="form-input"
+                                        placeholder="Santa Cruz"
                                     />
-                                </div>
+                                </label>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">
+                                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary" disabled={saving}>
                                     Cancelar
                                 </button>
                                 <button type="submit" className="btn-primary" disabled={saving}>
-                                    {saving ? 'Guardando...' : 'Guardar'}
+                                    {saving ? 'Guardando...' : 'Guardar proveedor'}
                                 </button>
                             </div>
                         </form>
@@ -331,62 +350,67 @@ export default function VerProveedores() {
 
             {/* Modal de editar proveedor */}
             {editProveedor && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => !saving && handleCancelEdit()}>
+                    <div className="modal-large" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Editar Proveedor</h3>
-                            <button onClick={handleCancelEdit}>×</button>
+                            <h3>Editar proveedor</h3>
+                            <button className="modal-close" onClick={handleCancelEdit}>×</button>
                         </div>
-                        <form onSubmit={handleSubmit}>
+                        <form className="modal-form" onSubmit={handleSubmit}>
                             <div className="form-grid">
-                                <div className="form-group">
-                                    <label>Nombre del proveedor/empresa *</label>
+                                <label>
+                                    <span className="label-text">Nombre del proveedor/empresa *</span>
                                     <input
                                         type="text"
                                         value={formData.nombre}
                                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                        className="form-input"
                                         required
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>NIT/CI</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">NIT/CI</span>
                                     <input
                                         type="text"
                                         value={formData.nit_ci}
                                         onChange={(e) => setFormData({...formData, nit_ci: e.target.value})}
+                                        className="form-input"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Email</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Email</span>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        className="form-input"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Teléfono</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Teléfono</span>
                                     <input
                                         type="text"
                                         value={formData.telefono}
                                         onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                                        className="form-input"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Ciudad</label>
+                                </label>
+                                <label>
+                                    <span className="label-text">Ciudad</span>
                                     <input
                                         type="text"
                                         value={formData.ciudad}
                                         onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
+                                        className="form-input"
                                     />
-                                </div>
+                                </label>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" onClick={handleCancelEdit} className="btn-secondary">
+                                <button type="button" onClick={handleCancelEdit} className="btn-secondary" disabled={saving}>
                                     Cancelar
                                 </button>
                                 <button type="submit" className="btn-primary" disabled={saving}>
-                                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                                    {saving ? 'Guardando...' : 'Guardar cambios'}
                                 </button>
                             </div>
                         </form>
@@ -396,22 +420,17 @@ export default function VerProveedores() {
 
             {/* Modal de confirmación de eliminación */}
             {deleteProveedor && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-sm">
-                        <div className="modal-header">
-                            <h3>Confirmar Eliminación</h3>
-                            <button onClick={() => setDeleteProveedor(null)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p>¿Estás seguro de eliminar el proveedor <strong>{deleteProveedor.nombre}</strong>?</p>
-                            <p className="text-sm text-muted">Esta acción no se puede deshacer.</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setDeleteProveedor(null)} className="btn-secondary">
+                <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => !deleting && setDeleteProveedor(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <h3>¿Eliminar proveedor?</h3>
+                        <p>Estás a punto de eliminar el proveedor <strong>{deleteProveedor.nombre}</strong>.</p>
+                        <p className="warning-text">Esta acción no se puede deshacer.</p>
+                        <div className="modal-actions">
+                            <button className="btn outline" onClick={() => setDeleteProveedor(null)} disabled={deleting}>
                                 Cancelar
                             </button>
-                            <button onClick={handleDelete} className="btn-danger" disabled={deleting}>
-                                {deleting ? 'Eliminando...' : 'Eliminar'}
+                            <button className="btn danger" onClick={handleDelete} disabled={deleting}>
+                                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
                             </button>
                         </div>
                     </div>
