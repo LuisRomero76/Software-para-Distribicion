@@ -1053,7 +1053,7 @@
 }
 
 .modal-large {
-  width: min(600px, 95%);
+  width: min(1000px, 95%);
   max-height: 90vh;
   overflow-y: auto;
   background: var(--card);

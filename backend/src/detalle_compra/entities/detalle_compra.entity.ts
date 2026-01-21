@@ -24,7 +24,7 @@ export class DetalleCompra {
   subtotal: number;
 
   @Column({ type: 'date', nullable: true })
-  fecha_vencimiento: Date;
+  fecha_vencimiento: Date | null;
 
   @Column({ type: 'varchar', length: 20, default: 'unidad' })
   modo: string;

@@ -7,6 +7,10 @@ export enum ModoCompra {
 }
 
 export class CreateDetalleCompraDto {
+  @IsOptional()
+  @IsInt()
+  detalle_compra_id?: number; // Para identificar detalles existentes en updates
+
   @IsInt()
   product_id: number;
 

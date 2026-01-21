@@ -24,7 +24,7 @@ export class Lote {
   costo_unitario: number;
 
   @Column({ type: 'date', nullable: true })
-  fecha_vencimiento: Date;
+  fecha_vencimiento: Date | null;
 
   @Column({ nullable: true })
   detalle_compra_id: number;

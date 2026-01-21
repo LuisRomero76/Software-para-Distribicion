@@ -45,6 +45,11 @@ export default function RealizarCompra() {
     // Fecha se define automáticamente al registrar
     const [observaciones, setObservaciones] = useState('');
     
+    // Estados para descuento
+    const [aplicarDescuento, setAplicarDescuento] = useState<boolean>(false);
+    const [tipoDescuento, setTipoDescuento] = useState<'bolivianos' | 'porcentaje'>('bolivianos');
+    const [valorDescuento, setValorDescuento] = useState<number>(0);
+    
     // Productos y proveedores
     const [proveedores, setProveedores] = useState<Proveedor[]>([]);
     const [productos, setProductos] = useState<ProductoExtendido[]>([]);
@@ -146,7 +151,7 @@ export default function RealizarCompra() {
         }
     };
 
-    const calcularTotal = (): number => {
+    const calcularSubtotal = (): number => {
         return productosCompra.reduce((sum, item) => {
             if (item.modo === 'paquete') {
                 // Precio por paquete * cantidad de paquetes
@@ -157,6 +162,21 @@ export default function RealizarCompra() {
                 return sum + (item.cantidad * item.precio_compra);
             }
         }, 0);
+    };
+
+    const calcularDescuento = (): number => {
+        if (!aplicarDescuento || valorDescuento <= 0) return 0;
+        
+        const subtotal = calcularSubtotal();
+        if (tipoDescuento === 'porcentaje') {
+            const descuento = subtotal * (valorDescuento / 100);
+            return Math.min(descuento, subtotal); // No puede ser mayor al subtotal
+        }
+        return Math.min(valorDescuento, subtotal); // No puede ser mayor al subtotal
+    };
+
+    const calcularTotal = (): number => {
+        return Math.max(0, calcularSubtotal() - calcularDescuento());
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -225,6 +245,7 @@ export default function RealizarCompra() {
             await createCompra({
                 proveedor_id: proveedorFinalId,
                 tipo_compra: tipoCompra,
+                descuento: aplicarDescuento ? calcularDescuento() : 0,
                 monto_pagado: tipoCompra === 'CONTADO' ? calcularTotal() : montoPagado,
                 observaciones,
                 detalles,
@@ -514,6 +535,56 @@ export default function RealizarCompra() {
                 <div className="form-section">
                     <h3 className="section-title">Datos de la Compra</h3>
                     
+                    {/* Opciones de Descuento */}
+                    <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text)' }}>Aplicar Descuento</h4>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={aplicarDescuento}
+                                    onChange={(e) => {
+                                        setAplicarDescuento(e.target.checked);
+                                        if (!e.target.checked) setValorDescuento(0);
+                                    }}
+                                />
+                                <span>Activar descuento</span>
+                            </label>
+                        </div>
+
+                        {aplicarDescuento && (
+                            <div className="grid-2">
+                                <div className="form-group">
+                                    <label>Tipo de descuento</label>
+                                    <select
+                                        className="form-input"
+                                        value={tipoDescuento}
+                                        onChange={(e) => {
+                                            setTipoDescuento(e.target.value as 'bolivianos' | 'porcentaje');
+                                            setValorDescuento(0);
+                                        }}
+                                    >
+                                        <option value="bolivianos">Bolivianos (Bs)</option>
+                                        <option value="porcentaje">Porcentaje (%)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>{tipoDescuento === 'bolivianos' ? 'Monto del descuento (Bs)' : 'Porcentaje de descuento (%)'}</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={valorDescuento}
+                                        onChange={(e) => setValorDescuento(parseFloat(e.target.value) || 0)}
+                                        min="0"
+                                        max={tipoDescuento === 'porcentaje' ? 100 : calcularSubtotal()}
+                                        step={tipoDescuento === 'porcentaje' ? '0.1' : '0.01'}
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="grid-2">
                         <div className="form-group">
                             <label htmlFor="tipo-compra">Tipo de Compra *</label>
@@ -587,11 +658,47 @@ export default function RealizarCompra() {
                     </div>
                 </div>
 
-                {/* Total */}
+                {/* Resumen Total */}
                 <div className="form-section total-section">
                     <div className="total-display">
-                        <h3>Total de la Compra</h3>
-                        <p className="total-amount">Bs {total.toFixed(2)}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Subtotal:</span>
+                                <span style={{ fontWeight: '500' }}>Bs {calcularSubtotal().toFixed(2)}</span>
+                            </div>
+
+                            {aplicarDescuento && valorDescuento > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', color: 'var(--success)' }}>
+                                    <span>Descuento ({tipoDescuento === 'porcentaje' ? `${valorDescuento}%` : 'Bs'}):</span>
+                                    <span style={{ fontWeight: '500' }}>- Bs {calcularDescuento().toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            <div style={{ height: '1px', background: 'var(--border)', margin: '0.5rem 0' }} />
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.3rem' }}>Total de la Compra</h3>
+                                <p className="total-amount" style={{ margin: 0 }}>Bs {calcularTotal().toFixed(2)}</p>
+                            </div>
+
+                            {tipoCompra === 'CREDITO' && (
+                                <>
+                                    <div style={{ height: '1px', background: 'var(--border)', margin: '0.5rem 0' }} />
+                                    <div style={{ background: 'var(--background)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                                                <span style={{ color: 'var(--text-muted)' }}>Monto pagado:</span>
+                                                <span style={{ fontWeight: '600', color: 'var(--success)' }}>Bs {montoPagado.toFixed(2)}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                                                <span style={{ color: 'var(--text-muted)' }}>Monto adeudado:</span>
+                                                <span style={{ fontWeight: '600', color: 'var(--warning)' }}>Bs {Math.max(0, calcularTotal() - montoPagado).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 

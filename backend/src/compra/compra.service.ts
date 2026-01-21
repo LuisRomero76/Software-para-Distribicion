@@ -61,11 +61,15 @@ export class CompraService {
     await queryRunner.startTransaction();
 
     try {
-      // Calcular el total de la compra
-      const total = createCompraDto.detalles.reduce(
+      // Calcular el subtotal de la compra (suma de todos los productos)
+      const subtotal = createCompraDto.detalles.reduce(
         (sum, detalle) => sum + detalle.cantidad * detalle.precio_unitario,
         0
       );
+
+      // Calcular el descuento y el total final
+      const descuento = createCompraDto.descuento || 0;
+      const total = subtotal - descuento;
 
       // Calcular montos según el tipo de compra
       const montoPagado = createCompraDto.monto_pagado || 0;
@@ -77,6 +81,8 @@ export class CompraService {
         proveedor_id: proveedor ? proveedor.proveedor_id : null,
         fecha_compra: createCompraDto.fecha_compra ?? new Date(),
         tipo_compra: createCompraDto.tipo_compra,
+        subtotal,
+        descuento,
         total,
         monto_pagado: montoPagado,
         monto_adeudado: createCompraDto.tipo_compra === TipoCompra.CREDITO ? montoAdeudado : 0,
@@ -179,9 +185,232 @@ export class CompraService {
   }
 
   async update(id: number, updateCompraDto: UpdateCompraDto): Promise<Compra> {
-    const compra = await this.findOne(id);
-    Object.assign(compra, updateCompraDto);
-    return this.compraRepository.save(compra);
+    const compra = await this.compraRepository.findOne({
+      where: { compra_id: id },
+      relations: ['detalles', 'detalles.lotes'],
+    });
+
+    if (!compra) {
+      throw new NotFoundException(`Compra con ID ${id} no encontrada`);
+    }
+
+    // Si se envían detalles, actualizar completamente
+    if (updateCompraDto.detalles && updateCompraDto.detalles.length > 0) {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        // Obtener detalles actuales de la compra
+        const detallesActuales = await queryRunner.manager.find(DetalleCompra, {
+          where: { compra_id: id },
+          relations: ['lotes'],
+        });
+
+        // Separar detalles en: actualizar, crear nuevos, eliminar
+        const detallesParaActualizar = updateCompraDto.detalles.filter(d => d.detalle_compra_id);
+        const detallesParaCrear = updateCompraDto.detalles.filter(d => !d.detalle_compra_id);
+        const idsEnviados = detallesParaActualizar.map(d => d.detalle_compra_id);
+        const detallesParaEliminar = detallesActuales.filter(d => !idsEnviados.includes(d.detalle_compra_id));
+
+        // PASO 1: Eliminar detalles que ya no están en la lista
+        for (const detalleAEliminar of detallesParaEliminar) {
+          // Eliminar lotes asociados
+          await queryRunner.manager.query(
+            `DELETE FROM lote WHERE detalle_compra_id = ?`,
+            [detalleAEliminar.detalle_compra_id]
+          );
+          // Eliminar el detalle
+          await queryRunner.manager.remove(detalleAEliminar);
+        }
+
+        // PASO 2: Actualizar detalles existentes
+        for (const detalleDto of detallesParaActualizar) {
+          const detalleExistente = detallesActuales.find(d => d.detalle_compra_id === detalleDto.detalle_compra_id);
+          
+          if (!detalleExistente) {
+            throw new NotFoundException(`Detalle de compra con ID ${detalleDto.detalle_compra_id} no encontrado`);
+          }
+          
+          // Obtener información del producto
+          const producto = await this.productRepository.findOne({
+            where: { product_id: detalleDto.product_id },
+          });
+
+          if (!producto) {
+            throw new NotFoundException(`Producto con ID ${detalleDto.product_id} no encontrado`);
+          }
+
+          // Convertir valores a números
+          const cantidadNueva = Number(detalleDto.cantidad);
+          const precioNuevo = Number(detalleDto.precio_unitario);
+          
+          // Calcular cantidad en unidades
+          let cantidadUnidades = cantidadNueva;
+          if (detalleDto.modo === 'paquete') {
+            cantidadUnidades = cantidadNueva * (producto.cant_por_paquete || 1);
+          }
+
+          // Actualizar el detalle
+          detalleExistente.product_id = Number(detalleDto.product_id);
+          detalleExistente.cantidad = cantidadNueva;
+          detalleExistente.precio_unitario = precioNuevo;
+          detalleExistente.subtotal = cantidadNueva * precioNuevo;
+          detalleExistente.modo = detalleDto.modo || 'unidad';
+          detalleExistente.fecha_vencimiento = detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null;
+
+          // Guardar el detalle
+          await queryRunner.manager.save(detalleExistente);
+
+          // Actualizar el lote
+          const loteExistente = detalleExistente.lotes && detalleExistente.lotes.length > 0 ? detalleExistente.lotes[0] : null;
+          
+          if (loteExistente) {
+            // Calcular diferencia de cantidad
+            const cantidadInicialAnterior = Number(loteExistente.cantidad_inicial);
+            const diferenciaCantidad = cantidadUnidades - cantidadInicialAnterior;
+            const nuevaCantidadActual = Number(loteExistente.cantidad_actual) + diferenciaCantidad;
+            
+            // Validar que no se venda más de lo que hay
+            if (nuevaCantidadActual < 0) {
+              throw new BadRequestException(
+                `No se puede reducir la cantidad porque ya se han vendido unidades de este lote.`
+              );
+            }
+            
+            // Actualizar lote
+            loteExistente.cantidad_inicial = cantidadUnidades;
+            loteExistente.cantidad_actual = nuevaCantidadActual;
+            loteExistente.unidades_sueltas = nuevaCantidadActual % (producto.cant_por_paquete || 1);
+            loteExistente.costo_unitario = precioNuevo;
+            loteExistente.fecha_vencimiento = detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null;
+            
+            await queryRunner.manager.save(loteExistente);
+          }
+        }
+
+        // PASO 3: Crear nuevos detalles (los que no tienen detalle_compra_id)
+        for (const detalleDto of detallesParaCrear) {
+          const producto = await this.productRepository.findOne({
+            where: { product_id: detalleDto.product_id },
+          });
+
+          if (!producto) {
+            throw new NotFoundException(`Producto con ID ${detalleDto.product_id} no encontrado`);
+          }
+
+          // Convertir valores a números
+          const cantidadNueva = Number(detalleDto.cantidad);
+          const precioNuevo = Number(detalleDto.precio_unitario);
+          
+          // Calcular cantidad en unidades
+          let cantidadUnidades = cantidadNueva;
+          if (detalleDto.modo === 'paquete') {
+            cantidadUnidades = cantidadNueva * (producto.cant_por_paquete || 1);
+          }
+
+          // Crear nuevo detalle
+          const nuevoDetalle = this.detalleCompraRepository.create({
+            compra_id: id,
+            product_id: Number(detalleDto.product_id),
+            cantidad: cantidadNueva,
+            precio_unitario: precioNuevo,
+            subtotal: cantidadNueva * precioNuevo,
+            modo: detalleDto.modo || 'unidad',
+            fecha_vencimiento: detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null,
+          });
+
+          const detalleSaved = await queryRunner.manager.save(nuevoDetalle);
+
+          // Crear el lote
+          const lote = this.loteRepository.create({
+            product_id: Number(detalleDto.product_id),
+            detalle_compra_id: detalleSaved.detalle_compra_id,
+            cantidad_inicial: cantidadUnidades,
+            cantidad_actual: cantidadUnidades,
+            unidades_sueltas: cantidadUnidades % (producto.cant_por_paquete || 1),
+            costo_unitario: precioNuevo,
+            fecha_vencimiento: detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null,
+          });
+
+          await queryRunner.manager.save(lote);
+        }
+
+        // Calcular subtotal, descuento y total
+        const subtotal = updateCompraDto.detalles.reduce(
+          (sum, detalle) => sum + detalle.cantidad * detalle.precio_unitario,
+          0
+        );
+        const descuento = updateCompraDto.descuento || 0;
+        const total = subtotal - descuento;
+        const tipoCompraFinal = updateCompraDto.tipo_compra ?? compra.tipo_compra;
+        const montoPagado = updateCompraDto.monto_pagado !== undefined ? updateCompraDto.monto_pagado : compra.monto_pagado;
+        const montoAdeudado = total - montoPagado;
+
+        // Actualizar campos básicos de la compra
+        if (updateCompraDto.hasOwnProperty('proveedor_id')) {
+          compra.proveedor_id = updateCompraDto.proveedor_id ?? null;
+        }
+        compra.tipo_compra = tipoCompraFinal;
+        compra.subtotal = subtotal;
+        compra.descuento = descuento;
+        compra.total = total;
+        compra.monto_pagado = montoPagado;
+        compra.monto_adeudado = tipoCompraFinal === TipoCompra.CREDITO ? montoAdeudado : 0;
+        compra.estado = tipoCompraFinal === TipoCompra.CONTADO ? EstadoCompra.COMPLETADO : (montoAdeudado <= 0 ? EstadoCompra.COMPLETADO : EstadoCompra.PENDIENTE);
+        compra.observaciones = updateCompraDto.observaciones !== undefined ? updateCompraDto.observaciones : compra.observaciones;
+
+        const compraActualizada = await queryRunner.manager.save(compra);
+
+        await queryRunner.commitTransaction();
+
+        // Retornar la compra actualizada con sus relaciones
+        return this.findOne(id);
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        throw error;
+      } finally {
+        await queryRunner.release();
+      }
+    } else {
+      // Si no se envían detalles, solo actualizar campos básicos
+      if (updateCompraDto.hasOwnProperty('proveedor_id')) {
+        compra.proveedor_id = updateCompraDto.proveedor_id ?? null;
+      }
+      
+      // Actualizar descuento si se envía
+      if (updateCompraDto.hasOwnProperty('descuento')) {
+        compra.descuento = updateCompraDto.descuento || 0;
+        // Recalcular total con el nuevo descuento
+        compra.total = compra.subtotal - compra.descuento;
+      }
+      
+      // Actualizar monto pagado si se envía
+      if (updateCompraDto.hasOwnProperty('monto_pagado')) {
+        compra.monto_pagado = updateCompraDto.monto_pagado || 0;
+      }
+      
+      // Actualizar tipo de compra y recalcular montos
+      if (updateCompraDto.tipo_compra !== undefined) {
+        compra.tipo_compra = updateCompraDto.tipo_compra;
+      }
+      
+      // Recalcular monto adeudado y estado basado en el tipo de compra
+      if (compra.tipo_compra === TipoCompra.CONTADO) {
+        compra.monto_pagado = compra.total;
+        compra.monto_adeudado = 0;
+        compra.estado = EstadoCompra.COMPLETADO;
+      } else {
+        // Para CREDITO, calcular el adeudado basado en el monto pagado
+        compra.monto_adeudado = compra.total - compra.monto_pagado;
+        compra.estado = compra.monto_adeudado <= 0 ? EstadoCompra.COMPLETADO : EstadoCompra.PENDIENTE;
+      }
+      
+      if (updateCompraDto.observaciones !== undefined) {
+        compra.observaciones = updateCompraDto.observaciones;
+      }
+      return this.compraRepository.save(compra);
+    }
   }
 
   async remove(id: number): Promise<void> {

@@ -528,33 +528,17 @@
     transform: translateY(-2px);
 }
 
-.financial-card.total {
-    background: linear-gradient(135deg, var(--primary, #0ea5e9), var(--primary-700, #0369a1));
-}
-
-.financial-card.pagado {
-    background: linear-gradient(135deg, var(--success, #22c55e), #16a34a);
-}
-
-.financial-card.adeudado {
-    background: linear-gradient(135deg, var(--warning, #f59e0b), #d97706);
-}
-
-.financial-card.pagos {
-    background: linear-gradient(135deg, var(--info, #3b82f6), #2563eb);
-}
-
 .financial-label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text);
     margin-bottom: 0.5rem;
 }
 
 .financial-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: white;
+    color: var(--text);
     margin: 0;
 }
 
@@ -593,6 +577,135 @@
     color: var(--text-secondary, #64748b);
 }
 
+/* Estilos para sección de descuentos */
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary, #0ea5e9);
+}
+
+/* Estilos para edición de productos */
+.product-edit-card {
+    background: var(--card, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.product-edit-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-light, #38bdf8);
+}
+
+.product-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--bg-2, #f8fafc) 0%, var(--bg-3, #f1f5f9) 100%);
+    border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.product-edit-body {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.form-help-text {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #64748b);
+    font-style: italic;
+}
+
+.form-input.input-readonly {
+    background: var(--bg-3, #f1f5f9);
+    color: var(--text, #0f172a);
+    font-weight: 600;
+    cursor: not-allowed;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-icon:active {
+    transform: translateY(0);
+}
+
+.total-summary-card {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--bg-2, #f8fafc) 0%, var(--bg-3, #f1f5f9) 100%);
+    border: 2px solid var(--primary-light, #38bdf8);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+/* Dark mode para edición de productos */
+[data-theme="dark"] .product-edit-card {
+    background: var(--card, #1e293b);
+    border-color: var(--border, #334155);
+}
+
+[data-theme="dark"] .product-edit-card:hover {
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="dark"] .product-edit-header {
+    background: linear-gradient(135deg, var(--bg-2, #0f172a) 0%, var(--bg-3, #1e293b) 100%);
+    border-bottom-color: var(--border, #334155);
+}
+
+[data-theme="dark"] .form-help-text {
+    color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .form-input.input-readonly {
+    background: var(--bg-3, #0f172a);
+    color: var(--text, #f1f5f9);
+}
+
+[data-theme="dark"] .total-summary-card {
+    background: linear-gradient(135deg, var(--bg-2, #0f172a) 0%, var(--bg-3, #1e293b) 100%);
+    border-color: var(--primary, #0ea5e9);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
 /* Responsive para pagos y detalles */
 @media (max-width: 768px) {
     .payment-summary {
@@ -605,5 +718,9 @@
     
     .financial-value {
         font-size: 1.5rem;
+    }
+    
+    .product-edit-body {
+        grid-template-columns: 1fr;
     }
 }

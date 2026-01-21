@@ -18,6 +18,11 @@ export class CreateCompraDto {
 
   @IsOptional()
   @Type(() => Number)
+  @Min(0, { message: 'El descuento no puede ser negativo' })
+  descuento?: number;
+
+  @IsOptional()
+  @Type(() => Number)
   @Min(0, { message: 'El monto pagado no puede ser negativo' })
   monto_pagado?: number;
 

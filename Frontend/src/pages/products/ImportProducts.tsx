@@ -368,7 +368,7 @@ export default function ImportProducts() {
                     <th>Nombre *</th>
                     <th>Descripción</th>
                     <th>Tamaño</th>
-                    <th>Precio *</th>
+                    <th>Precio Venta</th>
                     <th>Precio Compra</th>
                     <th>Precio Compra Paq.</th>
                     <th>Precio Venta Paq.</th>

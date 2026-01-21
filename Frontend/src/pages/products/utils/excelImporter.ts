@@ -32,7 +32,7 @@ export async function readProductExcelFile(file: File): Promise<SheetData[]> {
       nombre: r['Nombre'] ?? r['nombre'] ?? '',
       descripcion: r['Descripción'] ?? r['descripcion'] ?? r['descripción'] ?? '',
       tamaño: r['Tamaño'] ?? r['tamaño'] ?? r['tamano'] ?? '',
-      precio: r['Precio'] ?? r['precio'] ?? '',
+      precio: r['Precio Venta'] ?? r['precio Venta'] ?? '',
       precio_compra: r['Precio Compra'] ?? r['precio_compra'] ?? '',
       precio_compra_paquete: r['Precio Compra Paquete'] ?? r['precio_compra_paquete'] ?? '',
       precio_venta_paquete: r['Precio Venta Paquete'] ?? r['precio_venta_paquete'] ?? '',
@@ -57,7 +57,7 @@ export function generateProductTemplate(): void {
       'Nombre': 'Vino Tinto',
       'Descripción': 'Vino tinto premium',
       'Tamaño': '750ml',
-      'Precio': '150.50',
+      'Precio Venta': '150.50',
       'Precio Compra': '100.00',
       'Precio Compra Paquete': '570.00',
       'Precio Venta Paquete': '870.00',
@@ -71,7 +71,7 @@ export function generateProductTemplate(): void {
     { wch: 30 }, // Nombre
     { wch: 40 }, // Descripción
     { wch: 15 }, // Tamaño
-    { wch: 15 }, // Precio
+    { wch: 15 }, // Precio Venta
     { wch: 18 }, // Precio Compra
     { wch: 22 }, // Precio Compra Paquete
     { wch: 22 }, // Precio Venta Paquete

@@ -3,7 +3,7 @@ import { request } from '../lib/http';
 export interface Proveedor {
     proveedor_id: number;
     nombre: string;
-    ruc?: string;
+    nit_ci?: string;
     email?: string;
     telefono?: string;
     direccion?: string;
@@ -38,6 +38,8 @@ export interface Compra {
     fecha_compra: string;
     tipo_compra: 'CONTADO' | 'CREDITO';
     estado: 'PENDIENTE' | 'COMPLETADO';
+    subtotal: number;
+    descuento: number;
     total: number;
     monto_pagado: number;
     monto_adeudado: number;
@@ -61,6 +63,7 @@ export interface CreateCompraDto {
     proveedor_id?: number; // opcional
     fecha_compra?: string; // opcional; se genera en backend si falta
     tipo_compra: 'CONTADO' | 'CREDITO';
+    descuento?: number;
     monto_pagado?: number;
     observaciones?: string;
     detalles: Array<{
@@ -79,9 +82,20 @@ export interface CreatePagoCompraDto {
 }
 
 export interface UpdateCompraDto {
-    proveedor_id?: number;
+    proveedor_id?: number | null;
     fecha_compra?: string;
+    tipo_compra?: 'CONTADO' | 'CREDITO';
+    descuento?: number;
+    monto_pagado?: number;
     observaciones?: string;
+    detalles?: Array<{
+        detalle_compra_id?: number; // ID para identificar detalles existentes
+        product_id: number;
+        cantidad: number;
+        precio_unitario: number;
+        fecha_vencimiento?: string;
+        modo?: 'unidad' | 'paquete';
+    }>;
 }
 
 // Compra Services
