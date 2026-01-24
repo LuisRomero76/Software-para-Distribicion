@@ -21,6 +21,11 @@ export class CreateVentaDto {
   monto_pagado?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @Min(0, { message: 'El descuento no puede ser negativo' })
+  descuento?: number;
+
+  @IsOptional()
   @IsString()
   observaciones?: string;
 

@@ -137,6 +137,13 @@ export const createPagoCompra = async (data: CreatePagoCompraDto): Promise<PagoC
     });
 };
 
+export const updatePagoCompra = async (id: number, data: Partial<CreatePagoCompraDto>): Promise<PagoCompra> => {
+    return request<PagoCompra>(`/pago-compra/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    });
+};
+
 export const deletePagoCompra = async (id: number): Promise<void> => {
     return request<void>(`/pago-compra/${id}`, { method: 'DELETE' });
 };

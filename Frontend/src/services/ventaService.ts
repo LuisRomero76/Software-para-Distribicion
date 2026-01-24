@@ -38,6 +38,8 @@ export interface Venta {
     cliente?: Cliente;
     fecha_venta: string;
     tipo_venta: 'CONTADO' | 'CREDITO';
+    subtotal: number;
+    descuento: number;
     total: number;
     estado: 'PENDIENTE' | 'COMPLETADO';
     monto_pagado: number;
@@ -64,11 +66,20 @@ export interface CreateVentaDto {
     fecha_venta?: string;
     tipo_venta?: 'CONTADO' | 'CREDITO';
     monto_pagado?: number;
+    descuento?: number;
     observaciones?: string;
     detalles: Array<{
         lote_id: number;
         cantidad: number;
+        modo?: 'unidad' | 'paquete';
     }>;
+}
+
+export interface CreateDetalleVentaDto {
+    detalle_venta_id?: number;
+    lote_id: number;
+    cantidad: number;
+    modo: 'unidad' | 'paquete';
 }
 
 export interface CreatePagoDto {
@@ -83,6 +94,9 @@ export interface UpdateVentaDto {
     fecha_venta?: string;
     tipo_venta?: 'CONTADO' | 'CREDITO';
     observaciones?: string;
+    descuento?: number;
+    monto_pagado?: number;
+    detalles?: CreateDetalleVentaDto[];
 }
 
 // Venta Services
@@ -136,6 +150,14 @@ export const createPago = async (data: CreatePagoDto, token?: string): Promise<P
 
 export const getPagosByVenta = async (ventaId: number, token?: string): Promise<Pago[]> => {
     return request<Pago[]>(`/pago/venta/${ventaId}`, {}, token);
+};
+
+export const updatePago = async (id: number, data: Partial<CreatePagoDto>, token?: string): Promise<Pago> => {
+    return request<Pago>(`/pago/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }, token);
 };
 
 export const deletePago = async (pagoId: number, token?: string): Promise<void> => {

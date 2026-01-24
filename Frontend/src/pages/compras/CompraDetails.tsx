@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, CreditCard, Package, DollarSign, FileText, Edit, Trash2, Plus, X, Save, CheckCircle, Clock } from 'lucide-react';
-import { getCompraById, getPagosByCompra, updateCompra, type Compra, type PagoCompra } from '../../services/compraService';
+import { getCompraById, getPagosByCompra, updateCompra, createPagoCompra, updatePagoCompra, deletePagoCompra, type Compra, type PagoCompra } from '../../services/compraService';
 import { getAllProveedores, type Proveedor } from '../../services/proveedorService';
 import { getAllProducts, type Producto } from '../../services/productService';
 import './compras.css';
@@ -77,6 +77,17 @@ export default function CompraDetails() {
     const [productos, setProductos] = useState<ProductoExtendido[]>([]);
     const [savingProductos, setSavingProductos] = useState(false);
 
+    // Estados para modal de pagos
+    const [showPagoModal, setShowPagoModal] = useState(false);
+    const [editandoPago, setEditandoPago] = useState<PagoCompra | null>(null);
+    const [pagoFormData, setPagoFormData] = useState({
+        monto: 0,
+        fecha_pago: new Date().toISOString().split('T')[0],
+        observaciones: ''
+    });
+    const [savingPago, setSavingPago] = useState(false);
+    const [pagoError, setPagoError] = useState<string | null>(null);
+
     useEffect(() => {
         document.title = 'Grupo Vicorsa | Detalles de Compra';
         loadCompraDetails();
@@ -91,6 +102,18 @@ export default function CompraDetails() {
                 getCompraById(parseInt(id)),
                 getPagosByCompra(parseInt(id)),
             ]);
+            
+            console.log('📥 Compra recargada:', {
+                id: compraData.compra_id,
+                detalles: compraData.detalles?.map((d: any) => ({
+                    id: d.detalle_compra_id,
+                    producto: d.producto?.nombre,
+                    cantidad: d.cantidad,
+                    modo: d.modo,
+                    precio_unitario: d.precio_unitario
+                }))
+            });
+            
             setCompra(compraData);
             setPagos(pagosData);
             setError(null);
@@ -206,6 +229,14 @@ export default function CompraDetails() {
                 producto: detalle.producto,
             }));
             
+            console.log('📋 Detalles cargados para edición:', detalles.map(d => ({
+                id: d.detalle_compra_id,
+                producto: d.producto?.nombre,
+                cantidad: d.cantidad,
+                modo: d.modo,
+                precio_unitario: d.precio_unitario
+            })));
+            
             setDetallesEditables(detalles);
             setEditandoProductos(true);
         } catch (err) {
@@ -304,7 +335,7 @@ export default function CompraDetails() {
         if (!compra) return;
         
         // Validar
-        if (detallesEditables.some(d => d.producto_id === 0)) {
+        if (detallesEditables.some(d => d.producto_id === 0 || !d.producto_id)) {
             alert('Todos los productos deben estar seleccionados');
             return;
         }
@@ -317,14 +348,29 @@ export default function CompraDetails() {
         try {
             setSavingProductos(true);
             
-            const detalles = detallesEditables.map(d => ({
-                detalle_compra_id: d.detalle_compra_id, // Enviar ID si existe (para actualizar)
-                product_id: d.producto_id,
-                cantidad: d.cantidad,
-                precio_unitario: d.precio_unitario,
-                modo: d.modo,
-                fecha_vencimiento: d.fecha_vencimiento || undefined,
-            }));
+            // Preparar detalles para enviar al backend
+            const detalles = detallesEditables.map(d => {
+                const detalle: any = {
+                    product_id: Number(d.producto_id),
+                    cantidad: Number(d.cantidad),
+                    precio_unitario: Number(d.precio_unitario),
+                    modo: d.modo || 'unidad',
+                };
+                
+                // Incluir ID si existe (para actualizar detalles existentes)
+                if (d.detalle_compra_id) {
+                    detalle.detalle_compra_id = Number(d.detalle_compra_id);
+                }
+                
+                // Incluir fecha de vencimiento si existe
+                if (d.fecha_vencimiento && d.fecha_vencimiento.trim() !== '') {
+                    detalle.fecha_vencimiento = d.fecha_vencimiento;
+                }
+                
+                return detalle;
+            });
+            
+            console.log('📤 Enviando detalles al backend:', detalles);
             
             await updateCompra(compra.compra_id, {
                 detalles,
@@ -335,10 +381,130 @@ export default function CompraDetails() {
             setDetallesEditables([]);
             alert('¡Productos actualizados exitosamente!');
         } catch (err: any) {
-            alert(err?.message || 'Error al actualizar productos');
-            console.error(err);
+            const errorMsg = err?.response?.data?.message || err?.message || 'Error al actualizar productos';
+            alert(errorMsg);
+            console.error('Error al actualizar productos:', err);
         } finally {
             setSavingProductos(false);
+        }
+    };
+
+    // === FUNCIONES PARA MANEJO DE PAGOS ===
+    
+    const handleAbrirModalPago = () => {
+        if (!compra) return;
+        setPagoFormData({
+            monto: 0,
+            fecha_pago: new Date().toISOString().split('T')[0],
+            observaciones: ''
+        });
+        setEditandoPago(null);
+        setPagoError(null);
+        setShowPagoModal(true);
+    };
+
+    const handleEditarPago = (pago: PagoCompra) => {
+        // Convertir fecha a formato YYYY-MM-DD
+        let fechaFormateada = pago.fecha_pago;
+        if (typeof fechaFormateada === 'string' && fechaFormateada.includes('T')) {
+            fechaFormateada = fechaFormateada.split('T')[0];
+        } else if (typeof fechaFormateada === 'string') {
+            fechaFormateada = fechaFormateada.split(' ')[0];
+        }
+        
+        setPagoFormData({
+            monto: pago.monto,
+            fecha_pago: fechaFormateada,
+            observaciones: pago.observaciones || ''
+        });
+        setEditandoPago(pago);
+        setPagoError(null);
+        setShowPagoModal(true);
+    };
+
+    const handleCerrarModalPago = () => {
+        setShowPagoModal(false);
+        setEditandoPago(null);
+        setPagoFormData({
+            monto: 0,
+            fecha_pago: new Date().toISOString().split('T')[0],
+            observaciones: ''
+        });
+        setPagoError(null);
+    };
+
+    const handleGuardarPago = async () => {
+        if (!compra) return;
+        
+        // Validaciones
+        if (pagoFormData.monto <= 0) {
+            setPagoError('El monto debe ser mayor a 0');
+            return;
+        }
+
+        // Si es un nuevo pago, validar que no exceda el monto adeudado
+        if (!editandoPago && pagoFormData.monto > compra.monto_adeudado) {
+            setPagoError(`El monto no puede exceder el adeudado (Bs. ${compra.monto_adeudado.toFixed(2)})`);
+            return;
+        }
+
+        // Si es edición de pago, validar considerando el monto del pago original
+        if (editandoPago) {
+            const diferenciaMontos = pagoFormData.monto - editandoPago.monto;
+            if (diferenciaMontos > compra.monto_adeudado) {
+                setPagoError(`El monto adicional excede el adeudado (Bs. ${compra.monto_adeudado.toFixed(2)})`);
+                return;
+            }
+        }
+
+        try {
+            setSavingPago(true);
+            setPagoError(null);
+
+            if (editandoPago) {
+                // Actualizar pago existente
+                await updatePagoCompra(editandoPago.pago_compra_id, {
+                    monto: pagoFormData.monto,
+                    fecha_pago: pagoFormData.fecha_pago,
+                    observaciones: pagoFormData.observaciones || undefined
+                });
+            } else {
+                // Crear nuevo pago
+                await createPagoCompra({
+                    compra_id: compra.compra_id,
+                    monto: pagoFormData.monto,
+                    fecha_pago: pagoFormData.fecha_pago,
+                    observaciones: pagoFormData.observaciones || undefined
+                });
+            }
+
+            // Recargar datos
+            await loadCompraDetails();
+            handleCerrarModalPago();
+            
+        } catch (err: any) {
+            const errorMsg = err?.response?.data?.message || err?.message || 'Error al guardar el pago';
+            setPagoError(errorMsg);
+            console.error('Error al guardar pago:', err);
+        } finally {
+            setSavingPago(false);
+        }
+    };
+
+    const handleEliminarPago = async (pago: PagoCompra) => {
+        const montoFormateado = parseFloat(pago.monto as any).toFixed(2);
+        if (!window.confirm(`¿Está seguro de eliminar el pago de Bs. ${montoFormateado}?\n\nEsta acción no se puede deshacer y el monto será devuelto al saldo adeudado.`)) {
+            return;
+        }
+
+        try {
+            await deletePagoCompra(pago.pago_compra_id);
+            await loadCompraDetails();
+            alert('Pago eliminado exitosamente');
+        } catch (err: any) {
+            const errorMsg = err?.response?.data?.message || err?.message || 'Error al eliminar el pago';
+            alert(errorMsg);
+            console.error('Error al eliminar pago:', err);
         }
     };
 
@@ -742,6 +908,97 @@ export default function CompraDetails() {
                 )}
             </div>
 
+            {/* Historial de Pagos */}
+            {compra.tipo_compra === 'CREDITO' && (
+                <div className="form-section">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 className="section-title">
+                            <DollarSign size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                            Historial de Pagos
+                        </h3>
+                        {compra.monto_adeudado > 0 && (
+                            <button 
+                                className="btn-primary" 
+                                onClick={handleAbrirModalPago}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <Plus size={18} /> Registrar Pago
+                            </button>
+                        )}
+                    </div>
+                    {pagos.length > 0 ? (
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha y Hora</th>
+                                    <th className="text-right">Monto</th>
+                                    <th>Observaciones</th>
+                                    <th style={{ width: '120px' }}>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pagos.map((pago) => (
+                                    <tr key={pago.pago_compra_id}>
+                                        <td className="id-col">#{pago.pago_compra_id}</td>
+                                        <td>
+                                            {formatearFecha(pago.fecha_pago)}
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                {formatearHora((pago as any).createdAt || pago.fecha_pago)}
+                                            </div>
+                                        </td>
+                                        <td className="text-right">
+                                            <strong style={{ color: 'var(--success)' }}>
+                                                Bs {parseFloat(pago.monto as any).toFixed(2)}
+                                            </strong>
+                                        </td>
+                                        <td>{pago.observaciones || '-'}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                <button
+                                                    className="btn-icon btn-icon-primary"
+                                                    onClick={() => handleEditarPago(pago)}
+                                                    title="Editar pago"
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn-icon btn-icon-danger"
+                                                    onClick={() => handleEliminarPago(pago)}
+                                                    title="Eliminar pago"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                <tr style={{ fontWeight: '600', background: 'var(--bg-2)' }}>
+                                    <td colSpan={2} className="text-right">TOTAL PAGADO:</td>
+                                    <td className="text-right" style={{ fontSize: '1.1rem', color: 'var(--success)' }}>
+                                        Bs {parseFloat(compra.monto_pagado as any).toFixed(2)}
+                                    </td>
+                                    <td colSpan={2}></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="empty-state">
+                            <p>No se han registrado pagos para esta compra</p>
+                            {compra.monto_adeudado > 0 && (
+                                <button 
+                                    className="btn-primary" 
+                                    onClick={handleAbrirModalPago}
+                                    style={{ marginTop: '1rem' }}
+                                >
+                                    <Plus size={18} /> Registrar Primer Pago
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Modal de edición de datos básicos */}
             {showEditModal && (
                 <div className="modal-overlay" role="dialog" aria-modal="true">
@@ -954,6 +1211,118 @@ export default function CompraDetails() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal para Registrar/Editar Pago */}
+            {showPagoModal && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                        <div className="modal-header">
+                            <h3>
+                                {editandoPago ? 'Editar Pago' : 'Registrar Pago'}
+                            </h3>
+                            <button className="modal-close" onClick={handleCerrarModalPago} disabled={savingPago}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            {pagoError && (
+                                <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                                    {pagoError}
+                                </div>
+                            )}
+
+                            {!editandoPago && compra && (
+                                <div className="info-card" style={{ marginBottom: '1.5rem', background: 'var(--bg-2)', padding: '1rem', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Monto Total:</span>
+                                        <span style={{ fontWeight: '600' }}>Bs {parseFloat(compra.total as any).toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span style={{ color: 'var(--success)' }}>Pagado:</span>
+                                        <span style={{ fontWeight: '600', color: 'var(--success)' }}>Bs {parseFloat(compra.monto_pagado as any).toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ height: '1px', background: 'var(--border)', margin: '0.5rem 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: 'var(--warning)', fontWeight: '600' }}>Adeudado:</span>
+                                        <span style={{ fontWeight: '700', color: 'var(--warning)', fontSize: '1.1rem' }}>
+                                            Bs {parseFloat(compra.monto_adeudado as any).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label>Monto del Pago *</label>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    value={pagoFormData.monto || ''}
+                                    onChange={(e) => setPagoFormData({ ...pagoFormData, monto: parseFloat(e.target.value) || 0 })}
+                                    min="0.01"
+                                    max={editandoPago 
+                                        ? parseFloat(compra.monto_adeudado as any) + parseFloat(editandoPago.monto as any)
+                                        : parseFloat(compra.monto_adeudado as any)
+                                    }
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    disabled={savingPago}
+                                    required
+                                />
+                                <small style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    {editandoPago 
+                                        ? `Máximo permitido: Bs ${(parseFloat(compra.monto_adeudado as any) + parseFloat(editandoPago.monto as any)).toFixed(2)}`
+                                        : `Monto adeudado: Bs ${parseFloat(compra.monto_adeudado as any).toFixed(2)}`
+                                    }
+                                </small>
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label>Fecha del Pago *</label>
+                                <input
+                                    type="date"
+                                    className="form-input"
+                                    value={pagoFormData.fecha_pago}
+                                    onChange={(e) => setPagoFormData({ ...pagoFormData, fecha_pago: e.target.value })}
+                                    disabled={savingPago}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Observaciones</label>
+                                <textarea
+                                    className="form-input"
+                                    value={pagoFormData.observaciones}
+                                    onChange={(e) => setPagoFormData({ ...pagoFormData, observaciones: e.target.value })}
+                                    rows={3}
+                                    placeholder="Notas sobre el pago (opcional)..."
+                                    disabled={savingPago}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            <button 
+                                type="button"
+                                className="btn-secondary" 
+                                onClick={handleCerrarModalPago}
+                                disabled={savingPago}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button"
+                                className="btn-primary"
+                                onClick={handleGuardarPago}
+                                disabled={savingPago}
+                            >
+                                {savingPago ? 'Guardando...' : (editandoPago ? 'Actualizar Pago' : 'Registrar Pago')}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

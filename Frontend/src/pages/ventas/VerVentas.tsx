@@ -115,6 +115,8 @@ export default function VerVentas() {
             'Tipo': venta.tipo_venta,
             'Estado': venta.estado,
             'Fecha': new Date(venta.fecha_venta).toLocaleDateString('es-ES'),
+            'Subtotal (Bs.)': parseFloat(venta.subtotal as any).toFixed(2),
+            'Descuento (Bs.)': parseFloat(venta.descuento as any).toFixed(2),
             'Total (Bs.)': parseFloat(venta.total as any).toFixed(2),
             'Pagado (Bs.)': parseFloat(venta.monto_pagado as any).toFixed(2),
             'Adeudado (Bs.)': parseFloat(venta.monto_adeudado as any).toFixed(2),
@@ -127,7 +129,7 @@ export default function VerVentas() {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventas');
 
         worksheet['!cols'] = [
-            { wch: 8 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
+            { wch: 8 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 40 }
         ];
 
         const today = new Date();
@@ -284,7 +286,17 @@ export default function VerVentas() {
                         </div>
                         <div className="modal-body">
                             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-2)', borderRadius: '8px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                                    <div>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Subtotal</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>Bs {parseFloat(pagoModal.venta.subtotal as any).toFixed(2)}</p>
+                                    </div>
+                                    {parseFloat(pagoModal.venta.descuento as any) > 0 && (
+                                        <div>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Descuento</p>
+                                            <p style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--danger)' }}>- Bs {parseFloat(pagoModal.venta.descuento as any).toFixed(2)}</p>
+                                        </div>
+                                    )}
                                     <div>
                                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total</p>
                                         <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>Bs {parseFloat(pagoModal.venta.total as any).toFixed(2)}</p>
@@ -332,7 +344,6 @@ export default function VerVentas() {
                                         <input
                                             type="number"
                                             className="form-input"
-                                            value={montoPago}
                                             onChange={(e) => setMontoPago(parseFloat(e.target.value) || 0)}
                                             min="0.01"
                                             max={pagoModal.venta.monto_adeudado}

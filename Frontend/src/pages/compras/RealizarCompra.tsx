@@ -265,8 +265,6 @@ export default function RealizarCompra() {
         return <div className="loading">Cargando...</div>;
     }
 
-    const total = calcularTotal();
-
     return (
         <div className="page-container">
             <div className="page-header">

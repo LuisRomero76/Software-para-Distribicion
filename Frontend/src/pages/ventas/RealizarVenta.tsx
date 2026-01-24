@@ -318,6 +318,7 @@ export default function RealizarVenta() {
                 cliente_id: clienteFinalId,
                 fecha_venta: new Date().toISOString(),
                 tipo_venta: tipoVenta,
+                descuento: aplicarDescuento ? calcularDescuento() : 0,
                 monto_pagado: tipoVenta === 'CREDITO' ? montoPagado : undefined,
                 observaciones,
                 detalles,
@@ -336,8 +337,6 @@ export default function RealizarVenta() {
     if (loading && productos.length === 0) {
         return <div className="loading">Cargando...</div>;
     }
-
-    const total = calcularTotal();
 
     return (
         <div className="page-container">

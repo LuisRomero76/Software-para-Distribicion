@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Patch, UseGuards } from '@nestjs/common';
 import { PagoService } from './pago.service';
 import { CreatePagoDto } from './dto/create-pago.dto';
 import { AuthGuard } from 'src/auth/guard/auth.guard';
@@ -23,9 +23,15 @@ export class PagoController {
     return this.pagoService.findOne(+id);
   }
 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updatePagoDto: Partial<CreatePagoDto>) {
+    return this.pagoService.update(+id, updatePagoDto);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     this.pagoService.remove(+id);
     return { message: 'Pago eliminado correctamente' };
   }
 }
+

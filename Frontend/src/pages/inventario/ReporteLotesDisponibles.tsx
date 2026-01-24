@@ -1,7 +1,26 @@
 import { useState, useEffect } from 'react';
 import { getLotesDisponibles, type Lote } from '../../services/loteService';
-import { Package, Calendar, DollarSign, AlertCircle, FileText, Download } from 'lucide-react';
-import '../../styles/ReporteLotesDisponibles.css';
+import { Package, DollarSign, AlertCircle, FileText, Download, TrendingUp, Box } from 'lucide-react';
+import '../../styles/page.css';
+
+// Helper para formatear fecha sin problemas de zona horaria
+const   formatearFecha = (fecha: string | Date) => {
+    const fechaStr = typeof fecha === 'string' ? fecha : fecha.toISOString();
+    
+    // Si es solo fecha (YYYY-MM-DD) o timestamp ISO, extraer la fecha directamente
+    if (fechaStr.includes('T')) {
+        // Es un timestamp completo, extraer solo la parte de la fecha
+        const [fechaParte] = fechaStr.split('T');
+        const [year, month, day] = fechaParte.split('-').map(Number);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        return `${day} ${meses[month - 1]} ${year}`;
+    } else {
+        // Es solo fecha YYYY-MM-DD
+        const [year, month, day] = fechaStr.split('-').map(Number);
+        const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        return `${day} ${meses[month - 1]} ${year}`;
+    }
+};
 
 export default function ReporteLotesDisponibles() {
     const [lotes, setLotes] = useState<Lote[]>([]);
@@ -120,8 +139,8 @@ export default function ReporteLotesDisponibles() {
             html += `<td>${totalUnidades}</td>`;
             html += `<td>${costoUnitario.toFixed(2)}</td>`;
             html += `<td>${calcularValorInventario(lote)}</td>`;
-            html += `<td>${new Date(lote.fecha_ingreso).toLocaleDateString()}</td>`;
-            html += `<td>${lote.fecha_vencimiento ? new Date(lote.fecha_vencimiento).toLocaleDateString() : 'N/A'}</td>`;
+            html += `<td>${formatearFecha(lote.fecha_ingreso)}</td>`;
+            html += `<td>${lote.fecha_vencimiento ? formatearFecha(lote.fecha_vencimiento) : 'N/A'}</td>`;
             html += `<td>${estadoVenc.texto}</td>`;
             html += '</tr>';
         });
@@ -141,17 +160,17 @@ export default function ReporteLotesDisponibles() {
 
     if (loading) {
         return (
-            <div className="reporte-lotes-container">
-                <div className="loading-message">Cargando lotes disponibles...</div>
+            <div className="page-container">
+                <div className="loading-state">Cargando lotes disponibles...</div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="reporte-lotes-container">
-                <div className="error-message">
-                    <AlertCircle size={24} />
+            <div className="page-container">
+                <div className="alert alert-error">
+                    <AlertCircle size={20} />
                     <span>{error}</span>
                 </div>
             </div>
@@ -159,143 +178,174 @@ export default function ReporteLotesDisponibles() {
     }
 
     return (
-        <div className="reporte-lotes-container">
-            <div className="reporte-header">
-                <div className="header-title">
-                    <FileText size={28} />
-                    <h1>Reporte de Lotes Disponibles</h1>
+        <div className="page-container">
+            {/* Header */}
+            <div className="page-header">
+                <div>
+                    <h2 className="page-title">
+                        <FileText size={28} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        Reporte de Lotes Disponibles
+                    </h2>
+                    <p className="page-subtitle">Inventario completo de productos en stock</p>
                 </div>
-                <button className="btn-exportar" onClick={exportarAExcel}>
+                <button className="btn-primary" onClick={exportarAExcel}>
                     <Download size={18} />
                     Exportar Excel
                 </button>
             </div>
 
-            <div className="resumen-cards">
-                <div className="resumen-card">
-                    <div className="card-icon">
-                        <Package size={24} />
+            {/* Tarjetas de Resumen */}
+            <div className="form-section">
+                <h3 className="section-title">
+                    <TrendingUp size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Resumen General
+                </h3>
+                <div className="grid-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+                    <div className="financial-card">
+                        <div className="financial-label">
+                            <Box size={18} style={{ marginRight: '0.5rem' }} />
+                            Total de Lotes
+                        </div>
+                        <div className="financial-value">{lotesFiltrados.length}</div>
                     </div>
-                    <div className="card-content">
-                        <span className="card-label">Total Lotes</span>
-                        <span className="card-value">{lotesFiltrados.length}</span>
+
+                    <div className="financial-card">
+                        <div className="financial-label">
+                            <Package size={18} style={{ marginRight: '0.5rem' }} />
+                            Total de Unidades
+                        </div>
+                        <div className="financial-value">{calcularTotalUnidades()}</div>
                     </div>
-                </div>
-                <div className="resumen-card">
-                    <div className="card-icon">
-                        <Package size={24} />
-                    </div>
-                    <div className="card-content">
-                        <span className="card-label">Total Unidades</span>
-                        <span className="card-value">{calcularTotalUnidades()}</span>
-                    </div>
-                </div>
-                <div className="resumen-card">
-                    <div className="card-icon">
-                        <DollarSign size={24} />
-                    </div>
-                    <div className="card-content">
-                        <span className="card-label">Valor Inventario</span>
-                        <span className="card-value">${calcularTotalInventario()}</span>
+
+                    <div className="financial-card total">
+                        <div className="financial-label">
+                            <DollarSign size={18} style={{ marginRight: '0.5rem' }} />
+                            Valor del Inventario
+                        </div>
+                        <div className="financial-value">Bs {calcularTotalInventario()}</div>
                     </div>
                 </div>
             </div>
 
-            <div className="filtros-section">
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre de producto..."
-                    value={filtroProducto}
-                    onChange={(e) => setFiltroProducto(e.target.value)}
-                    className="filtro-input"
-                />
-                <select
-                    value={filtroVencimiento}
-                    onChange={(e) => setFiltroVencimiento(e.target.value as any)}
-                    className="filtro-select"
-                >
-                    <option value="todos">Todos los lotes</option>
-                    <option value="proximos">Próximos a vencer (30 días)</option>
-                    <option value="vencidos">Vencidos</option>
-                </select>
+            {/* Filtros */}
+            <div className="form-section">
+                <h3 className="section-title">Filtros de Búsqueda</h3>
+                <div className="grid-2">
+                    <div className="form-group">
+                        <label>Buscar Producto</label>
+                        <input
+                            type="text"
+                            placeholder="Nombre del producto..."
+                            value={filtroProducto}
+                            onChange={(e) => setFiltroProducto(e.target.value)}
+                            className="form-input"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Filtrar por Vencimiento</label>
+                        <select
+                            value={filtroVencimiento}
+                            onChange={(e) => setFiltroVencimiento(e.target.value as any)}
+                            className="form-input"
+                        >
+                            <option value="todos">Todos los lotes</option>
+                            <option value="proximos">Próximos a vencer (30 días)</option>
+                            <option value="vencidos">Vencidos</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <div className="tabla-container">
-                <table className="lotes-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Producto</th>
-                            <th>Paquetes</th>
-                            <th>Unidades Sueltas</th>
-                            <th>Total Unidades</th>
-                            <th>Costo Unit.</th>
-                            <th>Valor Total</th>
-                            <th>Fecha Ingreso</th>
-                            <th>Fecha Vencimiento</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {lotesFiltrados.length === 0 ? (
+            {/* Tabla de Lotes */}
+            <div className="form-section">
+                <h3 className="section-title">
+                    <Package size={20} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Listado de Lotes ({lotesFiltrados.length})
+                </h3>
+                {lotesFiltrados.length === 0 ? (
+                    <div className="empty-state">
+                        <Package size={48} style={{ opacity: 0.3 }} />
+                        <p>No se encontraron lotes con los filtros aplicados</p>
+                    </div>
+                ) : (
+                    <table className="data-table">
+                        <thead>
                             <tr>
-                                <td colSpan={10} className="no-data">
-                                    No se encontraron lotes disponibles
-                                </td>
+                                <th>ID</th>
+                                <th>Producto</th>
+                                <th className="text-center">Paquetes</th>
+                                <th className="text-center">Unidades Sueltas</th>
+                                <th className="text-center">Total Unidades</th>
+                                <th className="text-right">Costo Unit.</th>
+                                <th className="text-right">Valor Total</th>
+                                <th className="text-center">Fecha Ingreso</th>
+                                <th className="text-center">Fecha Vencimiento</th>
+                                <th className="text-center">Estado</th>
                             </tr>
-                        ) : (
-                            lotesFiltrados.map(lote => {
-                                // cantidad_actual ya está en unidades totales
+                        </thead>
+                        <tbody>
+                            {lotesFiltrados.map(lote => {
                                 const cantPorPaquete = lote.producto?.cant_por_paquete || 1;
                                 const paquetes = Math.floor(lote.cantidad_actual / cantPorPaquete);
                                 const unidadesSueltas = lote.cantidad_actual % cantPorPaquete;
                                 const totalUnidades = lote.cantidad_actual;
                                 const estadoVenc = obtenerEstadoVencimiento(lote.fecha_vencimiento);
+                                const costoUnitario = typeof lote.costo_unitario === 'string' ? parseFloat(lote.costo_unitario) : lote.costo_unitario;
 
                                 return (
                                     <tr key={lote.lote_id}>
-                                        <td>{lote.lote_id}</td>
-                                        <td className="producto-nombre">
-                                            <div className="producto-info">
-                                                <span className="nombre">{lote.producto?.nombre || 'N/A'}</span>
+                                        <td className="id-col">#{lote.lote_id}</td>
+                                        <td>
+                                            <div>
+                                                <strong>{lote.producto?.nombre || 'N/A'}</strong>
                                                 {lote.producto?.categoria && (
-                                                    <span className="categoria">{lote.producto.categoria.nombre}</span>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                                                        {lote.producto.categoria.nombre}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td>{paquetes}</td>
-                                        <td>{unidadesSueltas}</td>
-                                        <td><strong>{totalUnidades}</strong></td>
-                                        <td>${typeof lote.costo_unitario === 'string' ? parseFloat(lote.costo_unitario).toFixed(2) : lote.costo_unitario.toFixed(2)}</td>
-                                        <td className="valor-total">${calcularValorInventario(lote)}</td>
-                                        <td>
-                                            <div className="fecha-info">
-                                                <Calendar size={14} />
-                                                {new Date(lote.fecha_ingreso).toLocaleDateString()}
-                                            </div>
+                                        <td className="text-center">{paquetes}</td>
+                                        <td className="text-center">{unidadesSueltas}</td>
+                                        <td className="text-center"><strong>{totalUnidades}</strong></td>
+                                        <td className="text-right">Bs {costoUnitario.toFixed(2)}</td>
+                                        <td className="text-right">
+                                            <strong style={{ color: 'var(--primary)' }}>
+                                                Bs {calcularValorInventario(lote)}
+                                            </strong>
                                         </td>
-                                        <td>
+                                        <td className="text-center">
+                                            <span className="badge badge-info">
+                                                {new Date(lote.fecha_ingreso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </td>
+                                        <td className="text-center">
                                             {lote.fecha_vencimiento ? (
-                                                <div className="fecha-info">
-                                                    <Calendar size={14} />
-                                                    {new Date(lote.fecha_vencimiento).toLocaleDateString()}
-                                                </div>
+                                                <span className="badge badge-info">
+                                                    {}
+                                                    {formatearFecha(lote.fecha_vencimiento)}
+                                                </span>
                                             ) : (
-                                                <span className="sin-fecha">N/A</span>
+                                                <span className="text-muted">-</span>
                                             )}
                                         </td>
-                                        <td>
-                                            <span className={`estado-badge ${estadoVenc.clase}`}>
-                                                {estadoVenc.estado !== 'sin-fecha' && <AlertCircle size={14} />}
+                                        <td className="text-center">
+                                            <span className={`badge ${
+                                                estadoVenc.estado === 'vencido' ? 'badge-danger' :
+                                                estadoVenc.estado === 'critico' ? 'badge-warning' :
+                                                estadoVenc.estado === 'proximo' ? 'badge-info' :
+                                                'badge-success'
+                                            }`}>
+                                                {estadoVenc.estado !== 'sin-fecha' && <AlertCircle size={12} style={{ marginRight: '0.25rem' }} />}
                                                 {estadoVenc.texto}
                                             </span>
                                         </td>
                                     </tr>
                                 );
-                            })
-                        )}
-                    </tbody>
-                </table>
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );

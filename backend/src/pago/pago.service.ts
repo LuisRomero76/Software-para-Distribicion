@@ -73,6 +73,52 @@ export class PagoService {
     return pago;
   }
 
+  async update(id: number, updatePagoDto: Partial<CreatePagoDto>): Promise<Pago> {
+    const pago = await this.pagoRepository.findOne({
+      where: { pago_id: id },
+      relations: ['venta'],
+    });
+
+    if (!pago) {
+      throw new NotFoundException(`Pago con ID ${id} no encontrado`);
+    }
+
+    const venta = pago.venta;
+    const montoAnterior = Number(pago.monto);
+    const montoNuevo = Number(updatePagoDto.monto);
+
+    // Si el monto cambió, actualizar los totales de la venta
+    if (montoAnterior !== montoNuevo) {
+      const diferencia = montoNuevo - montoAnterior;
+
+      // Verificar que el nuevo monto no exceda el total disponible
+      const montoAdeudadoActual = Number(venta.monto_adeudado) + diferencia;
+      if (montoAdeudadoActual < -0.01) {
+        throw new BadRequestException(
+          `El nuevo monto del pago excede el total de la venta. Máximo permitido: ${(montoAnterior + venta.monto_adeudado).toFixed(2)}`
+        );
+      }
+
+      // Actualizar los montos de la venta
+      venta.monto_pagado = Number(venta.monto_pagado) + diferencia;
+      venta.monto_adeudado = Number(venta.monto_adeudado) - diferencia;
+
+      // Actualizar el estado según el monto adeudado
+      if (venta.monto_adeudado <= 0.01) {
+        venta.estado = EstadoVenta.COMPLETADO;
+        venta.monto_adeudado = 0;
+      } else {
+        venta.estado = EstadoVenta.PENDIENTE;
+      }
+
+      await this.ventaRepository.save(venta);
+    }
+
+    // Actualizar el pago
+    Object.assign(pago, updatePagoDto);
+    return this.pagoRepository.save(pago);
+  }
+
   async remove(id: number): Promise<void> {
     const pago = await this.findOne(id);
     const venta = await this.ventaRepository.findOne({

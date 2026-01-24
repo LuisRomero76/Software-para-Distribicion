@@ -175,6 +175,7 @@ export class CompraService {
     const compra = await this.compraRepository.findOne({
       where: { compra_id: id },
       relations: ['proveedor', 'detalles', 'detalles.producto', 'detalles.lotes'],
+      cache: false,
     });
 
     if (!compra) {
@@ -194,7 +195,7 @@ export class CompraService {
       throw new NotFoundException(`Compra con ID ${id} no encontrada`);
     }
 
-    // Si se envían detalles, actualizar completamente
+    // Si se envían detalles, actualizar completamente usando SQL directo
     if (updateCompraDto.detalles && updateCompraDto.detalles.length > 0) {
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
@@ -251,17 +252,31 @@ export class CompraService {
             cantidadUnidades = cantidadNueva * (producto.cant_por_paquete || 1);
           }
 
-          // Actualizar el detalle
-          detalleExistente.product_id = Number(detalleDto.product_id);
-          detalleExistente.cantidad = cantidadNueva;
-          detalleExistente.precio_unitario = precioNuevo;
-          detalleExistente.subtotal = cantidadNueva * precioNuevo;
-          detalleExistente.modo = detalleDto.modo || 'unidad';
-          detalleExistente.fecha_vencimiento = detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null;
+          const datosActualizados = {
+            product_id: Number(detalleDto.product_id),
+            cantidad: cantidadNueva,
+            precio_unitario: precioNuevo,
+            subtotal: cantidadNueva * precioNuevo,
+            modo: String(detalleDto.modo || 'unidad'),
+            fecha_vencimiento: detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null,
+          };
 
-          // Guardar el detalle
-          await queryRunner.manager.save(detalleExistente);
-
+          // Ejecutar UPDATE SQL directo
+          const updateResult = await queryRunner.query(
+            `UPDATE detalle_compra 
+             SET product_id = ?, cantidad = ?, precio_unitario = ?, subtotal = ?, modo = ?, fecha_vencimiento = ?
+             WHERE detalle_compra_id = ?`,
+            [
+              datosActualizados.product_id,
+              datosActualizados.cantidad,
+              datosActualizados.precio_unitario,
+              datosActualizados.subtotal,
+              datosActualizados.modo,
+              datosActualizados.fecha_vencimiento,
+              detalleExistente.detalle_compra_id
+            ]
+          );
+          
           // Actualizar el lote
           const loteExistente = detalleExistente.lotes && detalleExistente.lotes.length > 0 ? detalleExistente.lotes[0] : null;
           
@@ -278,14 +293,20 @@ export class CompraService {
               );
             }
             
-            // Actualizar lote
-            loteExistente.cantidad_inicial = cantidadUnidades;
-            loteExistente.cantidad_actual = nuevaCantidadActual;
-            loteExistente.unidades_sueltas = nuevaCantidadActual % (producto.cant_por_paquete || 1);
-            loteExistente.costo_unitario = precioNuevo;
-            loteExistente.fecha_vencimiento = detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null;
-            
-            await queryRunner.manager.save(loteExistente);
+            // Actualizar lote con SQL directo
+            await queryRunner.query(
+              `UPDATE lote 
+               SET cantidad_inicial = ?, cantidad_actual = ?, unidades_sueltas = ?, costo_unitario = ?, fecha_vencimiento = ?
+               WHERE lote_id = ?`,
+              [
+                cantidadUnidades,
+                nuevaCantidadActual,
+                nuevaCantidadActual % (producto.cant_por_paquete || 1),
+                precioNuevo,
+                datosActualizados.fecha_vencimiento,
+                loteExistente.lote_id
+              ]
+            );
           }
         }
 
@@ -310,8 +331,8 @@ export class CompraService {
           }
 
           // Crear nuevo detalle
-          const nuevoDetalle = this.detalleCompraRepository.create({
-            compra_id: id,
+          const nuevoDetalle = queryRunner.manager.create(DetalleCompra, {
+            compra_id: Number(id),
             product_id: Number(detalleDto.product_id),
             cantidad: cantidadNueva,
             precio_unitario: precioNuevo,
@@ -320,8 +341,8 @@ export class CompraService {
             fecha_vencimiento: detalleDto.fecha_vencimiento ? new Date(detalleDto.fecha_vencimiento) : null,
           });
 
-          const detalleSaved = await queryRunner.manager.save(nuevoDetalle);
-
+          const detalleSaved = await queryRunner.manager.save(DetalleCompra, nuevoDetalle);
+          
           // Crear el lote
           const lote = this.loteRepository.create({
             product_id: Number(detalleDto.product_id),
@@ -347,25 +368,58 @@ export class CompraService {
         const montoPagado = updateCompraDto.monto_pagado !== undefined ? updateCompraDto.monto_pagado : compra.monto_pagado;
         const montoAdeudado = total - montoPagado;
 
-        // Actualizar campos básicos de la compra
-        if (updateCompraDto.hasOwnProperty('proveedor_id')) {
-          compra.proveedor_id = updateCompraDto.proveedor_id ?? null;
-        }
-        compra.tipo_compra = tipoCompraFinal;
-        compra.subtotal = subtotal;
-        compra.descuento = descuento;
-        compra.total = total;
-        compra.monto_pagado = montoPagado;
-        compra.monto_adeudado = tipoCompraFinal === TipoCompra.CREDITO ? montoAdeudado : 0;
-        compra.estado = tipoCompraFinal === TipoCompra.CONTADO ? EstadoCompra.COMPLETADO : (montoAdeudado <= 0 ? EstadoCompra.COMPLETADO : EstadoCompra.PENDIENTE);
-        compra.observaciones = updateCompraDto.observaciones !== undefined ? updateCompraDto.observaciones : compra.observaciones;
+        // Actualizar campos básicos de la compra con SQL directo
+        const proveedorIdFinal = updateCompraDto.hasOwnProperty('proveedor_id') 
+          ? (updateCompraDto.proveedor_id ?? null) 
+          : compra.proveedor_id;
+        const observacionesFinal = updateCompraDto.observaciones !== undefined 
+          ? updateCompraDto.observaciones 
+          : compra.observaciones;
 
-        const compraActualizada = await queryRunner.manager.save(compra);
+        await queryRunner.query(
+          `UPDATE compra 
+           SET tipo_compra = ?, subtotal = ?, descuento = ?, total = ?, 
+               monto_pagado = ?, monto_adeudado = ?, estado = ?, 
+               proveedor_id = ?, observaciones = ?
+           WHERE compra_id = ?`,
+          [
+            tipoCompraFinal,
+            subtotal,
+            descuento,
+            total,
+            montoPagado,
+            tipoCompraFinal === TipoCompra.CREDITO ? montoAdeudado : 0,
+            tipoCompraFinal === TipoCompra.CONTADO ? EstadoCompra.COMPLETADO : (montoAdeudado <= 0 ? EstadoCompra.COMPLETADO : EstadoCompra.PENDIENTE),
+            proveedorIdFinal,
+            observacionesFinal,
+            id
+          ]
+        );
 
         await queryRunner.commitTransaction();
+        
+        // Verificar en la BD directamente antes de retornar
+        if (detallesParaActualizar.length > 0) {
+          const verificacion = await queryRunner.query(
+            'SELECT detalle_compra_id, cantidad, modo, precio_unitario FROM detalle_compra WHERE detalle_compra_id = ?',
+            [detallesParaActualizar[0].detalle_compra_id]
+          );
+        }
 
-        // Retornar la compra actualizada con sus relaciones
-        return this.findOne(id);
+        await queryRunner.release();
+
+        // Retornar la compra actualizada con sus relaciones (sin caché)
+        const compraFinal = await this.compraRepository.findOne({
+          where: { compra_id: id },
+          relations: ['proveedor', 'detalles', 'detalles.producto', 'detalles.lotes'],
+          cache: false,
+        });
+        
+        if (!compraFinal) {
+          throw new NotFoundException(`Compra con ID ${id} no encontrada después de la actualización`);
+        }
+        
+        return compraFinal;
       } catch (error) {
         await queryRunner.rollbackTransaction();
         throw error;

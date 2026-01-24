@@ -79,7 +79,47 @@ export class PagoCompraService {
   }
 
   async update(id: number, updatePagoCompraDto: UpdatePagoCompraDto): Promise<PagoCompra> {
-    const pago = await this.findOne(id);
+    const pago = await this.pagoCompraRepository.findOne({
+      where: { pago_compra_id: id },
+      relations: ['compra'],
+    });
+
+    if (!pago) {
+      throw new NotFoundException(`Pago de compra con ID ${id} no encontrado`);
+    }
+
+    const compra = pago.compra;
+    const montoAnterior = Number(pago.monto);
+    const montoNuevo = Number(updatePagoCompraDto.monto);
+
+    // Si el monto cambió, actualizar los totales de la compra
+    if (montoAnterior !== montoNuevo) {
+      const diferencia = montoNuevo - montoAnterior;
+
+      // Verificar que el nuevo monto no exceda el total disponible
+      const montoAdeudadoActual = Number(compra.monto_adeudado) + diferencia;
+      if (montoAdeudadoActual < -0.01) {
+        throw new BadRequestException(
+          `El nuevo monto del pago excede el total de la compra. Máximo permitido: ${(montoAnterior + compra.monto_adeudado).toFixed(2)}`
+        );
+      }
+
+      // Actualizar los montos de la compra
+      compra.monto_pagado = Number(compra.monto_pagado) + diferencia;
+      compra.monto_adeudado = Number(compra.monto_adeudado) - diferencia;
+
+      // Actualizar el estado según el monto adeudado
+      if (compra.monto_adeudado <= 0.01) {
+        compra.estado = EstadoCompra.COMPLETADO;
+        compra.monto_adeudado = 0;
+      } else {
+        compra.estado = EstadoCompra.PENDIENTE;
+      }
+
+      await this.compraRepository.save(compra);
+    }
+
+    // Actualizar el pago
     Object.assign(pago, updatePagoCompraDto);
     return this.pagoCompraRepository.save(pago);
   }
