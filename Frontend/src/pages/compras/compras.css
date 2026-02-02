@@ -189,10 +189,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    color: white;   
 }
 
 .btn-icon-primary {
-    background-color: var(--primary, #0ea5e9);
+    background-color: #0ea5e9;
     color: white;
     padding: 0.5rem;
     border: none;
@@ -238,12 +239,8 @@
 }
 
 .btn-icon.btn-success {
-    background-color: var(--success, #22c55e);
+    background-color: #22c55e;
     color: white;
-}
-
-.btn-icon.btn-success:hover {
-    background-color: #16a34a;
 }
 
 /* Total */
@@ -253,11 +250,11 @@
 }
 
 .total-display {
-    background: linear-gradient(135deg, var(--primary, #0ea5e9), var(--primary-700, #0369a1));
+    background-color: #0ea4e983;
     border-radius: 12px;
     padding: 1.5rem 2rem;
     text-align: right;
-    min-width: 280px;
+    min-width: 350px;
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
@@ -265,13 +262,13 @@
     margin: 0 0 0.5rem 0;
     font-size: 1rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text);
 }
 
 .total-amount {
     font-size: 2.25rem;
     font-weight: 700;
-    color: white;
+    color: var(--text);
     margin: 0;
     letter-spacing: -0.5px;
 }
@@ -367,8 +364,7 @@
     color: white;
 }
 
-.btn-success {
-    background-color: var(--success, #22c55e);
+/* .btn-success {
     color: white;
     padding: 0.75rem 1.5rem;
     border: none;
@@ -380,15 +376,17 @@
     align-items: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
-}
+} */
 
 .btn-success:hover:not(:disabled) {
     background-color: #16a34a;
+    color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
 .btn-success:disabled {
+    color: white;
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -535,6 +533,7 @@
     }
     
     .btn-icon {
+        color: white;
         flex: 0 0 auto;
         align-self: flex-end;
     }
@@ -554,6 +553,7 @@
     }
     
     .btn-icon {
+        color: white;
         flex: 0 0 auto;
         align-self: flex-end;
     }
@@ -603,6 +603,7 @@
 
 .payment-info .value.success {
     color: var(--success, #22c55e);
+    background-color: #22c55e47;
 }
 
 .payment-info .value.warning {
@@ -774,6 +775,7 @@ input[type="checkbox"] {
 }
 
 .btn-icon {
+    color: white;
     display: inline-flex;
     align-items: center;
     justify-content: center;

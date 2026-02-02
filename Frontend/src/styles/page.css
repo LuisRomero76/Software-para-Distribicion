@@ -120,6 +120,7 @@
 
 .btn-success:hover:not(:disabled) {
     background-color: #218838;
+    color: white;
 }
 
 .btn-icon {

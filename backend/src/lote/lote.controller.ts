@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { LoteService } from './lote.service';
 import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
+import { AjusteInventarioDto } from './dto/ajuste-inventario.dto';
 import { AuthGuard } from 'src/auth/guard/auth.guard';
 
 @UseGuards(AuthGuard)
@@ -12,6 +13,11 @@ export class LoteController {
   @Post()
   create(@Body() createLoteDto: CreateLoteDto) {
     return this.loteService.create(createLoteDto);
+  }
+
+  @Post('ajuste-inventario')
+  ajusteInventario(@Body() ajusteInventarioDto: AjusteInventarioDto) {
+    return this.loteService.ajusteInventario(ajusteInventarioDto);
   }
 
   @Get()

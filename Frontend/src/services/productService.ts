@@ -4,10 +4,12 @@ export interface Producto {
     product_id: number;
     nombre: string;
     descripcion?: string;
-    precio: number; // precio de venta por unidad
+    precio_venta_sin_factura: number; // precio de venta por unidad sin factura
+    precio_venta_con_factura?: number; // precio de venta por unidad con factura
     precio_compra?: number; // precio de compra por unidad
     precio_compra_paquete?: number; // precio de compra por paquete
-    precio_venta_paquete?: number; // precio de venta por paquete
+    precio_venta_paquete_sin_factura?: number; // precio de venta por paquete sin factura
+    precio_venta_paquete_con_factura?: number; // precio de venta por paquete con factura
     cant_por_paquete?: number; // unidades por paquete
     cod_barra?: string;
     categoria_id: number;
@@ -22,28 +24,35 @@ export interface Producto {
 export interface CreateProductoDto {
     nombre: string;
     descripcion?: string;
-    precio: number;
+    precio_venta_sin_factura: number;
+    precio_venta_con_factura?: number;
     cod_barra?: string;
     categoria_id: number;
     sub_categoria_id: number;
     stock?: number;
     precio_compra?: number;
     precio_compra_paquete?: number;
-    precio_venta_paquete?: number;
+    precio_venta_paquete_sin_factura?: number;
+    precio_venta_paquete_con_factura?: number;
     cant_por_paquete?: number;
 }
 
 export interface UpdateProductoDto {
     nombre?: string;
     descripcion?: string;
-    precio?: number;
+    precio_venta_sin_factura?: number;
+    precio_venta_con_factura?: number;
     cod_barra?: string;
     categoria_id?: number;
     sub_categoria_id?: number;
     stock?: number;
     precio_compra?: number;
+    precio_compra_paquete?: number;
+    precio_venta_paquete_sin_factura?: number;
+    precio_venta_paquete_con_factura?: number;
     cant_por_paquete?: number;
 }
+
 
 // Producto Services
 export const getAllProducts = async (): Promise<Producto[]> => {

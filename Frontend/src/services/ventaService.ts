@@ -18,7 +18,11 @@ export interface Lote {
     producto?: {
         product_id: number;
         nombre: string;
-        precio: number;
+        precio_venta_sin_factura: number;
+        precio_venta_con_factura?: number;
+        precio_venta_paquete_sin_factura?: number;
+        precio_venta_paquete_con_factura?: number;
+        cant_por_paquete?: number;
     };
 }
 
@@ -45,6 +49,7 @@ export interface Venta {
     monto_pagado: number;
     monto_adeudado: number;
     observaciones?: string;
+    con_factura?: boolean;
     detalles?: DetalleVenta[];
     pagos?: Pago[];
     createdAt?: string;
@@ -68,6 +73,7 @@ export interface CreateVentaDto {
     monto_pagado?: number;
     descuento?: number;
     observaciones?: string;
+    con_factura?: boolean;
     detalles: Array<{
         lote_id: number;
         cantidad: number;

@@ -49,6 +49,9 @@ export class Venta {
   @Column({ type: 'text', nullable: true })
   observaciones: string;
 
+  @Column({ type: 'boolean', default: false })
+  con_factura: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

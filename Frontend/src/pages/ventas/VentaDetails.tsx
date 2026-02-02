@@ -16,8 +16,9 @@ import {
     type CreateDetalleVentaDto,
     type Cliente
 } from '../../services/ventaService';
-import type { Producto } from '../../services/productService';
+import { getAllProducts, type Producto } from '../../services/productService';
 import { useAuth } from '../../context/AuthContext';
+import Autocomplete from '../../components/Autocomplete';
 import '../compras/compras.css';
 import '../../styles/page.css';
 
@@ -89,6 +90,7 @@ export default function VentaDetailsNew() {
     const [editandoProductos, setEditandoProductos] = useState(false);
     const [detallesEditables, setDetallesEditables] = useState<DetalleEditable[]>([]);
     const [lotes, setLotes] = useState<Lote[]>([]);
+    const [productos, setProductos] = useState<Producto[]>([]);
     const [savingProductos, setSavingProductos] = useState(false);
 
     // Estados para modal de pagos
@@ -101,6 +103,11 @@ export default function VentaDetailsNew() {
     });
     const [savingPago, setSavingPago] = useState(false);
     const [pagoError, setPagoError] = useState<string | null>(null);
+    
+    // Estados para modal de eliminación de pago
+    const [showDeletePagoModal, setShowDeletePagoModal] = useState(false);
+    const [pagoToDelete, setPagoToDelete] = useState<Pago | null>(null);
+    const [deletingPago, setDeletingPago] = useState(false);
 
     useEffect(() => {
         document.title = 'Grupo Vicorsa | Detalles de Venta';
@@ -215,8 +222,12 @@ export default function VentaDetailsNew() {
         if (!venta) return;
         
         try {
-            const lotesData = await getAllLotes(auth?.token);
+            const [lotesData, productosData] = await Promise.all([
+                getAllLotes(auth?.token),
+                getAllProducts()
+            ]);
             setLotes(lotesData);
+            setProductos(productosData);
             
             const detalles = venta.detalles?.map(detalle => ({
                 detalle_venta_id: detalle.detalle_venta_id,
@@ -247,25 +258,42 @@ export default function VentaDetailsNew() {
     const handleModificarDetalle = (index: number, campo: string, valor: any) => {
         const nuevosDetalles = [...detallesEditables];
         
-        if (campo === 'lote_id') {
-            const lote = lotes.find(l => l.lote_id === parseInt(valor));
-            if (lote && lote.producto) {
-                const producto = lote.producto;
-                const cantPorPaquete = (producto as any).cant_por_paquete || 1;
+        if (campo === 'product_id') {
+            const producto = productos.find(p => p.product_id === valor);
+            if (producto) {
+                // Filtrar lotes de este producto con stock disponible
+                const lotesDelProducto = lotes.filter(
+                    l => l.product_id === valor && l.cantidad_actual > 0
+                );
                 
                 // Determinar precio según modo actual
-                let precio = producto.precio;
-                if (nuevosDetalles[index].modo === 'paquete') {
-                    precio = (producto as any).precio_venta_paquete || (producto.precio * cantPorPaquete);
+                const modoActual = nuevosDetalles[index].modo;
+                let precio = 0;
+                if (modoActual === 'paquete') {
+                    const precioVentaPaquete = parseFloat((producto as any).precio_venta_paquete_sin_factura) || 0;
+                    const precioBase = parseFloat(producto.precio_venta_sin_factura as any) || 0;
+                    const cantPorPaquete = (producto as any).cant_por_paquete || 1;
+                    precio = precioVentaPaquete || (precioBase * cantPorPaquete);
+                } else {
+                    precio = parseFloat(producto.precio_venta_sin_factura as any) || 0;
                 }
                 
                 nuevosDetalles[index] = {
                     ...nuevosDetalles[index],
-                    lote_id: lote.lote_id,
-                    lote: lote,
                     producto: producto as any,
                     precio_venta_real: precio,
                     cantidad: 1,
+                    lote_id: lotesDelProducto.length > 0 ? lotesDelProducto[0].lote_id : 0,
+                    lote: lotesDelProducto.length > 0 ? lotesDelProducto[0] : undefined,
+                };
+            }
+        } else if (campo === 'lote_id') {
+            const lote = lotes.find(l => l.lote_id === parseInt(valor));
+            if (lote) {
+                nuevosDetalles[index] = {
+                    ...nuevosDetalles[index],
+                    lote_id: lote.lote_id,
+                    lote: lote,
                 };
             }
         } else if (campo === 'modo') {
@@ -274,9 +302,11 @@ export default function VentaDetailsNew() {
             
             let nuevoPrecio = 0;
             if (valor === 'paquete') {
-                nuevoPrecio = (producto as any)?.precio_venta_paquete || ((producto?.precio || 0) * cantPorPaquete);
+                const precioVentaPaquete = parseFloat((producto as any)?.precio_venta_paquete_sin_factura) || 0;
+                const precioBase = parseFloat(producto?.precio_venta_sin_factura as any) || 0;
+                nuevoPrecio = precioVentaPaquete || (precioBase * cantPorPaquete);
             } else {
-                nuevoPrecio = producto?.precio || 0;
+                nuevoPrecio = parseFloat(producto?.precio_venta_sin_factura as any) || 0;
             }
             
             nuevosDetalles[index] = {
@@ -449,20 +479,33 @@ export default function VentaDetailsNew() {
         }
     };
 
-    const handleEliminarPago = async (pago: Pago) => {
-        const montoFormateado = parseFloat(pago.monto as any).toFixed(2);
-        if (!window.confirm(`¿Está seguro de eliminar el pago de Bs. ${montoFormateado}?\n\nEsta acción no se puede deshacer y el monto será devuelto al saldo adeudado.`)) {
-            return;
-        }
+    const handleAbrirModalEliminarPago = (pago: Pago) => {
+        setPagoToDelete(pago);
+        setShowDeletePagoModal(true);
+    };
+
+    const handleCerrarModalEliminarPago = () => {
+        setShowDeletePagoModal(false);
+        setPagoToDelete(null);
+    };
+
+    const handleConfirmarEliminarPago = async () => {
+        if (!pagoToDelete) return;
 
         try {
-            await deletePago(pago.pago_id, auth?.token);
+            setDeletingPago(true);
+            await deletePago(pagoToDelete.pago_id, auth?.token);
+            
+            // Recargar datos de la venta y pagos
             await loadVentaDetails();
-            alert('Pago eliminado exitosamente');
+            
+            handleCerrarModalEliminarPago();
         } catch (err: any) {
             const errorMsg = err?.response?.data?.message || err?.message || 'Error al eliminar el pago';
             alert(errorMsg);
             console.error('Error al eliminar pago:', err);
+        } finally {
+            setDeletingPago(false);
         }
     };
 
@@ -564,6 +607,21 @@ export default function VentaDetailsNew() {
                                     Pago pendiente
                                 </span>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="info-card">
+                        <div className="info-label">
+                            <FileText size={16} />
+                            Factura
+                        </div>
+                        <div className="info-value">
+                            <span className={`badge ${venta.con_factura ? 'badge-info' : 'badge-secondary'}`}>
+                                {venta.con_factura ? '✓ Con Factura' : 'Sin Factura'}
+                            </span>
+                        </div>
+                        <div className="info-secondary" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            {venta.con_factura ? 'Precios incluyen factura' : 'Precios sin factura'}
                         </div>
                     </div>
 
@@ -730,101 +788,194 @@ export default function VentaDetailsNew() {
                             <Plus size={18} /> Agregar Producto
                         </button>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className="products-list">
                             {detallesEditables.map((detalle, index) => {
                                 const lote = detalle.lote || lotes.find(l => l.lote_id === detalle.lote_id);
-                                const producto = lote?.producto;
+                                const producto = detalle.producto || lote?.producto;
                                 const cantPorPaquete = (producto as any)?.cant_por_paquete || 1;
                                 
+                                // Obtener el lote original de la venta (antes de cualquier modificación)
+                                const detalleOriginal = detalle.detalle_venta_id 
+                                    ? venta?.detalles?.find(d => d.detalle_venta_id === detalle.detalle_venta_id)
+                                    : null;
+                                const loteOriginalId = detalleOriginal?.lote_id;
+                                
+                                // Calcular stock disponible según modo
+                                // IMPORTANTE: Solo sumar la cantidad vendida si es el MISMO lote original
+                                let stockDisponible = 0;
+                                if (lote) {
+                                    // Solo sumar la cantidad original si estamos viendo el lote que se usó en la venta
+                                    const esLoteOriginal = lote.lote_id === loteOriginalId;
+                                    const cantidadOriginalVendida = esLoteOriginal && detalleOriginal 
+                                        ? detalleOriginal.cantidad 
+                                        : 0;
+                                    
+                                    if (detalle.modo === 'paquete') {
+                                        // En modo paquete: stock actual + paquetes vendidos (solo si es el lote original)
+                                        const stockEnUnidades = lote.cantidad_actual + (cantidadOriginalVendida * cantPorPaquete);
+                                        stockDisponible = Math.floor(stockEnUnidades / cantPorPaquete);
+                                    } else {
+                                        // En modo unidad: stock actual + unidades vendidas (solo si es el lote original)
+                                        stockDisponible = lote.cantidad_actual + cantidadOriginalVendida;
+                                    }
+                                }
+                                
+                                // Filtrar lotes del producto seleccionado
+                                // Siempre incluir el lote actual aunque no tenga stock
+                                const lotesDelProducto = producto 
+                                    ? lotes.filter(l => {
+                                        if (l.product_id !== producto.product_id) return false;
+                                        // Incluir si tiene stock O si es el lote actualmente seleccionado
+                                        return l.cantidad_actual > 0 || l.lote_id === detalle.lote_id;
+                                    })
+                                    : [];
+                                
                                 return (
-                                    <div key={index} className="product-edit-card">
-                                        <div className="product-edit-header">
-                                            <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text)' }}>
-                                                Producto #{index + 1}
-                                            </h4>
-                                            {detallesEditables.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    className="btn-icon btn-danger"
-                                                    onClick={() => handleEliminarProducto(index)}
-                                                    title="Eliminar producto"
-                                                    style={{ padding: '0.4rem' }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                    <div key={index} className="product-card">
+                                        {/* Producto */}
+                                        <div className="product-form-group">
+                                            <label>Producto *</label>
+                                            <Autocomplete
+                                                options={productos.map(prod => ({
+                                                    value: prod.product_id,
+                                                    label: prod.nombre,
+                                                    subtitle: prod.categoria ? `Categoría: ${prod.categoria.nombre}` : undefined
+                                                }))}
+                                                value={producto?.product_id || 0}
+                                                onChange={(value) => handleModificarDetalle(index, 'product_id', typeof value === 'number' ? value : parseInt(value as string))}
+                                                placeholder="Buscar producto..."
+                                                required
+                                            />
+                                        </div>
+
+                                        {/* Modo */}
+                                        <div className="product-form-group">
+                                            <label>Modo *</label>
+                                            <select
+                                                value={detalle.modo}
+                                                onChange={(e) => handleModificarDetalle(index, 'modo', e.target.value)}
+                                            >
+                                                <option value="unidad">Por unidad</option>
+                                                <option value="paquete">Por paquete</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Unidades por paquete (si modo = paquete) */}
+                                        {detalle.modo === 'paquete' && (
+                                            <div className="product-form-group">
+                                                <label>Unidades por paquete</label>
+                                                <input
+                                                    type="text"
+                                                    value={cantPorPaquete}
+                                                    className="input-disabled"
+                                                    disabled
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Lote */}
+                                        <div className="product-form-group">
+                                            <label>Lote *</label>
+                                            <select
+                                                value={detalle.lote_id}
+                                                onChange={(e) => handleModificarDetalle(index, 'lote_id', Number(e.target.value))}
+                                                disabled={lotesDelProducto.length === 0}
+                                                required
+                                            >
+                                                <option value={0}>-- Selecciona un lote --</option>
+                                                {lotesDelProducto.map(l => (
+                                                    <option key={l.lote_id} value={l.lote_id}>
+                                                        Lote #{l.lote_id} - Stock: {stockDisponible}
+                                                        {l.fecha_vencimiento && ` - Venc: ${new Date(l.fecha_vencimiento).toLocaleDateString('es-ES')}`}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {producto && lotesDelProducto.length === 0 && (
+                                                <small style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
+                                                    Sin stock disponible
+                                                </small>
                                             )}
                                         </div>
-                                        
-                                        <div className="product-edit-body">
-                                            <div className="form-group">
-                                                <label>Lote *</label>
-                                                <select
-                                                    className="form-input"
-                                                    value={detalle.lote_id}
-                                                    onChange={(e) => handleModificarDetalle(index, 'lote_id', e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="0">-- Seleccionar --</option>
-                                                    {lotes.map(l => (
-                                                        <option key={l.lote_id} value={l.lote_id}>
-                                                            #{l.lote_id} - {l.producto?.nombre} (Stock: {l.cantidad_actual})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            
-                                            <div className="form-group">
-                                                <label>Modo de Venta</label>
-                                                <select
-                                                    className="form-input"
-                                                    value={detalle.modo}
-                                                    onChange={(e) => handleModificarDetalle(index, 'modo', e.target.value)}
-                                                >
-                                                    <option value="unidad">Por Unidad</option>
-                                                    <option value="paquete">Por Paquete ({cantPorPaquete} u/paq)</option>
-                                                </select>
-                                            </div>
-                                            
-                                            <div className="form-group">
-                                                <label>
-                                                    {detalle.modo === 'paquete' ? 'Cantidad de Paquetes *' : 'Cantidad de Unidades *'}
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    value={detalle.cantidad}
-                                                    onChange={(e) => handleModificarDetalle(index, 'cantidad', e.target.value)}
-                                                    min="1"
-                                                    max={lote?.cantidad_actual || 0}
-                                                    required
-                                                />
-                                                {detalle.modo === 'paquete' && (
-                                                    <small className="form-help-text">
-                                                        = {detalle.cantidad * cantPorPaquete} unidades totales
-                                                    </small>
-                                                )}
-                                            </div>
-                                            
-                                            <div className="form-group">
-                                                <label>Precio {detalle.modo === 'paquete' ? 'por Paquete' : 'Unitario'}</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-input input-readonly"
-                                                    value={`Bs ${detalle.precio_venta_real.toFixed(2)}`}
-                                                    disabled
-                                                />
-                                            </div>
-                                            
-                                            <div className="form-group">
-                                                <label>Subtotal</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-input input-readonly"
-                                                    value={`Bs ${(detalle.cantidad * detalle.precio_venta_real).toFixed(2)}`}
-                                                    disabled
-                                                />
+
+                                        {/* Stock Disponible */}
+                                        <div className="product-form-group">
+                                            <label>Stock Disponible</label>
+                                            <div style={{ 
+                                                padding: '0.65rem 0.85rem',
+                                                background: 'var(--bg-2)',
+                                                borderRadius: '6px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                color: 'var(--text)'
+                                            }}>
+                                                <Package size={16} />
+                                                <strong>{stockDisponible} {detalle.modo === 'paquete' ? 'paquetes' : 'unidades'}</strong>
                                             </div>
                                         </div>
+
+                                        {/* Cantidad (según modo) */}
+                                        <div className="product-form-group">
+                                            <label>
+                                                {detalle.modo === 'paquete' ? 'Paquetes *' : 'Cantidad *'}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={stockDisponible}
+                                                value={detalle.cantidad}
+                                                onChange={(e) => handleModificarDetalle(index, 'cantidad', e.target.value)}
+                                                disabled={stockDisponible === 0}
+                                                style={{
+                                                    borderColor: detalle.cantidad > stockDisponible ? 'var(--danger, #ef4444)' : undefined
+                                                }}
+                                                required
+                                            />
+                                            {detalle.cantidad > stockDisponible && (
+                                                <small style={{ color: 'var(--danger, #ef4444)', fontSize: '0.85rem', display: 'block', marginTop: '0.25rem' }}>
+                                                    ⚠️ Stock insuficiente. Disponible: {stockDisponible} {detalle.modo === 'paquete' ? 'paquetes' : 'unidades'}
+                                                </small>
+                                            )}
+                                            {detalle.modo === 'paquete' && (
+                                                <small className="form-help-text">
+                                                    = {detalle.cantidad * cantPorPaquete} unidades totales
+                                                </small>
+                                            )}
+                                        </div>
+
+                                        {/* Precio Unitario/por Paquete */}
+                                        <div className="product-form-group">
+                                            <label>Precio {detalle.modo === 'paquete' ? 'por Paquete' : 'Unitario'} (Bs.) *</label>
+                                            <input
+                                                type="text"
+                                                value={`Bs ${detalle.precio_venta_real.toFixed(2)}`}
+                                                className="input-disabled"
+                                                disabled
+                                            />
+                                        </div>
+
+                                        {/* Subtotal */}
+                                        <div className="product-form-group">
+                                            <label>Subtotal</label>
+                                            <input
+                                                type="text"
+                                                value={`Bs ${(detalle.cantidad * detalle.precio_venta_real).toFixed(2)}`}
+                                                className="input-disabled"
+                                                disabled
+                                            />
+                                        </div>
+
+                                        {/* Botón eliminar */}
+                                        {detallesEditables.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="btn-icon btn-danger"
+                                                onClick={() => handleEliminarProducto(index)}
+                                                title="Eliminar producto"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -898,7 +1049,7 @@ export default function VentaDetailsNew() {
                                                 </button>
                                                 <button
                                                     className="btn-icon btn-icon-danger"
-                                                    onClick={() => handleEliminarPago(pago)}
+                                                    onClick={() => handleAbrirModalEliminarPago(pago)}
                                                     title="Eliminar pago"
                                                 >
                                                     <Trash2 size={16} />
@@ -954,18 +1105,19 @@ export default function VentaDetailsNew() {
                                 
                                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                                     <label>Cliente</label>
-                                    <select
-                                        className="form-input"
-                                        value={clienteId || ''}
-                                        onChange={(e) => setClienteId(e.target.value ? parseInt(e.target.value) : null)}
-                                    >
-                                        <option value="">-- Sin cliente --</option>
-                                        {clientes.map(c => (
-                                            <option key={c.cliente_id} value={c.cliente_id}>
-                                                {c.nombre} {c.nit_ci ? `- ${c.nit_ci}` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Autocomplete
+                                        options={[
+                                            { value: 0, label: '-- Sin cliente --' },
+                                            ...clientes.map(cliente => ({
+                                                value: cliente.cliente_id,
+                                                label: cliente.nombre,
+                                                subtitle: cliente.nit_ci ? `NIT/CI: ${cliente.nit_ci}` : undefined
+                                            }))
+                                        ]}
+                                        value={clienteId ?? 0}
+                                        onChange={(value) => setClienteId(value === 0 ? null : (typeof value === 'number' ? value : parseInt(value as string)))}
+                                        placeholder="Buscar cliente..."
+                                    />
                                 </div>
                                 
                                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
@@ -1255,6 +1407,97 @@ export default function VentaDetailsNew() {
                                 disabled={savingPago}
                             >
                                 {savingPago ? 'Guardando...' : (editandoPago ? 'Actualizar Pago' : 'Registrar Pago')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmación para eliminar pago */}
+            {showDeletePagoModal && pagoToDelete && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3>Confirmar Eliminación</h3>
+                            <button className="modal-close" onClick={handleCerrarModalEliminarPago} disabled={deletingPago}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'flex-start', 
+                                gap: '1rem',
+                                padding: '1rem',
+                                background: 'var(--bg-2)',
+                                borderRadius: '8px',
+                                border: '1px solid var(--warning)'
+                            }}>
+                                <div style={{ color: 'var(--warning)', marginTop: '0.2rem' }}>
+                                    <Trash2 size={24} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+                                        ¿Está seguro de eliminar este pago?
+                                    </h4>
+                                    <p style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)' }}>
+                                        Esta acción no se puede deshacer.
+                                    </p>
+                                    <div style={{ 
+                                        background: 'var(--bg)', 
+                                        padding: '0.75rem', 
+                                        borderRadius: '6px',
+                                        marginTop: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Monto del pago:</span>
+                                            <strong style={{ color: 'var(--danger)' }}>
+                                                Bs {parseFloat(pagoToDelete.monto as any).toFixed(2)}
+                                            </strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Fecha:</span>
+                                            <span>{formatearFecha(pagoToDelete.fecha_pago)}</span>
+                                        </div>
+                                        {pagoToDelete.observaciones && (
+                                            <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                                    Observaciones: {pagoToDelete.observaciones}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p style={{ 
+                                        margin: '1rem 0 0 0', 
+                                        fontSize: '0.9rem', 
+                                        color: 'var(--warning)',
+                                        fontWeight: '500'
+                                    }}>
+                                        ⚠️ El monto será devuelto al saldo adeudado de la venta.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            <button 
+                                type="button"
+                                className="btn-secondary" 
+                                onClick={handleCerrarModalEliminarPago}
+                                disabled={deletingPago}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button"
+                                className="btn-danger"
+                                onClick={handleConfirmarEliminarPago}
+                                disabled={deletingPago}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <Trash2 size={18} />
+                                {deletingPago ? 'Eliminando...' : 'Eliminar Pago'}
                             </button>
                         </div>
                     </div>

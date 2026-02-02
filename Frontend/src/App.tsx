@@ -31,6 +31,7 @@ import ReporteIngresosEgresos from './pages/finanzas/ReporteIngresosEgresos'
 import GestionCategoriasFinanzas from './pages/finanzas/GestionCategoriasFinanzas'
 import VerIngresosEgresos from './pages/finanzas/VerIngresosEgresos'
 import { ReporteLotesDisponibles } from './pages/inventario'
+import AjusteInventario from './pages/inventario/AjusteInventario'
 
 function App() {
   return (
@@ -89,6 +90,7 @@ function App() {
               <Route path="finanzas/categorias" element={<GestionCategoriasFinanzas />} />
               <Route path="finanzas/ver-ingresos-egresos" element={<VerIngresosEgresos />} />
               <Route path="inventario/lotes-disponibles" element={<ReporteLotesDisponibles />} />
+              <Route path="inventario/ajuste-inventario" element={<AjusteInventario />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

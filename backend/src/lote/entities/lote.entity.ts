@@ -27,7 +27,7 @@ export class Lote {
   fecha_vencimiento: Date | null;
 
   @Column({ nullable: true })
-  detalle_compra_id: number;
+  detalle_compra_id: number | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   fecha_ingreso: Date;

@@ -12,8 +12,12 @@ export interface Proveedor {
 export interface Producto {
     product_id: number;
     nombre: string;
-    precio: number; // venta
-    precio_compra?: number; // compra
+    precio_venta_sin_factura: number;
+    precio_venta_con_factura?: number;
+    precio_venta_paquete_sin_factura?: number;
+    precio_venta_paquete_con_factura?: number;
+    precio_compra?: number;
+    precio_compra_paquete?: number;
     cant_por_paquete?: number;
     categoria_id: number;
     sub_categoria_id: number;

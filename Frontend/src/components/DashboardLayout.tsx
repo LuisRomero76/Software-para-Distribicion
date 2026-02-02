@@ -233,6 +233,9 @@ export default function DashboardLayout() {
                                 <Link to="/inventario/lotes-disponibles" className={location.pathname === '/inventario/lotes-disponibles' ? 'active' : ''}>
                                     <Package size={16} /> Reporte de Lotes Disponibles
                                 </Link>
+                                <Link to="/inventario/ajuste-inventario" className={location.pathname === '/inventario/ajuste-inventario' ? 'active' : ''}>
+                                    <UserPlus size={16} /> Ajuste de Inventario
+                                </Link>
                             </div>
                         )}
 

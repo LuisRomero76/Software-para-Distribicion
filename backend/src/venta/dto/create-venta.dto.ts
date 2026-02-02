@@ -1,4 +1,4 @@
-import { IsInt, IsDate, IsOptional, IsString, IsEnum, IsArray, ValidateNested, ArrayMinSize, Min } from 'class-validator';
+import { IsInt, IsDate, IsOptional, IsString, IsEnum, IsArray, ValidateNested, ArrayMinSize, Min, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TipoVenta } from '../entities/venta.entity';
 import { CreateDetalleVentaDto } from 'src/detalle_venta/dto/create-detalle_venta.dto';
@@ -28,6 +28,10 @@ export class CreateVentaDto {
   @IsOptional()
   @IsString()
   observaciones?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  con_factura?: boolean;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'La venta debe tener al menos un detalle' })

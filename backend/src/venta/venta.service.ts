@@ -74,12 +74,22 @@ export class VentaService {
           );
         }
 
-        // Usar el precio según el modo de venta
+        // Usar el precio según el modo de venta y si es con factura o sin factura
         let precioVenta: number;
+        const conFactura = createVentaDto.con_factura || false;
+        
         if (detalleDto.modo === 'paquete') {
-          precioVenta = lote.producto.precio_venta_paquete || lote.producto.precio;
+          if (conFactura) {
+            precioVenta = lote.producto.precio_venta_paquete_con_factura || lote.producto.precio_venta_paquete_sin_factura || lote.producto.precio_venta_sin_factura;
+          } else {
+            precioVenta = lote.producto.precio_venta_paquete_sin_factura || lote.producto.precio_venta_sin_factura;
+          }
         } else {
-          precioVenta = lote.producto.precio;
+          if (conFactura) {
+            precioVenta = lote.producto.precio_venta_con_factura || lote.producto.precio_venta_sin_factura;
+          } else {
+            precioVenta = lote.producto.precio_venta_sin_factura;
+          }
         }
         
         subtotal += precioVenta * detalleDto.cantidad;
@@ -105,6 +115,7 @@ export class VentaService {
         monto_adeudado: createVentaDto.tipo_venta === TipoVenta.CREDITO ? montoAdeudado : 0,
         estado: estado,
         observaciones: createVentaDto.observaciones,
+        con_factura: createVentaDto.con_factura || false,
       });
 
       const ventaSaved = await queryRunner.manager.save(venta);
@@ -127,12 +138,22 @@ export class VentaService {
           cantidadEnUnidades = detalleDto.cantidad * unidadesPorPaquete;
         }
 
-        // Usar el precio según el modo de venta
+        // Usar el precio según el modo de venta y si es con factura
         let precioVenta: number;
+        const conFactura = createVentaDto.con_factura || false;
+        
         if (detalleDto.modo === 'paquete') {
-          precioVenta = lote.producto.precio_venta_paquete || lote.producto.precio;
+          if (conFactura) {
+            precioVenta = lote.producto.precio_venta_paquete_con_factura || lote.producto.precio_venta_paquete_sin_factura || lote.producto.precio_venta_sin_factura;
+          } else {
+            precioVenta = lote.producto.precio_venta_paquete_sin_factura || lote.producto.precio_venta_sin_factura;
+          }
         } else {
-          precioVenta = lote.producto.precio;
+          if (conFactura) {
+            precioVenta = lote.producto.precio_venta_con_factura || lote.producto.precio_venta_sin_factura;
+          } else {
+            precioVenta = lote.producto.precio_venta_sin_factura;
+          }
         }
         
         const subtotal = precioVenta * detalleDto.cantidad;
@@ -155,12 +176,22 @@ export class VentaService {
       }
 
       // Crear ingreso automáticamente
-      await this.ingresoService.create({
-        tipo: TipoIngreso.VENTA,
-        descripcion: `Venta #${ventaSaved.venta_id}`,
-        monto: totalVenta,
-        referencia_id: ventaSaved.venta_id,
-      });
+      // Si es CONTADO: registrar el total
+      // Si es CREDITO: registrar solo el monto pagado inicial (si existe)
+      const montoIngreso = createVentaDto.tipo_venta === TipoVenta.CONTADO 
+        ? totalVenta 
+        : (createVentaDto.monto_pagado || 0);
+      
+      if (montoIngreso > 0) {
+        await this.ingresoService.create({
+          tipo: TipoIngreso.VENTA,
+          descripcion: createVentaDto.tipo_venta === TipoVenta.CONTADO
+            ? `Venta #${ventaSaved.venta_id} (Contado)`
+            : `Venta #${ventaSaved.venta_id} (Pago inicial)`,
+          monto: montoIngreso,
+          referencia_id: ventaSaved.venta_id,
+        });
+      }
 
       await queryRunner.commitTransaction();
 
@@ -179,7 +210,7 @@ export class VentaService {
   async findAll(): Promise<Venta[]> {
     return this.ventaRepository.find({
       relations: ['cliente', 'detalles', 'detalles.lote', 'detalles.lote.producto'],
-      order: { fecha_venta: 'DESC' },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -268,9 +299,9 @@ export class VentaService {
           // Usar el precio según el modo de venta
           let precioVenta: number;
           if (detalleDto.modo === 'paquete') {
-            precioVenta = lote.producto.precio_venta_paquete || lote.producto.precio;
+            precioVenta = lote.producto.precio_venta_paquete_sin_factura || lote.producto.precio_venta_sin_factura;
           } else {
-            precioVenta = lote.producto.precio;
+            precioVenta = lote.producto.precio_venta_sin_factura;
           }
 
           const subtotalDetalle = precioVenta * detalleDto.cantidad;
@@ -327,14 +358,21 @@ export class VentaService {
       // Solo actualizar datos básicos (sin modificar productos)
       let recalcular = false;
       
+      // Si se cambia de CREDITO a CONTADO, eliminar todos los pagos asociados
+      if (updateVentaDto.tipo_venta === TipoVenta.CONTADO && venta.tipo_venta === TipoVenta.CREDITO) {
+        await this.dataSource.query('DELETE FROM pago WHERE venta_id = ?', [id]);
+        venta.monto_pagado = venta.total; // Al contado se paga todo
+        recalcular = true;
+      }
+      
       // Actualizar descuento si se envía
       if (updateVentaDto.hasOwnProperty('descuento')) {
         venta.descuento = updateVentaDto.descuento || 0;
         recalcular = true;
       }
       
-      // Actualizar monto_pagado si se envía
-      if (updateVentaDto.hasOwnProperty('monto_pagado')) {
+      // Actualizar monto_pagado si se envía (solo si no cambió a CONTADO)
+      if (updateVentaDto.hasOwnProperty('monto_pagado') && updateVentaDto.tipo_venta !== TipoVenta.CONTADO) {
         venta.monto_pagado = updateVentaDto.monto_pagado || 0;
         recalcular = true;
       }
@@ -389,10 +427,18 @@ export class VentaService {
       for (const detalle of venta.detalles) {
         const lote = await queryRunner.manager.findOne('lote', {
           where: { lote_id: detalle.lote_id },
+          relations: ['producto'],
         }) as any;
 
         if (lote) {
-          lote.cantidad_actual += detalle.cantidad;
+          // Convertir cantidad a unidades si es modo paquete
+          let cantidadEnUnidades = detalle.cantidad;
+          if (detalle.modo === 'paquete') {
+            const unidadesPorPaquete = lote.producto.cant_por_paquete || 1;
+            cantidadEnUnidades = detalle.cantidad * unidadesPorPaquete;
+          }
+          
+          lote.cantidad_actual += cantidadEnUnidades;
           await queryRunner.manager.save('lote', lote);
         }
       }

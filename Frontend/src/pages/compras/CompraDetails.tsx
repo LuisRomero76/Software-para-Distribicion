@@ -87,6 +87,11 @@ export default function CompraDetails() {
     });
     const [savingPago, setSavingPago] = useState(false);
     const [pagoError, setPagoError] = useState<string | null>(null);
+    
+    // Estados para modal de eliminación de pago
+    const [showDeletePagoModal, setShowDeletePagoModal] = useState(false);
+    const [pagoToDelete, setPagoToDelete] = useState<PagoCompra | null>(null);
+    const [deletingPago, setDeletingPago] = useState(false);
 
     useEffect(() => {
         document.title = 'Grupo Vicorsa | Detalles de Compra';
@@ -491,20 +496,33 @@ export default function CompraDetails() {
         }
     };
 
-    const handleEliminarPago = async (pago: PagoCompra) => {
-        const montoFormateado = parseFloat(pago.monto as any).toFixed(2);
-        if (!window.confirm(`¿Está seguro de eliminar el pago de Bs. ${montoFormateado}?\n\nEsta acción no se puede deshacer y el monto será devuelto al saldo adeudado.`)) {
-            return;
-        }
+    const handleAbrirModalEliminarPago = (pago: PagoCompra) => {
+        setPagoToDelete(pago);
+        setShowDeletePagoModal(true);
+    };
+
+    const handleCerrarModalEliminarPago = () => {
+        setShowDeletePagoModal(false);
+        setPagoToDelete(null);
+    };
+
+    const handleConfirmarEliminarPago = async () => {
+        if (!pagoToDelete) return;
 
         try {
-            await deletePagoCompra(pago.pago_compra_id);
+            setDeletingPago(true);
+            await deletePagoCompra(pagoToDelete.pago_compra_id);
+            
+            // Recargar datos de la compra y pagos
             await loadCompraDetails();
-            alert('Pago eliminado exitosamente');
+            
+            handleCerrarModalEliminarPago();
         } catch (err: any) {
             const errorMsg = err?.response?.data?.message || err?.message || 'Error al eliminar el pago';
             alert(errorMsg);
             console.error('Error al eliminar pago:', err);
+        } finally {
+            setDeletingPago(false);
         }
     };
 
@@ -964,7 +982,7 @@ export default function CompraDetails() {
                                                 </button>
                                                 <button
                                                     className="btn-icon btn-icon-danger"
-                                                    onClick={() => handleEliminarPago(pago)}
+                                                    onClick={() => handleAbrirModalEliminarPago(pago)}
                                                     title="Eliminar pago"
                                                 >
                                                     <Trash2 size={16} />
@@ -1321,6 +1339,97 @@ export default function CompraDetails() {
                                 disabled={savingPago}
                             >
                                 {savingPago ? 'Guardando...' : (editandoPago ? 'Actualizar Pago' : 'Registrar Pago')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmación para eliminar pago */}
+            {showDeletePagoModal && pagoToDelete && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3>Confirmar Eliminación</h3>
+                            <button className="modal-close" onClick={handleCerrarModalEliminarPago} disabled={deletingPago}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body" style={{ padding: '1.5rem' }}>
+                            <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'flex-start', 
+                                gap: '1rem',
+                                padding: '1rem',
+                                background: 'var(--bg-2)',
+                                borderRadius: '8px',
+                                border: '1px solid var(--warning)'
+                            }}>
+                                <div style={{ color: 'var(--warning)', marginTop: '0.2rem' }}>
+                                    <Trash2 size={24} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+                                        ¿Está seguro de eliminar este pago?
+                                    </h4>
+                                    <p style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)' }}>
+                                        Esta acción no se puede deshacer.
+                                    </p>
+                                    <div style={{ 
+                                        background: 'var(--bg)', 
+                                        padding: '0.75rem', 
+                                        borderRadius: '6px',
+                                        marginTop: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Monto del pago:</span>
+                                            <strong style={{ color: 'var(--danger)' }}>
+                                                Bs {parseFloat(pagoToDelete.monto as any).toFixed(2)}
+                                            </strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Fecha:</span>
+                                            <span>{formatearFecha(pagoToDelete.fecha_pago)}</span>
+                                        </div>
+                                        {pagoToDelete.observaciones && (
+                                            <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                                    Observaciones: {pagoToDelete.observaciones}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p style={{ 
+                                        margin: '1rem 0 0 0', 
+                                        fontSize: '0.9rem', 
+                                        color: 'var(--warning)',
+                                        fontWeight: '500'
+                                    }}>
+                                        ⚠️ El monto será devuelto al saldo adeudado de la compra.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            <button 
+                                type="button"
+                                className="btn-secondary" 
+                                onClick={handleCerrarModalEliminarPago}
+                                disabled={deletingPago}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button"
+                                className="btn-danger"
+                                onClick={handleConfirmarEliminarPago}
+                                disabled={deletingPago}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <Trash2 size={18} />
+                                {deletingPago ? 'Eliminando...' : 'Eliminar Pago'}
                             </button>
                         </div>
                     </div>

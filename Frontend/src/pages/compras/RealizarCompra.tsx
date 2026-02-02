@@ -8,17 +8,12 @@ import { getAllProveedores, createProveedor, type Proveedor } from '../../servic
 import { getAllProducts, type Producto } from '../../services/productService';
 import Autocomplete from '../../components/Autocomplete';
 
-// Extend Producto type to include package pricing
-interface ProductoExtendido extends Producto {
-    precio_compra_paquete?: number;
-}
-
 interface CompraProducto extends DetalleCompra {
     id: string; // ID temporal para el formulario
     modo: 'unidad' | 'paquete';
     paquetes?: number; // solo si modo = paquete
     fecha_vencimiento?: string;
-    producto?: ProductoExtendido; // Override del tipo heredado
+    producto?: Producto; // Override del tipo heredado
 }
 
 export default function RealizarCompra() {
@@ -52,7 +47,7 @@ export default function RealizarCompra() {
     
     // Productos y proveedores
     const [proveedores, setProveedores] = useState<Proveedor[]>([]);
-    const [productos, setProductos] = useState<ProductoExtendido[]>([]);
+    const [productos, setProductos] = useState<Producto[]>([]);
     const [productosCompra, setProductosCompra] = useState<CompraProducto[]>([
         {
             id: '1',
@@ -77,7 +72,7 @@ export default function RealizarCompra() {
                 getAllProducts(),
             ]);
             setProveedores(prov);
-            setProductos(prod as ProductoExtendido[]);
+            setProductos(prod);
         } catch (err) {
             setError('Error al cargar datos');
             console.error(err);
@@ -672,7 +667,7 @@ export default function RealizarCompra() {
                                 </div>
                             )}
 
-                            <div style={{ height: '1px', background: 'var(--border)', margin: '0.5rem 0' }} />
+                            <div style={{ height: '1px', background: 'var(--text)', margin: '0.5rem 0' }} />
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0, fontSize: '1.3rem' }}>Total de la Compra</h3>

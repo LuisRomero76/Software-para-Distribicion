@@ -17,6 +17,8 @@ export interface Lote {
         precio: number;
         cod_barra?: string;
         cant_por_paquete?: number;
+        precio_compra?: number;
+        precio_compra_paquete?: number;
         categoria?: {
             categoria_id: number;
             nombre: string;
@@ -46,4 +48,21 @@ export const getLotesByProduct = async (productId: number): Promise<Lote[]> => {
 // Obtener un lote por ID
 export const getLoteById = async (id: number): Promise<Lote> => {
     return request<Lote>(`/lote/${id}`, { method: 'GET' });
+};
+
+// Interfaz para ajuste de inventario
+export interface AjusteInventario {
+    producto_id: number;
+    cantidad: number;
+    modo: 'unidad' | 'paquete';
+    fecha_vencimiento: string;
+    observaciones?: string;
+}
+
+// Crear ajuste de inventario (inventario inicial)
+export const crearAjusteInventario = async (ajuste: AjusteInventario): Promise<Lote> => {
+    return request<Lote>('/lote/ajuste-inventario', {
+        method: 'POST',
+        body: JSON.stringify(ajuste),
+    });
 };

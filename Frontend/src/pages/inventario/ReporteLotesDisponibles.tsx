@@ -69,11 +69,48 @@ export default function ReporteLotesDisponibles() {
         return cumpleNombre && cumpleVencimiento;
     });
 
+    const calcularValorPaquetes = (lote: Lote) => {
+        const cantPorPaquete = lote.producto?.cant_por_paquete || 1;
+        const paquetes = Math.floor(lote.cantidad_actual / cantPorPaquete);
+        
+        // Obtener precio de compra por paquete del producto
+        const precioCompraPaquete = lote.producto?.precio_compra_paquete;
+        
+        if (precioCompraPaquete && precioCompraPaquete > 0) {
+            const precioPaquete = typeof precioCompraPaquete === 'string' ? parseFloat(precioCompraPaquete) : precioCompraPaquete;
+            return paquetes * precioPaquete;
+        }
+        
+        // Si no hay precio de paquete, usar precio de compra unitario
+        const precioCompraUnitario = lote.producto?.precio_compra;
+        if (precioCompraUnitario && precioCompraUnitario > 0) {
+            const precioUnitario = typeof precioCompraUnitario === 'string' ? parseFloat(precioCompraUnitario) : precioCompraUnitario;
+            const unidadesEnPaquetes = paquetes * cantPorPaquete;
+            return unidadesEnPaquetes * precioUnitario;
+        }
+        
+        return 0;
+    };
+
+    const calcularValorUnidadesSueltas = (lote: Lote) => {
+        const cantPorPaquete = lote.producto?.cant_por_paquete || 1;
+        const unidadesSueltas = lote.cantidad_actual % cantPorPaquete;
+        
+        // Usar precio de compra unitario del producto
+        const precioCompraUnitario = lote.producto?.precio_compra;
+        
+        if (precioCompraUnitario && precioCompraUnitario > 0) {
+            const precioUnitario = typeof precioCompraUnitario === 'string' ? parseFloat(precioCompraUnitario) : precioCompraUnitario;
+            return unidadesSueltas * precioUnitario;
+        }
+        
+        return 0;
+    };
+
     const calcularValorInventario = (lote: Lote) => {
-        // cantidad_actual ya está en unidades totales
-        const totalUnidades = lote.cantidad_actual;
-        const costoUnitario = typeof lote.costo_unitario === 'string' ? parseFloat(lote.costo_unitario) : lote.costo_unitario;
-        return (totalUnidades * costoUnitario).toFixed(2);
+        const valorPaquetes = calcularValorPaquetes(lote);
+        const valorSueltas = calcularValorUnidadesSueltas(lote);
+        return (valorPaquetes + valorSueltas).toFixed(2);
     };
 
     const calcularTotalInventario = () => {
@@ -113,7 +150,7 @@ export default function ReporteLotesDisponibles() {
         
         // Encabezados
         html += '<thead><tr>';
-        const headers = ['ID Lote', 'Producto', 'Categoría', 'Paquetes', 'Unidades Sueltas', 'Total Unidades', 'Costo Unitario', 'Valor Total', 'Fecha Ingreso', 'Fecha Vencimiento', 'Estado'];
+        const headers = ['ID Lote', 'Producto', 'Categoría', 'Paquetes', 'Unidades Sueltas', 'Total Unidades', 'Costo Unitario', 'Valor Paquetes', 'Valor Unidades', 'Valor Total', 'Fecha Ingreso', 'Fecha Vencimiento', 'Estado'];
         headers.forEach(header => {
             html += `<th>${header}</th>`;
         });
@@ -138,6 +175,8 @@ export default function ReporteLotesDisponibles() {
             html += `<td>${unidadesSueltas}</td>`;
             html += `<td>${totalUnidades}</td>`;
             html += `<td>${costoUnitario.toFixed(2)}</td>`;
+            html += `<td>${calcularValorPaquetes(lote).toFixed(2)}</td>`;
+            html += `<td>${calcularValorUnidadesSueltas(lote).toFixed(2)}</td>`;
             html += `<td>${calcularValorInventario(lote)}</td>`;
             html += `<td>${formatearFecha(lote.fecha_ingreso)}</td>`;
             html += `<td>${lote.fecha_vencimiento ? formatearFecha(lote.fecha_vencimiento) : 'N/A'}</td>`;
@@ -277,6 +316,8 @@ export default function ReporteLotesDisponibles() {
                                 <th className="text-center">Unidades Sueltas</th>
                                 <th className="text-center">Total Unidades</th>
                                 <th className="text-right">Costo Unit.</th>
+                                <th className="text-right">Valor Paquetes</th>
+                                <th className="text-right">Valor Unidades</th>
                                 <th className="text-right">Valor Total</th>
                                 <th className="text-center">Fecha Ingreso</th>
                                 <th className="text-center">Fecha Vencimiento</th>
@@ -309,6 +350,16 @@ export default function ReporteLotesDisponibles() {
                                         <td className="text-center">{unidadesSueltas}</td>
                                         <td className="text-center"><strong>{totalUnidades}</strong></td>
                                         <td className="text-right">Bs {costoUnitario.toFixed(2)}</td>
+                                        <td className="text-right">
+                                            <span style={{ color: 'var(--success)' }}>
+                                                Bs {calcularValorPaquetes(lote).toFixed(2)}
+                                            </span>
+                                        </td>
+                                        <td className="text-right">
+                                            <span style={{ color: 'var(--success)' }}>
+                                                Bs {calcularValorUnidadesSueltas(lote).toFixed(2)}
+                                            </span>
+                                        </td>
                                         <td className="text-right">
                                             <strong style={{ color: 'var(--primary)' }}>
                                                 Bs {calcularValorInventario(lote)}

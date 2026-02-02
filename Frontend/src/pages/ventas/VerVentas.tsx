@@ -205,6 +205,7 @@ export default function VerVentas() {
                                 <th>ID</th>
                                 <th>Cliente</th>
                                 <th>Tipo</th>
+                                <th>Factura</th>
                                 <th>Estado</th>
                                 <th>Fecha</th>
                                 <th>Total (Bs.)</th>
@@ -221,6 +222,11 @@ export default function VerVentas() {
                                     <td>
                                         <span className={`badge ${venta.tipo_venta === 'CONTADO' ? 'badge-success' : 'badge-warning'}`}>
                                             {venta.tipo_venta}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${venta.con_factura ? 'badge-info' : 'badge-secondary'}`}>
+                                            {venta.con_factura ? '✓ Con Factura' : 'Sin Factura'}
                                         </span>
                                     </td>
                                     <td>

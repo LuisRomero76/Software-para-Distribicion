@@ -43,6 +43,7 @@ export default function RealizarVenta() {
     const [tipoVenta, setTipoVenta] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
     const [montoPagado, setMontoPagado] = useState<number>(0);
     const [observaciones, setObservaciones] = useState('');
+    const [conFactura, setConFactura] = useState<boolean>(false);
     
     // Estados para descuento
     const [aplicarDescuento, setAplicarDescuento] = useState<boolean>(false);
@@ -112,12 +113,20 @@ export default function RealizarVenta() {
                 nuevosProductos[index].producto = producto;
                 nuevosProductos[index].lotes_disponibles = lotesDelProducto;
                 
-                // Establecer precio según modo actual
+                // Establecer precio según modo actual y tipo de factura
                 const modoActual = nuevosProductos[index].modo;
                 if (modoActual === 'paquete') {
-                    nuevosProductos[index].precio_venta = producto.precio_venta_paquete ?? producto.precio;
+                    if (conFactura) {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_paquete_con_factura ?? producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                    } else {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                    }
                 } else {
-                    nuevosProductos[index].precio_venta = producto.precio;
+                    if (conFactura) {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_con_factura ?? producto.precio_venta_sin_factura;
+                    } else {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_sin_factura;
+                    }
                 }
                 
                 nuevosProductos[index].cantidad = 1;
@@ -182,13 +191,21 @@ export default function RealizarVenta() {
             const nuevoModo = value as 'unidad' | 'paquete';
             nuevosProductos[index].modo = nuevoModo;
             
-            // Actualizar precio según el nuevo modo
+            // Actualizar precio según el nuevo modo y tipo de factura
             const producto = nuevosProductos[index].producto;
             if (producto) {
                 if (nuevoModo === 'paquete') {
-                    nuevosProductos[index].precio_venta = producto.precio_venta_paquete ?? producto.precio;
+                    if (conFactura) {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_paquete_con_factura ?? producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                    } else {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                    }
                 } else {
-                    nuevosProductos[index].precio_venta = producto.precio;
+                    if (conFactura) {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_con_factura ?? producto.precio_venta_sin_factura;
+                    } else {
+                        nuevosProductos[index].precio_venta = producto.precio_venta_sin_factura;
+                    }
                 }
             }
             
@@ -214,6 +231,39 @@ export default function RealizarVenta() {
         }
         
         setProductosVenta(nuevosProductos);
+    };
+
+    const actualizarPreciosSegunFactura = (nuevaConFactura: boolean) => {
+        setConFactura(nuevaConFactura);
+        
+        // Actualizar precios de todos los productos según el nuevo tipo de factura
+        const productosActualizados = productosVenta.map(item => {
+            const producto = item.producto;
+            if (!producto) return item;
+            
+            let nuevoPrecio = item.precio_venta;
+            
+            if (item.modo === 'paquete') {
+                if (nuevaConFactura) {
+                    nuevoPrecio = producto.precio_venta_paquete_con_factura ?? producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                } else {
+                    nuevoPrecio = producto.precio_venta_paquete_sin_factura ?? producto.precio_venta_sin_factura;
+                }
+            } else {
+                if (nuevaConFactura) {
+                    nuevoPrecio = producto.precio_venta_con_factura ?? producto.precio_venta_sin_factura;
+                } else {
+                    nuevoPrecio = producto.precio_venta_sin_factura;
+                }
+            }
+            
+            return {
+                ...item,
+                precio_venta: nuevoPrecio
+            };
+        });
+        
+        setProductosVenta(productosActualizados);
     };
 
     const agregarProducto = () => {
@@ -321,6 +371,7 @@ export default function RealizarVenta() {
                 descuento: aplicarDescuento ? calcularDescuento() : 0,
                 monto_pagado: tipoVenta === 'CREDITO' ? montoPagado : undefined,
                 observaciones,
+                con_factura: conFactura,
                 detalles,
             }, auth?.token);
 
@@ -445,6 +496,36 @@ export default function RealizarVenta() {
                         <button type="button" className="btn-icon btn-success" onClick={agregarProducto}>
                             <Plus size={18} />
                         </button>
+                    </div>
+
+                    {/* Selector de tipo de factura */}
+                    <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-2)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', color: 'var(--text)' }}>Tipo de Venta</h4>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Los precios se ajustarán automáticamente según tu selección</p>
+                            </div>
+                            <div className="toggle-group">
+                                <label className={`toggle ${!conFactura ? 'active' : ''}`}>
+                                    <input
+                                        type="radio"
+                                        name="facturaToggle"
+                                        checked={!conFactura}
+                                        onChange={() => actualizarPreciosSegunFactura(false)}
+                                    />
+                                    Sin Factura
+                                </label>
+                                <label className={`toggle ${conFactura ? 'active' : ''}`}>
+                                    <input
+                                        type="radio"
+                                        name="facturaToggle"
+                                        checked={conFactura}
+                                        onChange={() => actualizarPreciosSegunFactura(true)}
+                                    />
+                                    Con Factura
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="products-list">
@@ -577,7 +658,7 @@ export default function RealizarVenta() {
                                     )}
 
                                     <div className="product-form-group">
-                                        <label>Precio {item.modo === 'paquete' ? 'por Paquete' : 'Unitario'} (Bs.) *</label>
+                                        <label>Precio {item.modo === 'paquete' ? 'por Paquete' : 'Unitario'} {conFactura ? '(Con Factura)' : '(Sin Factura)'} (Bs.) *</label>
                                         <input
                                             type="number"
                                             step="0.01"

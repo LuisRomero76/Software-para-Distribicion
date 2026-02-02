@@ -6,6 +6,8 @@ import { UpdatePagoCompraDto } from './dto/update-pago_compra.dto';
 import { PagoCompra } from './entities/pago_compra.entity';
 import { Compra } from 'src/compra/entities/compra.entity';
 import { EstadoCompra } from 'src/compra/entities/compra.entity';
+import { GastoOperativoService } from 'src/gasto_operativo/gasto_operativo.service';
+import { TipoEgreso } from 'src/gasto_operativo/entities/gasto_operativo.entity';
 
 @Injectable()
 export class PagoCompraService {
@@ -14,6 +16,7 @@ export class PagoCompraService {
     private pagoCompraRepository: Repository<PagoCompra>,
     @InjectRepository(Compra)
     private compraRepository: Repository<Compra>,
+    private gastoOperativoService: GastoOperativoService,
   ) {}
 
   async create(createPagoCompraDto: CreatePagoCompraDto): Promise<PagoCompra> {
@@ -47,6 +50,12 @@ export class PagoCompraService {
     }
 
     await this.compraRepository.save(compra);
+
+    // Registrar egreso por el pago de compra a crédito
+    await this.gastoOperativoService.create({
+      tipo: TipoEgreso.COMPRA,
+      monto: createPagoCompraDto.monto,
+    });
 
     return pagoSaved;
   }
@@ -89,24 +98,26 @@ export class PagoCompraService {
     }
 
     const compra = pago.compra;
-    const montoAnterior = Number(pago.monto);
-    const montoNuevo = Number(updatePagoCompraDto.monto);
+    const montoAnterior = parseFloat(pago.monto as any) || 0;
+    const montoNuevo = parseFloat(updatePagoCompraDto.monto as any) || 0;
 
     // Si el monto cambió, actualizar los totales de la compra
     if (montoAnterior !== montoNuevo) {
       const diferencia = montoNuevo - montoAnterior;
 
       // Verificar que el nuevo monto no exceda el total disponible
-      const montoAdeudadoActual = Number(compra.monto_adeudado) + diferencia;
-      if (montoAdeudadoActual < -0.01) {
+      const montoAdeudadoActual = parseFloat(compra.monto_adeudado as any) || 0;
+      const maximoPermitido = montoAnterior + montoAdeudadoActual;
+      
+      if (montoNuevo > maximoPermitido + 0.01) {
         throw new BadRequestException(
-          `El nuevo monto del pago excede el total de la compra. Máximo permitido: ${(montoAnterior + compra.monto_adeudado).toFixed(2)}`
+          `El nuevo monto del pago excede el total de la compra. Máximo permitido: Bs ${maximoPermitido.toFixed(2)}`
         );
       }
 
       // Actualizar los montos de la compra
-      compra.monto_pagado = Number(compra.monto_pagado) + diferencia;
-      compra.monto_adeudado = Number(compra.monto_adeudado) - diferencia;
+      compra.monto_pagado = (parseFloat(compra.monto_pagado as any) || 0) + diferencia;
+      compra.monto_adeudado = (parseFloat(compra.monto_adeudado as any) || 0) - diferencia;
 
       // Actualizar el estado según el monto adeudado
       if (compra.monto_adeudado <= 0.01) {

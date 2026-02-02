@@ -20,7 +20,10 @@ export class Product {
   tamaño: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
-  precio: number;
+  precio_venta_sin_factura: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
+  precio_venta_con_factura: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
   precio_compra: number;
@@ -29,7 +32,10 @@ export class Product {
   precio_compra_paquete: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
-  precio_venta_paquete: number;
+  precio_venta_paquete_sin_factura: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, default: 0 })
+  precio_venta_paquete_con_factura: number;
 
   @Column({ type: 'int', nullable: true, default: 1 })
   cant_por_paquete: number;

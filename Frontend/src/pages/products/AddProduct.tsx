@@ -17,10 +17,12 @@ export default function AddProduct() {
     nombre: '',
     descripcion: '',
     tamaño: '',
-    precio: '',
+    precio_venta_sin_factura: '',
+    precio_venta_con_factura: '',
     precio_compra: '',
     precio_compra_paquete: '',
-    precio_venta_paquete: '',
+    precio_venta_paquete_sin_factura: '',
+    precio_venta_paquete_con_factura: '',
     cant_por_paquete: '',
     category_id: '',
     sub_category_id: ''
@@ -76,8 +78,8 @@ export default function AddProduct() {
       return;
     }
 
-    if (!formData.precio || formData.precio.trim() === '') {
-      setError('El precio es requerido.');
+    if (!formData.precio_venta_sin_factura || formData.precio_venta_sin_factura.trim() === '') {
+      setError('El precio de venta sin factura es requerido.');
       return;
     }
 
@@ -86,16 +88,18 @@ export default function AddProduct() {
       const payload: any = {
         nombre: formData.nombre,
         category_id: parseInt(formData.category_id),
-        precio: parseFloat(formData.precio)
+        precio_venta_sin_factura: parseFloat(formData.precio_venta_sin_factura)
       };
 
       if (formData.cod_barra?.trim()) payload.cod_barra = formData.cod_barra.trim();
       if (formData.descripcion?.trim()) payload.descripcion = formData.descripcion.trim();
       if (formData.tamaño?.trim()) payload.tamaño = formData.tamaño.trim();
       if (formData.sub_category_id) payload.sub_category_id = parseInt(formData.sub_category_id);
+      if (formData.precio_venta_con_factura) payload.precio_venta_con_factura = parseFloat(formData.precio_venta_con_factura);
       if (formData.precio_compra) payload.precio_compra = parseFloat(formData.precio_compra);
       if (formData.precio_compra_paquete) payload.precio_compra_paquete = parseFloat(formData.precio_compra_paquete);
-      if (formData.precio_venta_paquete) payload.precio_venta_paquete = parseFloat(formData.precio_venta_paquete);
+      if (formData.precio_venta_paquete_sin_factura) payload.precio_venta_paquete_sin_factura = parseFloat(formData.precio_venta_paquete_sin_factura);
+      if (formData.precio_venta_paquete_con_factura) payload.precio_venta_paquete_con_factura = parseFloat(formData.precio_venta_paquete_con_factura);
       if (formData.cant_por_paquete) payload.cant_por_paquete = parseInt(formData.cant_por_paquete);
 
       await request('/product', {
@@ -110,10 +114,12 @@ export default function AddProduct() {
         nombre: '',
         descripcion: '',
         tamaño: '',
-        precio: '',
+        precio_venta_sin_factura: '',
+        precio_venta_con_factura: '',
         precio_compra: '',
         precio_compra_paquete: '',
-        precio_venta_paquete: '',
+        precio_venta_paquete_sin_factura: '',
+        precio_venta_paquete_con_factura: '',
         cant_por_paquete: '',
         category_id: '',
         sub_category_id: ''
@@ -173,12 +179,52 @@ export default function AddProduct() {
             </label>
 
             <label className="form-field">
-              <span className="label-text">Precio</span>
+              <span className="label-text">Precio Venta Sin Factura (Unitario) *</span>
               <input
                 type="number"
                 className="form-input"
-                value={formData.precio}
-                onChange={e => setFormData({ ...formData, precio: e.target.value })}
+                value={formData.precio_venta_sin_factura}
+                onChange={e => setFormData({ ...formData, precio_venta_sin_factura: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+                required
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio Venta Con Factura (Unitario)</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_venta_con_factura}
+                onChange={e => setFormData({ ...formData, precio_venta_con_factura: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio Venta Sin Factura (Paquete)</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_venta_paquete_sin_factura}
+                onChange={e => setFormData({ ...formData, precio_venta_paquete_sin_factura: e.target.value })}
+                step={0.01}
+                min={0}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="form-field">
+              <span className="label-text">Precio Venta Con Factura (Paquete)</span>
+              <input
+                type="number"
+                className="form-input"
+                value={formData.precio_venta_paquete_con_factura}
+                onChange={e => setFormData({ ...formData, precio_venta_paquete_con_factura: e.target.value })}
                 step={0.01}
                 min={0}
                 placeholder="0.00"
@@ -205,19 +251,6 @@ export default function AddProduct() {
                 className="form-input"
                 value={formData.precio_compra_paquete}
                 onChange={e => setFormData({ ...formData, precio_compra_paquete: e.target.value })}
-                step={0.01}
-                min={0}
-                placeholder="0.00"
-              />
-            </label>
-
-            <label className="form-field">
-              <span className="label-text">Precio de venta (Paquete)</span>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.precio_venta_paquete}
-                onChange={e => setFormData({ ...formData, precio_venta_paquete: e.target.value })}
                 step={0.01}
                 min={0}
                 placeholder="0.00"

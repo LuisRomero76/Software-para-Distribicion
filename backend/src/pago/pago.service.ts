@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Pago } from './entities/pago.entity';
 import { Venta, EstadoVenta } from 'src/venta/entities/venta.entity';
 import { CreatePagoDto } from './dto/create-pago.dto';
+import { IngresoService } from 'src/ingreso/ingreso.service';
+import { TipoIngreso } from 'src/ingreso/entities/ingreso.entity';
 
 @Injectable()
 export class PagoService {
@@ -12,6 +14,7 @@ export class PagoService {
     private pagoRepository: Repository<Pago>,
     @InjectRepository(Venta)
     private ventaRepository: Repository<Venta>,
+    private ingresoService: IngresoService,
   ) {}
 
   async create(createPagoDto: CreatePagoDto): Promise<Pago> {
@@ -50,6 +53,14 @@ export class PagoService {
       }
     );
 
+    // Registrar ingreso por el pago de venta a crédito
+    await this.ingresoService.create({
+      tipo: TipoIngreso.VENTA,
+      descripcion: `Pago de Venta #${createPagoDto.venta_id} - Pago #${pagoSaved.pago_id}`,
+      monto: createPagoDto.monto,
+      referencia_id: createPagoDto.venta_id,
+    });
+
     return pagoSaved;
   }
 
@@ -84,24 +95,26 @@ export class PagoService {
     }
 
     const venta = pago.venta;
-    const montoAnterior = Number(pago.monto);
-    const montoNuevo = Number(updatePagoDto.monto);
+    const montoAnterior = parseFloat(pago.monto as any) || 0;
+    const montoNuevo = parseFloat(updatePagoDto.monto as any) || 0;
 
     // Si el monto cambió, actualizar los totales de la venta
     if (montoAnterior !== montoNuevo) {
       const diferencia = montoNuevo - montoAnterior;
 
       // Verificar que el nuevo monto no exceda el total disponible
-      const montoAdeudadoActual = Number(venta.monto_adeudado) + diferencia;
-      if (montoAdeudadoActual < -0.01) {
+      const montoAdeudadoActual = parseFloat(venta.monto_adeudado as any) || 0;
+      const maximoPermitido = montoAnterior + montoAdeudadoActual;
+      
+      if (montoNuevo > maximoPermitido + 0.01) {
         throw new BadRequestException(
-          `El nuevo monto del pago excede el total de la venta. Máximo permitido: ${(montoAnterior + venta.monto_adeudado).toFixed(2)}`
+          `El nuevo monto del pago excede el total de la venta. Máximo permitido: Bs ${maximoPermitido.toFixed(2)}`
         );
       }
 
       // Actualizar los montos de la venta
-      venta.monto_pagado = Number(venta.monto_pagado) + diferencia;
-      venta.monto_adeudado = Number(venta.monto_adeudado) - diferencia;
+      venta.monto_pagado = (parseFloat(venta.monto_pagado as any) || 0) + diferencia;
+      venta.monto_adeudado = (parseFloat(venta.monto_adeudado as any) || 0) - diferencia;
 
       // Actualizar el estado según el monto adeudado
       if (venta.monto_adeudado <= 0.01) {

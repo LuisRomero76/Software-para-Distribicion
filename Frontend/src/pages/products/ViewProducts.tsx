@@ -11,10 +11,12 @@ interface Product {
   nombre: string;
   descripcion?: string;
   tamaño?: string;
-  precio: number;
+  precio_venta_sin_factura: number;
+  precio_venta_con_factura?: number;
   precio_compra?: number;
   precio_compra_paquete?: number;
-  precio_venta_paquete?: number;
+  precio_venta_paquete_sin_factura?: number;
+  precio_venta_paquete_con_factura?: number;
   cant_por_paquete?: number;
   category_id: number;
   sub_category_id: number;
@@ -44,10 +46,12 @@ export default function ViewProducts() {
     nombre: '',
     descripcion: '',
     tamaño: '',
-    precio: '',
+    precio_venta_sin_factura: '',
+    precio_venta_con_factura: '',
     precio_compra: '',
     precio_compra_paquete: '',
-    precio_venta_paquete: '',
+    precio_venta_paquete_sin_factura: '',
+    precio_venta_paquete_con_factura: '',
     cant_por_paquete: '',
     category_id: '',
     sub_category_id: ''
@@ -137,10 +141,12 @@ export default function ViewProducts() {
       nombre: product.nombre,
       descripcion: product.descripcion || '',
       tamaño: product.tamaño || '',
-      precio: product.precio?.toString() || '0',
+      precio_venta_sin_factura: product.precio_venta_sin_factura?.toString() || '0',
+      precio_venta_con_factura: product.precio_venta_con_factura?.toString() || '',
       precio_compra: product.precio_compra?.toString() || '',
       precio_compra_paquete: product.precio_compra_paquete?.toString() || '',
-      precio_venta_paquete: product.precio_venta_paquete?.toString() || '',
+      precio_venta_paquete_sin_factura: product.precio_venta_paquete_sin_factura?.toString() || '',
+      precio_venta_paquete_con_factura: product.precio_venta_paquete_con_factura?.toString() || '',
       cant_por_paquete: product.cant_por_paquete?.toString() || '',
       category_id: product.category_id?.toString() || '',
       sub_category_id: product.sub_category_id?.toString() || ''
@@ -151,8 +157,8 @@ export default function ViewProducts() {
     e.preventDefault();
     if (!selectedProduct) return;
     
-    if (!editForm.precio || editForm.precio.trim() === '') {
-      alert('El precio es requerido');
+    if (!editForm.precio_venta_sin_factura || editForm.precio_venta_sin_factura.trim() === '') {
+      alert('El precio de venta sin factura es requerido');
       return;
     }
     
@@ -160,7 +166,7 @@ export default function ViewProducts() {
     try {
       const payload: any = {
         nombre: editForm.nombre,
-        precio: parseFloat(editForm.precio),
+        precio_venta_sin_factura: parseFloat(editForm.precio_venta_sin_factura),
         category_id: parseInt(editForm.category_id),
         sub_category_id: parseInt(editForm.sub_category_id)
       };
@@ -168,9 +174,11 @@ export default function ViewProducts() {
       if (editForm.cod_barra?.trim()) payload.cod_barra = editForm.cod_barra.trim();
       if (editForm.descripcion?.trim()) payload.descripcion = editForm.descripcion.trim();
       if (editForm.tamaño?.trim()) payload.tamaño = editForm.tamaño.trim();
+      if (editForm.precio_venta_con_factura) payload.precio_venta_con_factura = parseFloat(editForm.precio_venta_con_factura);
       if (editForm.precio_compra) payload.precio_compra = parseFloat(editForm.precio_compra);
       if (editForm.precio_compra_paquete) payload.precio_compra_paquete = parseFloat(editForm.precio_compra_paquete);
-      if (editForm.precio_venta_paquete) payload.precio_venta_paquete = parseFloat(editForm.precio_venta_paquete);
+      if (editForm.precio_venta_paquete_sin_factura) payload.precio_venta_paquete_sin_factura = parseFloat(editForm.precio_venta_paquete_sin_factura);
+      if (editForm.precio_venta_paquete_con_factura) payload.precio_venta_paquete_con_factura = parseFloat(editForm.precio_venta_paquete_con_factura);
       if (editForm.cant_por_paquete) payload.cant_por_paquete = parseInt(editForm.cant_por_paquete);
 
       const updated = await request<Product>(
@@ -201,7 +209,8 @@ export default function ViewProducts() {
         'Nombre': product.nombre,
         'Descripción': product.descripcion || '',
         'Tamaño': product.tamaño || '',
-        'Precio': product.precio,
+        'Precio Venta S/F': product.precio_venta_sin_factura,
+        'Precio Venta C/F': product.precio_venta_con_factura || '',
         'Categoría': product.category?.nombre || '',
         'Subcategoría': product.subCategory?.nombre || '',
         'Fecha de Creación': new Date(product.createdAt).toLocaleString('es-ES', {
@@ -298,7 +307,7 @@ export default function ViewProducts() {
                   <td>{product.cod_barra || '-'}</td>
                   <td className="name-col">{product.nombre}</td>
                   <td>{product.tamaño || '-'}</td>
-                  <td>{typeof product.precio === 'number' ? product.precio.toFixed(2) : product.precio}</td>
+                  <td>{typeof product.precio_venta_sin_factura === 'number' ? product.precio_venta_sin_factura.toFixed(2) : product.precio_venta_sin_factura}</td>
                   <td>{getCategoryDisplay(product) || '-'}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => { setSelectedProduct(product); setEditMode(false); }} title="Ver detalles">
@@ -365,16 +374,29 @@ export default function ViewProducts() {
                     />
                   </label>
                   <label className="form-field">
-                    <span className="label-text">Precio</span>
+                    <span className="label-text">Precio Venta Sin Factura</span>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
                       className="form-input"
-                      value={editMode ? editForm.precio : selectedProduct.precio}
-                      onChange={e => setEditForm({ ...editForm, precio: e.target.value })}
+                      value={editMode ? editForm.precio_venta_sin_factura : selectedProduct.precio_venta_sin_factura}
+                      onChange={e => setEditForm({ ...editForm, precio_venta_sin_factura: e.target.value })}
                       disabled={!editMode}
                       required={editMode}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio Venta Con Factura</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio_venta_con_factura : (selectedProduct.precio_venta_con_factura || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_venta_con_factura: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="0.00"
                     />
                   </label>
                   <label className="form-field">
@@ -448,14 +470,27 @@ export default function ViewProducts() {
                     />
                   </label>
                   <label className="form-field">
-                    <span className="label-text">Precio de Venta (Paquete)</span>
+                    <span className="label-text">Precio Venta Paquete Sin Factura</span>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
                       className="form-input"
-                      value={editMode ? editForm.precio_venta_paquete : (selectedProduct.precio_venta_paquete || '')}
-                      onChange={e => setEditForm({ ...editForm, precio_venta_paquete: e.target.value })}
+                      value={editMode ? editForm.precio_venta_paquete_sin_factura : (selectedProduct.precio_venta_paquete_sin_factura || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_venta_paquete_sin_factura: e.target.value })}
+                      disabled={!editMode}
+                      placeholder="0.00"
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="label-text">Precio Venta Paquete Con Factura</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="form-input"
+                      value={editMode ? editForm.precio_venta_paquete_con_factura : (selectedProduct.precio_venta_paquete_con_factura || '')}
+                      onChange={e => setEditForm({ ...editForm, precio_venta_paquete_con_factura: e.target.value })}
                       disabled={!editMode}
                       placeholder="0.00"
                     />

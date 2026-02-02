@@ -139,10 +139,18 @@ export class CompraService {
       }
 
       // Crear egreso automáticamente
-      await this.gastoOperativoService.create({
-        tipo: TipoEgreso.COMPRA,
-        monto: total,
-      });
+      // Si es CONTADO: registrar el total
+      // Si es CREDITO: registrar solo el monto pagado inicial (si existe)
+      const montoEgreso = createCompraDto.tipo_compra === TipoCompra.CONTADO 
+        ? total 
+        : (createCompraDto.monto_pagado || 0);
+      
+      if (montoEgreso > 0) {
+        await this.gastoOperativoService.create({
+          tipo: TipoEgreso.COMPRA,
+          monto: montoEgreso,
+        });
+      }
 
       await queryRunner.commitTransaction();
 
@@ -432,6 +440,11 @@ export class CompraService {
         compra.proveedor_id = updateCompraDto.proveedor_id ?? null;
       }
       
+      // Si se cambia de CREDITO a CONTADO, eliminar todos los pagos asociados
+      if (updateCompraDto.tipo_compra === TipoCompra.CONTADO && compra.tipo_compra === TipoCompra.CREDITO) {
+        await this.dataSource.query('DELETE FROM pago_compra WHERE compra_id = ?', [id]);
+      }
+      
       // Actualizar descuento si se envía
       if (updateCompraDto.hasOwnProperty('descuento')) {
         compra.descuento = updateCompraDto.descuento || 0;
@@ -439,8 +452,8 @@ export class CompraService {
         compra.total = compra.subtotal - compra.descuento;
       }
       
-      // Actualizar monto pagado si se envía
-      if (updateCompraDto.hasOwnProperty('monto_pagado')) {
+      // Actualizar monto pagado si se envía (solo si no cambió a CONTADO)
+      if (updateCompraDto.hasOwnProperty('monto_pagado') && updateCompraDto.tipo_compra !== TipoCompra.CONTADO) {
         compra.monto_pagado = updateCompraDto.monto_pagado || 0;
       }
       
