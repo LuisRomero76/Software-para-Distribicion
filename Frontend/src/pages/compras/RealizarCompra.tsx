@@ -16,6 +16,19 @@ interface CompraProducto extends DetalleCompra {
     producto?: Producto; // Override del tipo heredado
 }
 
+/**
+ * Convierte una fecha de input (YYYY-MM-DD) a formato ISO con hora local de mediodía
+ * Esto evita problemas de zona horaria donde el día cambia al convertir a UTC
+ */
+const formatearFechaParaBackend = (fecha: string): string | undefined => {
+    if (!fecha || fecha.trim() === '') return undefined;
+    
+    // Crear fecha con hora de mediodía para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-').map(Number);
+    const fechaLocal = new Date(year, month - 1, day, 12, 0, 0);
+    return fechaLocal.toISOString();
+};
+
 export default function RealizarCompra() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -220,7 +233,7 @@ export default function RealizarCompra() {
                         product_id: p.producto_id,
                         cantidad: p.paquetes ?? 1,
                         precio_unitario: parseFloat(String(p.precio_compra)),
-                        fecha_vencimiento: p.fecha_vencimiento || undefined,
+                        fecha_vencimiento: formatearFechaParaBackend(p.fecha_vencimiento || ''),
                         modo: 'paquete' as const,
                     };
                 } else {
@@ -229,7 +242,7 @@ export default function RealizarCompra() {
                         product_id: p.producto_id,
                         cantidad: p.cantidad,
                         precio_unitario: parseFloat(String(p.precio_compra)),
-                        fecha_vencimiento: p.fecha_vencimiento || undefined,
+                        fecha_vencimiento: formatearFechaParaBackend(p.fecha_vencimiento || ''),
                         modo: 'unidad' as const,
                     };
                 }

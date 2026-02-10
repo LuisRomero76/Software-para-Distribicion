@@ -15,6 +15,19 @@ import '../../styles/page.css';
 import '../../styles/table.css';
 import './compras.css';
 
+/**
+ * Convierte una fecha de input (YYYY-MM-DD) a formato ISO con hora local de mediodía
+ * Esto evita problemas de zona horaria donde el día cambia al convertir a UTC
+ */
+const formatearFechaParaBackend = (fecha: string): string | undefined => {
+    if (!fecha || fecha.trim() === '') return undefined;
+    
+    // Crear fecha con hora de mediodía para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-').map(Number);
+    const fechaLocal = new Date(year, month - 1, day, 12, 0, 0);
+    return fechaLocal.toISOString();
+};
+
 interface CompraDetail extends Compra {
     detalles?: any[];
 }
@@ -93,7 +106,7 @@ export default function VerCompras() {
             await createPagoCompra({
                 compra_id: pagoModal.compra.compra_id,
                 monto: montoPago,
-                fecha_pago: new Date().toISOString().split('T')[0],
+                fecha_pago: formatearFechaParaBackend(new Date().toISOString().split('T')[0])!,
                 observaciones: observacionesPago || undefined,
             });
 

@@ -50,6 +50,19 @@ const formatearHora = (fecha: string | Date) => {
     return timeString;
 };
 
+/**
+ * Convierte una fecha de input (YYYY-MM-DD) a formato ISO con hora local de mediodía
+ * Esto evita problemas de zona horaria donde el día cambia al convertir a UTC
+ */
+const formatearFechaParaBackend = (fecha: string): string | undefined => {
+    if (!fecha || fecha.trim() === '') return undefined;
+    
+    // Crear fecha con hora de mediodía para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-').map(Number);
+    const fechaLocal = new Date(year, month - 1, day, 12, 0, 0);
+    return fechaLocal.toISOString();
+};
+
 export default function CompraDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -230,7 +243,8 @@ export default function CompraDetails() {
                 cantidad: detalle.cantidad,
                 precio_unitario: parseFloat(detalle.precio_unitario),
                 modo: detalle.modo || 'unidad',
-                fecha_vencimiento: detalle.fecha_vencimiento ? new Date(detalle.fecha_vencimiento).toISOString().split('T')[0] : '',
+                // Extraer solo la fecha (YYYY-MM-DD) sin conversión de zona horaria
+                fecha_vencimiento: detalle.fecha_vencimiento ? detalle.fecha_vencimiento.split('T')[0] : '',
                 producto: detalle.producto,
             }));
             
@@ -369,7 +383,7 @@ export default function CompraDetails() {
                 
                 // Incluir fecha de vencimiento si existe
                 if (d.fecha_vencimiento && d.fecha_vencimiento.trim() !== '') {
-                    detalle.fecha_vencimiento = d.fecha_vencimiento;
+                    detalle.fecha_vencimiento = formatearFechaParaBackend(d.fecha_vencimiento);
                 }
                 
                 return detalle;
@@ -470,7 +484,7 @@ export default function CompraDetails() {
                 // Actualizar pago existente
                 await updatePagoCompra(editandoPago.pago_compra_id, {
                     monto: pagoFormData.monto,
-                    fecha_pago: pagoFormData.fecha_pago,
+                    fecha_pago: formatearFechaParaBackend(pagoFormData.fecha_pago)!,
                     observaciones: pagoFormData.observaciones || undefined
                 });
             } else {
@@ -478,7 +492,7 @@ export default function CompraDetails() {
                 await createPagoCompra({
                     compra_id: compra.compra_id,
                     monto: pagoFormData.monto,
-                    fecha_pago: pagoFormData.fecha_pago,
+                    fecha_pago: formatearFechaParaBackend(pagoFormData.fecha_pago)!,
                     observaciones: pagoFormData.observaciones || undefined
                 });
             }

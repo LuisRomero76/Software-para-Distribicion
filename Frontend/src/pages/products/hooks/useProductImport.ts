@@ -5,10 +5,12 @@ export interface ProductCreatePayload {
   nombre: string;
   descripcion?: string;
   tamaño?: string;
-  precio: string;
+  precio_venta_sin_factura: string;
+  precio_venta_con_factura?: string;
   precio_compra?: string;
   precio_compra_paquete?: string;
-  precio_venta_paquete?: string;
+  precio_venta_paquete_sin_factura?: string;
+  precio_venta_paquete_con_factura?: string;
   cant_por_paquete?: string;
   category_id: number;
   sub_category_id?: number;
@@ -23,7 +25,7 @@ export function useProductImport() {
     const payload: ProductCreatePayload = {
       nombre: String(row.nombre || '').trim(),
       category_id: categoryId,
-      precio: String(row.precio || '0').trim(),
+      precio_venta_sin_factura: String(row.precio_venta_sin_factura || '0').trim(),
     };
 
     // Solo incluir sub_category_id si se proporciona
@@ -41,14 +43,20 @@ export function useProductImport() {
     if (row.tamaño && String(row.tamaño).trim() !== '') {
       payload.tamaño = String(row.tamaño).trim();
     }
+    if (row.precio_venta_con_factura && String(row.precio_venta_con_factura).trim() !== '') {
+      payload.precio_venta_con_factura = String(row.precio_venta_con_factura).trim();
+    }
     if (row.precio_compra && String(row.precio_compra).trim() !== '') {
       payload.precio_compra = String(row.precio_compra).trim();
     }
     if (row.precio_compra_paquete && String(row.precio_compra_paquete).trim() !== '') {
       payload.precio_compra_paquete = String(row.precio_compra_paquete).trim();
     }
-    if (row.precio_venta_paquete && String(row.precio_venta_paquete).trim() !== '') {
-      payload.precio_venta_paquete = String(row.precio_venta_paquete).trim();
+    if (row.precio_venta_paquete_sin_factura && String(row.precio_venta_paquete_sin_factura).trim() !== '') {
+      payload.precio_venta_paquete_sin_factura = String(row.precio_venta_paquete_sin_factura).trim();
+    }
+    if (row.precio_venta_paquete_con_factura && String(row.precio_venta_paquete_con_factura).trim() !== '') {
+      payload.precio_venta_paquete_con_factura = String(row.precio_venta_paquete_con_factura).trim();
     }
     if (row.cant_por_paquete && String(row.cant_por_paquete).trim() !== '') {
       payload.cant_por_paquete = String(row.cant_por_paquete).trim();
@@ -65,13 +73,13 @@ export function useProductImport() {
       errors.push('Nombre requerido');
     }
 
-    // Validar precio (obligatorio)
-    if (!row.precio || String(row.precio).trim() === '') {
-      errors.push('Precio requerido');
+    // Validar precio_venta_sin_factura (obligatorio)
+    if (!row.precio_venta_sin_factura || String(row.precio_venta_sin_factura).trim() === '') {
+      errors.push('Precio Venta Sin Factura requerido');
     } else {
-      const precio = parseFloat(String(row.precio).replace(',', '.'));
+      const precio = parseFloat(String(row.precio_venta_sin_factura).replace(',', '.'));
       if (isNaN(precio) || precio < 0) {
-        errors.push('Precio inválido');
+        errors.push('Precio Venta Sin Factura inválido');
       }
     }
 
