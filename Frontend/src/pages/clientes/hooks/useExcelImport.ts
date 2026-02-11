@@ -1,33 +1,14 @@
-import { useCategoriasClientes } from './useCategoriasClientes';
 import type { ClienteImportRow } from '../utils/excelImporter';
 import type { CreateClientePayload } from './useClientes';
 
 export function useExcelImport() {
-  const { categorias } = useCategoriasClientes();
-
-  const mapRowToPayload = (row: ClienteImportRow, categoriaName?: string, categoriaIds?: number[]): CreateClientePayload => {
-    // Encontrar categoría por nombre (si viene del nombre de la hoja)
-    let cliente_categoria_ids: number[] = [];
-    
-    if (categoriaIds && categoriaIds.length > 0) {
-      // Si se proporciona un array de IDs (desde selector), usar esos
-      cliente_categoria_ids = categoriaIds;
-    } else if (categoriaName) {
-      // Si viene de nombre de hoja, buscar por nombre
-      const cat = categorias.find(c => 
-        c.nombre.toLowerCase().replace(/\s+/g, '_') === categoriaName.toLowerCase().replace(/\s+/g, '_')
-      );
-      if (cat) {
-        cliente_categoria_ids = [cat.cliente_categoria_id];
-      }
-    }
-
+  const mapRowToPayload = (row: ClienteImportRow, preventistaId: number): CreateClientePayload => {
     // Construir payload limpio - solo incluir campos con valores
     const payload: any = {
       sub_canal: row.sub_canal || '',
       nombre: row.nombre || '',
       direccion: row.direccion || '',
-      cliente_categoria_ids,
+      preventista_id: preventistaId,
     };
 
     // Solo agregar campos opcionales si tienen valor
@@ -49,9 +30,6 @@ export function useExcelImport() {
     }
     if (row.telefono && row.telefono.toString().trim() !== '') {
       payload.telefono = row.telefono.toString().trim();
-    }
-    if (row.ruta && typeof row.ruta === 'string' && row.ruta.trim() !== '') {
-      payload.ruta = row.ruta.trim();
     }
     if (row.dia_visita && row.dia_visita.toString().trim() !== '') {
       payload.dia_visita = row.dia_visita.toString().trim();

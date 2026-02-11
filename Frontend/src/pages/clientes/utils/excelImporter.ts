@@ -9,15 +9,12 @@ export interface ClienteImportRow {
   ciudad?: string;
   coordenadas?: string;
   telefono?: string;
-  ruta?: string;
   dia_visita?: string;
-  categoria?: string;
   [key: string]: any;
 }
 
 export interface SheetData {
   nombre: string;
-  categoria?: string;
   datos: ClienteImportRow[];
 }
 
@@ -42,7 +39,6 @@ export async function readExcelFile(file: File): Promise<SheetData[]> {
           
           return {
             nombre: sheetName,
-            categoria: sheetName !== 'Clientes' ? sheetName : undefined,
             datos: processedData,
           };
         });
@@ -61,65 +57,45 @@ export async function readExcelFile(file: File): Promise<SheetData[]> {
 export function generateExcelTemplate(): void {
   const wb = XLSX.utils.book_new();
   
-  // Hoja 1: Clientes generales
+  // Plantilla de ejemplo con todos los campos
   const clientesData = [
     {
-      sub_canal: 'Canal 1',
+      sub_canal: 'Canal Ejemplo',
       visita: 'Día',
       dia_visita: 'Lunes',
       nit_ci: 12345678,
       nombre: 'Cliente Ejemplo 1',
       direccion: 'Calle Principal 123',
-      ciudad: 'Bogotá',
-      coordenadas: '4.7110,-74.0075',
-      telefono: '3001234567',
-      ruta: 'Ruta A',
+      ciudad: 'La Paz',
+      coordenadas: '-16.5000,-68.1500',
+      telefono: '70123456',
     },
-  ];
-  const ws1 = XLSX.utils.json_to_sheet(clientesData);
-  ws1['!cols'] = [
-    { wch: 12 }, // sub_canal
-    { wch: 10 }, // visita
-    { wch: 15 }, // dia_visita
-    { wch: 12 }, // nit_ci
-    { wch: 20 }, // nombre
-    { wch: 25 }, // direccion
-    { wch: 15 }, // ciudad
-    { wch: 20 }, // coordenadas
-    { wch: 15 }, // telefono
-    { wch: 15 }, // ruta
-  ];
-  XLSX.utils.book_append_sheet(wb, ws1, 'Clientes');
-  
-  // Hoja 2: Clientes categoría A
-  const clientesCatA = [
     {
-      sub_canal: 'Canal 2',
+      sub_canal: 'Canal Demo',
       visita: 'Noche',
       dia_visita: 'Martes',
       nit_ci: 87654321,
-      nombre: 'Cliente Categoría A',
+      nombre: 'Cliente Ejemplo 2',
       direccion: 'Avenida Secundaria 456',
-      ciudad: 'Medellín',
-      coordenadas: '6.2442,-75.5812',
-      telefono: '3109876543',
-      ruta: 'Ruta B',
+      ciudad: 'Santa Cruz',
+      coordenadas: '-17.8145,-63.1560',
+      telefono: '75987654',
     },
   ];
-  const ws2 = XLSX.utils.json_to_sheet(clientesCatA);
-  ws2['!cols'] = [
-    { wch: 12 }, // sub_canal
+  
+  const ws1 = XLSX.utils.json_to_sheet(clientesData);
+  ws1['!cols'] = [
+    { wch: 15 }, // sub_canal
     { wch: 10 }, // visita
     { wch: 15 }, // dia_visita
     { wch: 12 }, // nit_ci
-    { wch: 20 }, // nombre
-    { wch: 25 }, // direccion
+    { wch: 25 }, // nombre
+    { wch: 30 }, // direccion
     { wch: 15 }, // ciudad
     { wch: 20 }, // coordenadas
     { wch: 15 }, // telefono
-    { wch: 15 }, // ruta
   ];
-  XLSX.utils.book_append_sheet(wb, ws2, 'Categoría_A');
-    
+  XLSX.utils.book_append_sheet(wb, ws1, 'Clientes');
+  
   XLSX.writeFile(wb, 'Plantilla_Importar_Clientes.xlsx');
 }

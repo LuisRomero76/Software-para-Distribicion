@@ -13,6 +13,6 @@ export class CategoriaCliente {
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;
 
-    @ManyToMany(() => Cliente, cliente => cliente.categorias)
-    clientes: Cliente[];
+    // @ManyToMany(() => Cliente, cliente => cliente.categorias)
+    // clientes: Cliente[];
 }

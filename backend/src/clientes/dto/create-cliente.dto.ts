@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { ArrayNotEmpty, ArrayUnique, IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Length, Min, ValidateNested } from "class-validator";
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Length, ValidateNested, IsArray } from "class-validator";
 import { Visita } from "src/common/enums/visita.enum";
 import { DiaVisita } from "src/common/enums/dia-visita.enum";
 import { TelefonoReferenciaDto } from "./telefono-referencia.dto";
@@ -60,12 +60,8 @@ export class CreateClienteDto {
 	@Type(() => TelefonoReferenciaDto)
 	telefonos_referencia?: TelefonoReferenciaDto[];
 
-	@IsArray()
-	@ArrayNotEmpty()
-	@ArrayUnique()
-	@IsInt({ each: true })
-	@Min(1, { each: true })
+	@IsNotEmpty()
+	@IsInt()
 	@Type(() => Number)
-	@Transform(({ value }) => Array.isArray(value) ? value.map(Number) : [Number(value)])
-	cliente_categoria_ids: number[];
+	preventista_id: number;
 }

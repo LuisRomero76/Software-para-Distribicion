@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
-import { useCategoriasClientes } from './hooks/useCategoriasClientes';
+import { useCollaborators } from './hooks/useCollaborators';
 import { Visita } from './types/visita';
 import { DiaVisita } from './types/dia-visita';
 import { Search, Trash2, Users, Eye, Edit2, Download, RefreshCw, Upload, MapPin, X, Plus } from 'lucide-react';
@@ -12,7 +12,7 @@ import './VerClientes.css';
 
 export default function VerClientes() {
   const { clientes, loading, error, deleteCliente, updateCliente, fetchClientes } = useClientes();
-  const { categorias } = useCategoriasClientes();
+  const { preventistas } = useCollaborators();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -80,7 +80,7 @@ export default function VerClientes() {
       telefono: cliente.telefono,
       ruta: cliente.ruta,
       dia_visita: cliente.dia_visita,
-      cliente_categoria_ids: cliente.categorias.map(c => c.cliente_categoria_id),
+      preventista_id: cliente.preventista_id || 0,
     });
     setTelefonos(cliente.telefonos_referencia || []);
     setEditError(null);
@@ -184,14 +184,6 @@ export default function VerClientes() {
     }
   };
 
-  const toggleCategoria = (id: number) => {
-    setEditForm(prev => {
-      const set = new Set(prev.cliente_categoria_ids);
-      set.has(id) ? set.delete(id) : set.add(id);
-      return { ...prev, cliente_categoria_ids: Array.from(set) };
-    });
-  };
-
   const exportToExcel = () => {
     const dataToExport = clientes.map(c => ({
       ID: c.cliente_id,
@@ -202,7 +194,7 @@ export default function VerClientes() {
       Teléfono: c.telefono,
       Ruta: c.ruta,
       'Día Visita': c.dia_visita,
-      Categorías: c.categorias.map(k => k.nombre).join(', '),
+      Preventista: c.preventista ? `${c.preventista.nombre} ${c.preventista.apellido}` : 'Sin asignar',
       'Sub Canal': c.sub_canal,
       Visita: c.visita
     }));
@@ -259,7 +251,7 @@ export default function VerClientes() {
                 <th>Nit/CI</th>
                 <th>Teléfono</th>
                 <th>Día de Visita</th>
-                <th>Ciudad</th>
+                <th>Preventista</th>
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
@@ -272,7 +264,7 @@ export default function VerClientes() {
                   <td>{c.nit_ci}</td>
                   <td>{c.telefono}</td>
                   <td>{c.dia_visita}</td>
-                  <td>{c.ciudad}</td>
+                  <td>{c.preventista ? `${c.preventista.nombre} ${c.preventista.apellido}` : 'Sin asignar'}</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => navigate(`/clientes/${c.cliente_id}`)} title="Ver detalles">
                       <Eye size={16} />
@@ -442,29 +434,22 @@ export default function VerClientes() {
                 </div>
               </div>
 
-              {/* Categorías */}
+              {/* Asignación */}
               <div className="form-section">
-                <h4 className="form-section-title">Categorías</h4>
-                <div className="chips-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {categorias.map(cat => (
-                    <button
-                      type="button"
-                      key={cat.cliente_categoria_id}
-                      className={`chip ${editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'active' : ''}`}
-                      onClick={() => toggleCategoria(cat.cliente_categoria_id)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        borderRadius: '20px',
-                        border: '1px solid var(--border)',
-                        background: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'var(--primary)' : 'var(--card)',
-                        color: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'white' : 'var(--text)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {cat.nombre}
-                    </button>
-                  ))}
+                <h4 className="form-section-title">Asignación</h4>
+                <div className="form-row">
+                  <label>Preventista *</label>
+                  <select
+                    value={editForm.preventista_id || ''}
+                    onChange={e => updateEditForm('preventista_id', e.target.value ? Number(e.target.value) : 0)}
+                  >
+                    <option value="">Seleccionar preventista</option>
+                    {preventistas.map(prev => (
+                      <option key={prev.collaborator_id} value={prev.collaborator_id}>
+                        {prev.nombre} {prev.apellido}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

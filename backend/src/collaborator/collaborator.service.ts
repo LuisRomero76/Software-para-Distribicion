@@ -27,7 +27,7 @@ export class CollaboratorService {
   async findOne(id: number): Promise<Collaborator> {
     const collaborator = await this.collaboratorRepository.findOne({
       where: { collaborator_id: id },
-      relations: ['assignments'],
+      relations: ['assignments', 'clientes'],
     });
     if (!collaborator) {
       throw new NotFoundException(`Colaborador con ID ${id} no encontrado`);

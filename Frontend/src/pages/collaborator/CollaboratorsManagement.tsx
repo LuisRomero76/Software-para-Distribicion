@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { request } from '../../lib/http';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
@@ -7,6 +8,7 @@ import * as XLSX from 'xlsx';
 
 export default function CollaboratorsManagement() {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export default function CollaboratorsManagement() {
   const [itemsPerPage] = useState(10);
   const [deleteCollaborator, setDeleteCollaborator] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '' });
+  const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '', rol: 'preventista' as 'preventista' | 'distribuidor' });
   const [saving, setSaving] = useState(false);
 
   const loadCollaborators = async () => {
@@ -73,7 +75,8 @@ export default function CollaboratorsManagement() {
       nombre: collaborator.nombre,
       apellido: collaborator.apellido,
       telefono: collaborator.telefono || '',
-      email: collaborator.email
+      email: collaborator.email,
+      rol: collaborator.rol || 'preventista'
     });
   };
 
@@ -192,7 +195,7 @@ export default function CollaboratorsManagement() {
                   <td className="email-col">{collaborator.email}</td>
                   <td>{new Date(collaborator.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                   <td className="actions-col">
-                    <button className="action-btn view" onClick={() => { setSelectedCollaborator(collaborator); setEditMode(false); }} title="Ver información">
+                    <button className="action-btn view" onClick={() => navigate(`/colaboradores/${collaborator.collaborator_id}`)} title="Ver información">
                       <Eye size={16}/>
                     </button>
                     <button className="action-btn edit" onClick={() => handleEdit(collaborator)} title="Editar">
@@ -215,13 +218,13 @@ export default function CollaboratorsManagement() {
         />
       </div>
 
-      {/* Modal de Vista/Edición */}
-      {selectedCollaborator && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setSelectedCollaborator(null)}>
+      {/* Modal de Edición */}
+      {selectedCollaborator && editMode && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setSelectedCollaborator(null); setEditMode(false); }}>
           <div className="modal-large" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editMode ? 'Editar colaborador' : 'Información del colaborador'}</h3>
-              <button className="modal-close" onClick={() => setSelectedCollaborator(null)}>×</button>
+              <h3>Editar colaborador</h3>
+              <button className="modal-close" onClick={() => { setSelectedCollaborator(null); setEditMode(false); }}>×</button>
             </div>
             <form className="modal-form" onSubmit={handleSave}>
               <div className="form-grid">
@@ -229,10 +232,8 @@ export default function CollaboratorsManagement() {
                   <span className="label-text">Nombre</span>
                   <input 
                     type="text" 
-                    value={editMode ? editForm.nombre : selectedCollaborator.nombre} 
+                    value={editForm.nombre} 
                     onChange={e => setEditForm({...editForm, nombre: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
                     className="form-input" 
                     required
                   />
@@ -241,10 +242,8 @@ export default function CollaboratorsManagement() {
                   <span className="label-text">Apellido</span>
                   <input 
                     type="text" 
-                    value={editMode ? editForm.apellido : selectedCollaborator.apellido} 
+                    value={editForm.apellido} 
                     onChange={e => setEditForm({...editForm, apellido: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
                     className="form-input" 
                     required
                   />
@@ -253,10 +252,8 @@ export default function CollaboratorsManagement() {
                   <span className="label-text">Teléfono</span>
                   <input 
                     type="text" 
-                    value={editMode ? editForm.telefono : (selectedCollaborator.telefono || '')} 
+                    value={editForm.telefono} 
                     onChange={e => setEditForm({...editForm, telefono: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
                     className="form-input"
                   />
                 </label>
@@ -264,26 +261,28 @@ export default function CollaboratorsManagement() {
                   <span className="label-text">Email</span>
                   <input 
                     type="email" 
-                    value={editMode ? editForm.email : selectedCollaborator.email} 
+                    value={editForm.email} 
                     onChange={e => setEditForm({...editForm, email: e.target.value})}
-                    disabled={!editMode} 
-                    readOnly={!editMode} 
                     className="form-input" 
                     required
                   />
                 </label>
+                <label>
+                  <span className="label-text">Rol</span>
+                  <select 
+                    value={editForm.rol} 
+                    onChange={e => setEditForm({...editForm, rol: e.target.value as 'preventista' | 'distribuidor'})}
+                    className="form-input" 
+                    required
+                  >
+                    <option value="preventista">Preventista</option>
+                    <option value="distribuidor">Distribuidor</option>
+                  </select>
+                </label>
               </div>
               <div className="modal-actions">
-                {editMode ? (
-                  <>
-                    <button type="button" className="btn-secondary" onClick={() => setEditMode(false)} disabled={saving}>Cancelar</button>
-                    <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar Cambios'}</button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" className="btn-secondary" onClick={() => setSelectedCollaborator(null)}>Cerrar</button>
-                  </>
-                )}
+                <button type="button" className="btn-secondary" onClick={() => { setEditMode(false); setSelectedCollaborator(null); }} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar Cambios'}</button>
               </div>
             </form>
           </div>

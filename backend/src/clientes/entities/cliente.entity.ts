@@ -1,7 +1,7 @@
-import { CategoriaCliente } from "src/categoria_clientes/entities/categoria_cliente.entity";
+import { Collaborator } from "src/collaborator/entities/collaborator.entity";
 import { Visita } from "src/common/enums/visita.enum";
 import { DiaVisita } from "src/common/enums/dia-visita.enum";
-import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { TelefonoReferencia } from "./telefono-referencia.entity";
 
 @Entity()
@@ -37,21 +37,20 @@ export class Cliente {
     @Column({ type: 'varchar', length: 50, nullable: true })
     telefono?: string;
 
+    @Column({ type: 'int', nullable: true })
+    preventista_id?: number;
+
+    @ManyToOne(() => Collaborator, collaborator => collaborator.clientes, {
+        eager: true,
+    })
+    @JoinColumn({ name: 'preventista_id' })
+    preventista: Collaborator;
+
     @OneToMany(() => TelefonoReferencia, telefono => telefono.cliente, {
         cascade: true,
         eager: true,
     })
     telefonos_referencia: TelefonoReferencia[];
-
-    @ManyToMany(() => CategoriaCliente, categoria => categoria.clientes, {
-        eager: true,
-    })
-    @JoinTable({
-        name: 'cliente_categoria_rel',
-        joinColumn: { name: 'cliente_id', referencedColumnName: 'cliente_id' },
-        inverseJoinColumn: { name: 'cliente_categoria_id', referencedColumnName: 'cliente_categoria_id' },
-    })
-    categorias: CategoriaCliente[];
 
     @CreateDateColumn({ type: 'timestamp' })
     createdAt: Date;

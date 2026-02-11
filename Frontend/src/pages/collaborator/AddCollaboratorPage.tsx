@@ -13,6 +13,7 @@ export default function AddCollaboratorPage() {
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rol, setRol] = useState<'preventista' | 'distribuidor'>('preventista');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function AddCollaboratorPage() {
     try {
       await request('/collaborator', {
         method: 'POST',
-        body: JSON.stringify({ nombre, apellido, telefono, email, password }),
+        body: JSON.stringify({ nombre, apellido, telefono, email, password, rol }),
         headers: { 'Content-Type': 'application/json' }
       }, auth?.token);
       
@@ -45,6 +46,7 @@ export default function AddCollaboratorPage() {
       setTelefono('');
       setEmail('');
       setPassword('');
+      setRol('preventista');
     } catch (err: any) {
       setError(err?.message ?? 'Error al crear colaborador');
     } finally {
@@ -106,6 +108,18 @@ export default function AddCollaboratorPage() {
                 placeholder="colaborador@vicorsa.com"
                 required
               />
+            </label>
+            <label className="form-field">
+              <span className="label-text">Rol *</span>
+              <select
+                className="form-input"
+                value={rol}
+                onChange={e => setRol(e.target.value as 'preventista' | 'distribuidor')}
+                required
+              >
+                <option value="preventista">Preventista</option>
+                <option value="distribuidor">Distribuidor</option>
+              </select>
             </label>
             <label className="form-field full-width">
               <span className="label-text">Contraseña *</span>

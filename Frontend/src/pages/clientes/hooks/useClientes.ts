@@ -17,9 +17,9 @@ export interface Cliente {
   ciudad?: string;
   coordenadas?: string;
   telefono?: string;
-  ruta?: string;
   dia_visita?: string;
-  categorias: { cliente_categoria_id: number; nombre: string }[];
+  preventista_id?: number;
+  preventista?: { collaborator_id: number; nombre: string; apellido: string; rol: string };
   telefonos_referencia: TelefonoReferencia[];
 }
 
@@ -32,9 +32,8 @@ export interface CreateClientePayload {
   ciudad?: string;
   coordenadas?: string;
   telefono?: string;
-  ruta?: string;
   dia_visita?: string;
-  cliente_categoria_ids: number[];
+  preventista_id: number;
   telefonos_referencia?: TelefonoReferencia[];
 }
 

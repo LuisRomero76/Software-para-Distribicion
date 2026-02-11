@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useClientes, type CreateClientePayload } from './hooks/useClientes';
-import { useCategoriasClientes } from './hooks/useCategoriasClientes';
+import { useCollaborators } from './hooks/useCollaborators';
 import { Visita } from './types/visita';
 import { DiaVisita } from './types/dia-visita';
 import { UserPlus, Trash2, Plus, MapPin } from 'lucide-react';
@@ -9,7 +9,7 @@ import MapSelector from './components/MapSelector';
 
 export default function NuevoCliente() {
   const { createCliente } = useClientes();
-  const { categorias } = useCategoriasClientes();
+  const { preventistas } = useCollaborators();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function NuevoCliente() {
     sub_canal: '',
     nombre: '',
     direccion: '',
-    cliente_categoria_ids: [],
+    preventista_id: 0,
   });
   const [telefonos, setTelefonos] = useState<{ numero: string; nombre_contacto?: string }[]>([]);
 
@@ -39,14 +39,6 @@ export default function NuevoCliente() {
     }
   };
 
-  const toggleCategoria = (id: number) => {
-    setForm(prev => {
-      const set = new Set(prev.cliente_categoria_ids);
-      set.has(id) ? set.delete(id) : set.add(id);
-      return { ...prev, cliente_categoria_ids: Array.from(set) };
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -54,6 +46,12 @@ export default function NuevoCliente() {
 
     if (!form.nombre || !form.direccion || !form.sub_canal) {
       setError('Por favor completa los campos obligatorios (Nombre, Dirección, Sub Canal)');
+      return;
+    }
+
+    if (!form.preventista_id || form.preventista_id === 0) {
+      setError('Por favor selecciona un preventista');
+      setErrorField('preventista_id');
       return;
     }
 
@@ -251,30 +249,22 @@ export default function NuevoCliente() {
           </div>
 
           <div className="form-section">
-            <h3 className="form-section-title">Categorización</h3>
+            <h3 className="form-section-title">Asignación</h3>
             <div className="form-group">
-              <label>Seleccione las categorías</label>
-              <div className="chips-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
-                {categorias.map(cat => (
-                  <button
-                    type="button"
-                    key={cat.cliente_categoria_id}
-                    className={`chip ${form.cliente_categoria_ids.includes(cat.cliente_categoria_id) ? 'active' : ''}`}
-                    onClick={() => toggleCategoria(cat.cliente_categoria_id)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '20px',
-                      border: '1px solid var(--border)',
-                      background: form.cliente_categoria_ids.includes(cat.cliente_categoria_id) ? 'var(--primary)' : 'var(--card)',
-                      color: form.cliente_categoria_ids.includes(cat.cliente_categoria_id) ? 'white' : 'var(--text)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {cat.nombre}
-                  </button>
+              <label>Preventista * {errorField === 'preventista_id' && <span style={{ color: '#ef4444', fontSize: '0.875rem', marginLeft: '8px' }}>⚠ Campo requerido</span>}</label>
+              <select
+                className={`form-input ${errorField === 'preventista_id' ? 'input-error' : ''}`}
+                value={form.preventista_id || ''}
+                onChange={e => update('preventista_id', e.target.value ? Number(e.target.value) : 0)}
+                style={errorField === 'preventista_id' ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
+              >
+                <option value="">Seleccionar preventista</option>
+                {preventistas.map(prev => (
+                  <option key={prev.collaborator_id} value={prev.collaborator_id}>
+                    {prev.nombre} {prev.apellido}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           </div>
 

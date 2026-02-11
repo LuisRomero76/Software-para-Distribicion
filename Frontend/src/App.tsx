@@ -9,7 +9,7 @@ import Dashboard from './pages/Dashboard'
 import DashboardLayout from './components/DashboardLayout'
 import DashboardAdmins from './pages/Admins'
 import DashboardAddAdmin from './pages/AddAdmin'
-import { CollaboratorsManagement, AddCollaboratorPage } from './pages/collaborator'
+import { CollaboratorsManagement, AddCollaboratorPage, CollaboratorDetails } from './pages/collaborator'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
 import CategoriesManagement from './pages/products/caregories/CategoriesManagement'
@@ -60,6 +60,9 @@ function App() {
               <Route path="admins/add" element={<DashboardAddAdmin />} />
               <Route path="colaboradores" element={<CollaboratorsManagement />} />
               <Route path="colaboradores/agregar" element={<AddCollaboratorPage />} />
+              <Route path="colaboradores/:id" element={<CollaboratorDetails />} />
+              <Route path="collaborators" element={<CollaboratorsManagement />} />
+              <Route path="collaborators/:id" element={<CollaboratorDetails />} />
               <Route path="profile" element={<Profile />} />
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="categories" element={<CategoriesManagement />} />

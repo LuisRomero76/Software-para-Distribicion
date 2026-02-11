@@ -13,7 +13,7 @@ export function ClientesTable({ clientes, onDelete }: { clientes: Cliente[]; onD
             <th>Nombre</th>
             <th>Ciudad</th>
             <th>Teléfono</th>
-            <th>Categorías</th>
+            <th>Preventista</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -24,7 +24,7 @@ export function ClientesTable({ clientes, onDelete }: { clientes: Cliente[]; onD
               <td>{c.nombre}</td>
               <td>{c.ciudad || '-'}</td>
               <td>{c.telefono || '-'}</td>
-              <td>{c.categorias.map(k => k.nombre).join(', ')}</td>
+              <td>{c.preventista ? `${c.preventista.nombre} ${c.preventista.apellido}` : 'Sin asignar'}</td>
               <td>
                 <button className="action-btn delete" onClick={() => onDelete(c.cliente_id)}>Eliminar</button>
               </td>

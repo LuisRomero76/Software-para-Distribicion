@@ -6,7 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiGet } from './services/api';
 import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
-import { useCategoriasClientes } from './hooks/useCategoriasClientes';
+import { useCollaborators } from './hooks/useCollaborators';
 import { Visita } from './types/visita';
 import { DiaVisita } from './types/dia-visita';
 import MapSelector from './components/MapSelector';
@@ -46,7 +46,7 @@ export default function ClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { updateCliente } = useClientes();
-  const { categorias } = useCategoriasClientes();
+  const { preventistas } = useCollaborators();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +104,7 @@ export default function ClientDetails() {
       ciudad: cliente.ciudad,
       coordenadas: cliente.coordenadas,
       telefono: cliente.telefono,
-      cliente_categoria_ids: cliente.categorias.map(c => c.cliente_categoria_id),
+      preventista_id: cliente.preventista_id || 0,
     });
     setTelefonos(cliente.telefonos_referencia || []);
     setEditError(null);
@@ -124,14 +124,6 @@ export default function ClientDetails() {
     setEditForm(prev => ({ ...prev, [k]: v }));
   };
 
-  const toggleCategoria = (catId: number) => {
-    setEditForm(prev => {
-      const set = new Set(prev.cliente_categoria_ids);
-      set.has(catId) ? set.delete(catId) : set.add(catId);
-      return { ...prev, cliente_categoria_ids: Array.from(set) };
-    });
-  };
-
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cliente) return;
@@ -148,7 +140,7 @@ export default function ClientDetails() {
       ciudad: editForm.ciudad,
       coordenadas: editForm.coordenadas,
       telefono: editForm.telefono,
-      cliente_categoria_ids: editForm.cliente_categoria_ids,
+      preventista_id: editForm.preventista_id,
       telefonos_referencia: telefonos,
     };
 
@@ -220,15 +212,11 @@ export default function ClientDetails() {
           <h1>{cliente.nombre}</h1>
           <span className="client-badge">Nit/CI: {cliente.nit_ci}</span>
           
-          {cliente.categorias.length > 0 ? (
-            <div className="categories-list">
-              {cliente.categorias.map(cat => (
-                <span key={cat.cliente_categoria_id} className="category-tag">
-                  {cat.nombre}
-                </span>
-              ))}
+          {cliente.preventista && (
+            <div className="client-badge" style={{ marginLeft: '0.5rem', background: 'var(--primary)' }}>
+              Preventista: {cliente.preventista.nombre} {cliente.preventista.apellido}
             </div>
-          ) : (<span className="empty">Sin categorías asignadas</span>)}
+          )}
           
         </div>
         <div className="client-actions">
@@ -267,6 +255,12 @@ export default function ClientDetails() {
             <div className="info-field">
               <span className="info-field-label">Ruta Asignada</span>
               <span className="info-field-value">{cliente.ruta || <span className="empty">No asignada</span>}</span>
+            </div>
+            <div className="info-field">
+              <span className="info-field-label">Preventista</span>
+              <span className="info-field-value">
+                {cliente.preventista ? `${cliente.preventista.nombre} ${cliente.preventista.apellido}` : <span className="empty">Sin asignar</span>}
+              </span>
             </div>
           </div>
         </div>
@@ -542,29 +536,22 @@ export default function ClientDetails() {
                 </div>
               </div>
 
-              {/* Categorías */}
+              {/* Asignación */}
               <div className="form-section">
-                <h4 className="form-section-title">Categorías</h4>
-                <div className="chips-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {categorias.map(cat => (
-                    <button
-                      type="button"
-                      key={cat.cliente_categoria_id}
-                      className={`chip ${editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'active' : ''}`}
-                      onClick={() => toggleCategoria(cat.cliente_categoria_id)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        borderRadius: '20px',
-                        border: '1px solid var(--border)',
-                        background: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'var(--primary)' : 'var(--card)',
-                        color: editForm.cliente_categoria_ids?.includes(cat.cliente_categoria_id) ? 'white' : 'var(--text)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {cat.nombre}
-                    </button>
-                  ))}
+                <h4 className="form-section-title">Asignación</h4>
+                <div className="form-row">
+                  <label>Preventista *</label>
+                  <select
+                    value={editForm.preventista_id || ''}
+                    onChange={e => updateEditForm('preventista_id', e.target.value ? Number(e.target.value) : 0)}
+                  >
+                    <option value="">Seleccionar preventista</option>
+                    {preventistas.map(prev => (
+                      <option key={prev.collaborator_id} value={prev.collaborator_id}>
+                        {prev.nombre} {prev.apellido}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

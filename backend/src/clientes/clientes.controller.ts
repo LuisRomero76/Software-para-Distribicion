@@ -19,6 +19,19 @@ export class ClientesController {
     return this.clientesService.findAll();
   }
 
+  @Get('preventista/:preventista_id')
+  findByPreventista(@Param('preventista_id') preventista_id: string) {
+    return this.clientesService.findByPreventista(+preventista_id);
+  }
+
+  @Get('preventista/:preventista_id/dia/:dia_visita')
+  findByPreventistaAndDia(
+    @Param('preventista_id') preventista_id: string,
+    @Param('dia_visita') dia_visita: string
+  ) {
+    return this.clientesService.findByPreventistaAndDia(+preventista_id, dia_visita);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.clientesService.findOne(+id);
