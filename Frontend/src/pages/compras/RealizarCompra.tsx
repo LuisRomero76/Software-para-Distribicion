@@ -248,8 +248,6 @@ export default function RealizarCompra() {
                 }
             });
 
-            console.log('Detalles a enviar:', JSON.stringify(detalles, null, 2));
-
             await createCompra({
                 proveedor_id: proveedorFinalId,
                 tipo_compra: tipoCompra,

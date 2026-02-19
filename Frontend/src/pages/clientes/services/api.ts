@@ -13,10 +13,11 @@ export async function apiPost<T>(url: string, body: any): Promise<T> {
 }
 
 export async function apiPatch<T>(url: string, body: any): Promise<T> {
-  return request<T>(url, {
+  const response = await request<T>(url, {
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+  return response;
 }
 
 export async function apiDelete<T>(url: string): Promise<T> {

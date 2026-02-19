@@ -78,9 +78,8 @@ export default function VerClientes() {
       ciudad: cliente.ciudad,
       coordenadas: cliente.coordenadas,
       telefono: cliente.telefono,
-      ruta: cliente.ruta,
       dia_visita: cliente.dia_visita,
-      preventista_id: cliente.preventista_id || 0,
+      preventista_id: cliente.preventista_id || undefined,
     });
     setTelefonos(cliente.telefonos_referencia || []);
     setEditError(null);
@@ -106,6 +105,24 @@ export default function VerClientes() {
     setEditError(null);
     setEditSuccess(null);
 
+    // Validar que el preventista esté seleccionado
+    if (!editForm.preventista_id || editForm.preventista_id === 0) {
+      setEditError('Por favor selecciona un preventista');
+      setErrorField('preventista_id');
+      return;
+    }
+
+    // Asegurar que preventista_id sea un número válido
+    const preventistaId = typeof editForm.preventista_id === 'number' 
+      ? editForm.preventista_id 
+      : Number(editForm.preventista_id);
+
+    if (isNaN(preventistaId) || preventistaId <= 0) {
+      setEditError('El preventista seleccionado no es válido');
+      setErrorField('preventista_id');
+      return;
+    }
+
     const payload: Partial<CreateClientePayload> = { 
       sub_canal: editForm.sub_canal,
       visita: editForm.visita,
@@ -114,9 +131,8 @@ export default function VerClientes() {
       ciudad: editForm.ciudad,
       coordenadas: editForm.coordenadas,
       telefono: editForm.telefono,
-      ruta: editForm.ruta,
       dia_visita: editForm.dia_visita,
-      cliente_categoria_ids: editForm.cliente_categoria_ids,
+      preventista_id: preventistaId,
       telefonos_referencia: telefonos,
     };
 
@@ -127,9 +143,10 @@ export default function VerClientes() {
 
     try {
       await updateCliente(editingCliente.cliente_id, payload);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await fetchClientes();
       setEditSuccess('Cliente actualizado correctamente');
       
-      // Cerrar modal después de 1.5 segundos
       setTimeout(() => {
         setShowEditModal(false);
         setEditingCliente(null);
@@ -137,34 +154,32 @@ export default function VerClientes() {
         setEditSuccess(null);
       }, 1500);
     } catch (e: any) {
-      console.error('Error al actualizar cliente:', e);
+      console.error('❌ Error al actualizar cliente:', e);
       
-      // Detectar errores específicos
       let errorMessage = 'Error al actualizar cliente';
       let fieldWithError: string | null = null;
       
       if (e?.message) {
         const msg = e.message.toLowerCase();
         
-        // Detectar error de NIT/CI duplicado
         if (msg.includes('duplicate') || msg.includes('duplicado') || msg.includes('unique') || msg.includes('nit_ci') || msg.includes('ya está registrado')) {
           errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
           fieldWithError = 'nit_ci';
-        } 
-        // Detectar otros errores de duplicados
+        }
+        else if (msg.includes('preventista') || msg.includes('colaborador')) {
+          errorMessage = '❌ Error con el preventista seleccionado. Por favor, verifique que el preventista existe y tenga el rol correcto.';
+          fieldWithError = 'preventista_id';
+        }
         else if (msg.includes('already exists') || msg.includes('ya existe')) {
           errorMessage = 'Ya existe un cliente con estos datos. Por favor, verifique la información ingresada.';
         }
-        // Error de validación
         else if (msg.includes('validation') || msg.includes('validación')) {
           errorMessage = 'Error de validación: ' + e.message;
         }
-        // Si es "Internal server error" y tenemos un NIT/CI, probablemente sea duplicado
         else if (msg.includes('internal server error') && editForm.nit_ci) {
           errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
           fieldWithError = 'nit_ci';
         }
-        // Otros errores
         else if (!msg.includes('internal server error')) {
           errorMessage = e.message;
         }
@@ -177,7 +192,6 @@ export default function VerClientes() {
 
   const updateEditForm = (k: keyof CreateClientePayload, v: any) => {
     setEditForm(prev => ({ ...prev, [k]: v }));
-    // Limpiar error si el usuario está editando el campo que tiene error
     if (k === errorField) {
       setEditError(null);
       setErrorField(null);
@@ -192,7 +206,6 @@ export default function VerClientes() {
       Dirección: c.direccion,
       Ciudad: c.ciudad,
       Teléfono: c.telefono,
-      Ruta: c.ruta,
       'Día Visita': c.dia_visita,
       Preventista: c.preventista ? `${c.preventista.nombre} ${c.preventista.apellido}` : 'Sin asignar',
       'Sub Canal': c.sub_canal,
@@ -438,10 +451,15 @@ export default function VerClientes() {
               <div className="form-section">
                 <h4 className="form-section-title">Asignación</h4>
                 <div className="form-row">
-                  <label>Preventista *</label>
+                  <label>Preventista * {errorField === 'preventista_id' && <span style={{ color: '#ef4444', fontSize: '0.875rem', marginLeft: '8px' }}>⚠ Campo requerido</span>}</label>
                   <select
                     value={editForm.preventista_id || ''}
-                    onChange={e => updateEditForm('preventista_id', e.target.value ? Number(e.target.value) : 0)}
+                    onChange={e => {
+                      const value = e.target.value ? Number(e.target.value) : undefined;
+                      updateEditForm('preventista_id', value);
+                    }}
+                    required
+                    style={errorField === 'preventista_id' ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : {}}
                   >
                     <option value="">Seleccionar preventista</option>
                     {preventistas.map(prev => (

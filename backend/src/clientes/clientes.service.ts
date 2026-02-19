@@ -64,9 +64,10 @@ export class ClientesService {
   }
 
   async findAll() {
-    return await this.clienteRepository.find({
+    const clientes = await this.clienteRepository.find({
       relations: ['preventista', 'telefonos_referencia']
     });
+    return clientes;
   }
 
   async findOne(id: number) {
@@ -105,21 +106,41 @@ export class ClientesService {
         await this.validarPreventista(updateClienteDto.preventista_id);
       }
 
-      if (updateClienteDto.telefonos_referencia !== undefined) {
-        await this.telefonoReferenciaRepository.delete({ cliente_id: id });
-        
-        cliente.telefonos_referencia = updateClienteDto.telefonos_referencia?.map(tel =>
-          this.telefonoReferenciaRepository.create({ ...tel, cliente_id: id })
-        ) || [];
-      }
-
       const { preventista_id, telefonos_referencia, ...data } = updateClienteDto;
-      Object.assign(cliente, data);
+      
+      const updateData: any = { ...data };
+      
       if (preventista_id !== undefined && preventista_id !== null) {
-        cliente.preventista_id = preventista_id;
+        updateData.preventista_id = preventista_id;
       }
       
-      return await this.clienteRepository.save(cliente);
+      await this.clienteRepository.update(
+        { cliente_id: id },
+        updateData
+      );
+      
+      if (telefonos_referencia !== undefined) {
+        await this.telefonoReferenciaRepository.delete({ cliente_id: id });
+        
+        if (telefonos_referencia.length > 0) {
+          const nuevos = telefonos_referencia.map(tel =>
+            this.telefonoReferenciaRepository.create({ ...tel, cliente_id: id })
+          );
+          await this.telefonoReferenciaRepository.save(nuevos);
+        }
+      }
+      
+      // Recargar el cliente con todas sus relaciones para asegurar que se retornen correctamente
+      const clienteActualizado = await this.clienteRepository.findOne({
+        where: { cliente_id: id },
+        relations: ['preventista', 'telefonos_referencia']
+      });
+      
+      if (!clienteActualizado) {
+        throw new NotFoundException(`No se pudo encontrar el cliente actualizado con id ${id}`);
+      }
+      
+      return clienteActualizado;
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
         if (error.message.includes('nit_ci')) {

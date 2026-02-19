@@ -121,17 +121,6 @@ export default function CompraDetails() {
                 getPagosByCompra(parseInt(id)),
             ]);
             
-            console.log('📥 Compra recargada:', {
-                id: compraData.compra_id,
-                detalles: compraData.detalles?.map((d: any) => ({
-                    id: d.detalle_compra_id,
-                    producto: d.producto?.nombre,
-                    cantidad: d.cantidad,
-                    modo: d.modo,
-                    precio_unitario: d.precio_unitario
-                }))
-            });
-            
             setCompra(compraData);
             setPagos(pagosData);
             setError(null);
@@ -247,14 +236,6 @@ export default function CompraDetails() {
                 fecha_vencimiento: detalle.fecha_vencimiento ? detalle.fecha_vencimiento.split('T')[0] : '',
                 producto: detalle.producto,
             }));
-            
-            console.log('📋 Detalles cargados para edición:', detalles.map(d => ({
-                id: d.detalle_compra_id,
-                producto: d.producto?.nombre,
-                cantidad: d.cantidad,
-                modo: d.modo,
-                precio_unitario: d.precio_unitario
-            })));
             
             setDetallesEditables(detalles);
             setEditandoProductos(true);
@@ -388,8 +369,6 @@ export default function CompraDetails() {
                 
                 return detalle;
             });
-            
-            console.log('📤 Enviando detalles al backend:', detalles);
             
             await updateCompra(compra.compra_id, {
                 detalles,

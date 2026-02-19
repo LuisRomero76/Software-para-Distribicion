@@ -5,14 +5,13 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { apiGet } from './services/api';
-import { useClientes, type Cliente, type CreateClientePayload } from './hooks/useClientes';
+import { type Cliente, type CreateClientePayload } from './hooks/useClientes';
 import { useCollaborators } from './hooks/useCollaborators';
 import { Visita } from './types/visita';
 import { DiaVisita } from './types/dia-visita';
 import MapSelector from './components/MapSelector';
 import './ClientDetails.css';
 
-// Fix para los iconos de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -20,12 +19,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Componente para forzar el resize del mapa
 function MapResizer() {
   const map = useMap();
   
   useEffect(() => {
-    // Múltiples intentos para asegurar que el mapa se renderice correctamente
     const timers = [
       setTimeout(() => map.invalidateSize(), 100),
       setTimeout(() => map.invalidateSize(), 200),
@@ -45,7 +42,6 @@ function MapResizer() {
 export default function ClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { updateCliente } = useClientes();
   const { preventistas } = useCollaborators();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +77,6 @@ export default function ClientDetails() {
   if (error) return <div className="page-container"><div className="alert alert-error">{error}</div></div>;
   if (!cliente) return <div className="page-container"><div className="alert alert-error">Cliente no encontrado</div></div>;
 
-  // Parsear coordenadas
   const parseCoordinates = (coords?: string): [number, number] | null => {
     if (!coords) return null;
     const parts = coords.split(',').map(p => parseFloat(p.trim()));
@@ -104,7 +99,7 @@ export default function ClientDetails() {
       ciudad: cliente.ciudad,
       coordenadas: cliente.coordenadas,
       telefono: cliente.telefono,
-      preventista_id: cliente.preventista_id || 0,
+      preventista_id: cliente.preventista_id || undefined,
     });
     setTelefonos(cliente.telefonos_referencia || []);
     setEditError(null);
@@ -131,6 +126,24 @@ export default function ClientDetails() {
     setEditError(null);
     setEditSuccess(null);
 
+    // Validar que el preventista esté seleccionado
+    if (!editForm.preventista_id || editForm.preventista_id === 0) {
+      setEditError('Por favor selecciona un preventista');
+      setErrorField('preventista_id');
+      return;
+    }
+
+    // Asegurar que preventista_id sea un número válido
+    const preventistaId = typeof editForm.preventista_id === 'number' 
+      ? editForm.preventista_id 
+      : Number(editForm.preventista_id);
+
+    if (isNaN(preventistaId) || preventistaId <= 0) {
+      setEditError('El preventista seleccionado no es válido');
+      setErrorField('preventista_id');
+      return;
+    }
+
     const payload: Partial<CreateClientePayload> = {
       sub_canal: editForm.sub_canal,
       visita: editForm.visita,
@@ -140,7 +153,7 @@ export default function ClientDetails() {
       ciudad: editForm.ciudad,
       coordenadas: editForm.coordenadas,
       telefono: editForm.telefono,
-      preventista_id: editForm.preventista_id,
+      preventista_id: preventistaId,
       telefonos_referencia: telefonos,
     };
 
@@ -150,8 +163,6 @@ export default function ClientDetails() {
 
     try {
       setSaving(true);
-      await updateCliente(cliente.cliente_id, payload);
-      // Recargar datos del cliente
       const data = await apiGet<Cliente>(`/clientes/${id}`);
       setCliente(data);
       setEditSuccess('Cliente actualizado correctamente');
@@ -173,25 +184,24 @@ export default function ClientDetails() {
       if (e.message) {
         const msg = e.message.toLowerCase();
         
-        // Detectar error de NIT/CI duplicado
         if (msg.includes('duplicate') || msg.includes('duplicado') || msg.includes('unique') || msg.includes('nit_ci') || msg.includes('ya está registrado')) {
           errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
           fieldWithError = 'nit_ci';
-        } 
-        // Detectar otros errores de duplicados
+        }
+        else if (msg.includes('preventista') || msg.includes('colaborador')) {
+          errorMessage = '❌ Error con el preventista seleccionado. Por favor, verifique que el preventista existe y tenga el rol correcto.';
+          fieldWithError = 'preventista_id';
+        }
         else if (msg.includes('already exists') || msg.includes('ya existe')) {
           errorMessage = 'Ya existe un cliente con estos datos. Por favor, verifique la información ingresada.';
         }
-        // Error de validación
         else if (msg.includes('validation') || msg.includes('validación')) {
           errorMessage = 'Error de validación: ' + e.message;
         }
-        // Si es "Internal server error" y tenemos un NIT/CI, probablemente sea duplicado
         else if (msg.includes('internal server error') && editForm.nit_ci) {
           errorMessage = '❌ El campo NIT/CI ya está registrado en otro cliente';
           fieldWithError = 'nit_ci';
         }
-        // Otros errores
         else if (!msg.includes('internal server error')) {
           errorMessage = e.message;
         }
@@ -253,8 +263,8 @@ export default function ClientDetails() {
               <span className="info-field-value">{cliente.visita || <span className="empty">No especificado</span>}</span>
             </div>
             <div className="info-field">
-              <span className="info-field-label">Ruta Asignada</span>
-              <span className="info-field-value">{cliente.ruta || <span className="empty">No asignada</span>}</span>
+              <span className="info-field-label">Día de Visita</span>
+              <span className="info-field-value">{cliente.dia_visita || <span className="empty">No asignado</span>}</span>
             </div>
             <div className="info-field">
               <span className="info-field-label">Preventista</span>
@@ -543,7 +553,11 @@ export default function ClientDetails() {
                   <label>Preventista *</label>
                   <select
                     value={editForm.preventista_id || ''}
-                    onChange={e => updateEditForm('preventista_id', e.target.value ? Number(e.target.value) : 0)}
+                    onChange={e => {
+                      const value = e.target.value ? Number(e.target.value) : undefined;
+                      updateEditForm('preventista_id', value);
+                    }}
+                    required
                   >
                     <option value="">Seleccionar preventista</option>
                     {preventistas.map(prev => (

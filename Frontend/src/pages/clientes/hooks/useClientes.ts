@@ -80,8 +80,22 @@ export function useClientes() {
         }
       }
     }
-    await apiPatch(`/clientes/${id}`, body);
+    
+    // Asegurar que preventista_id sea un número válido si está presente
+    if (Object.prototype.hasOwnProperty.call(body, 'preventista_id')) {
+      const v = body.preventista_id;
+      if (v !== undefined && v !== null) {
+        const parsed = typeof v === 'string' ? parseInt(v, 10) : v;
+        if (Number.isNaN(parsed) || parsed <= 0) {
+          throw new Error('El ID del preventista no es válido');
+        }
+        body.preventista_id = parsed;
+      }
+    }
+    
+    const clienteActualizado = await apiPatch(`/clientes/${id}`, body);
     await fetchClientes();
+    return clienteActualizado;
   };
 
   useEffect(() => { fetchClientes(); }, []);
