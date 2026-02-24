@@ -370,7 +370,8 @@ export class CompraService {
           (sum, detalle) => sum + detalle.cantidad * detalle.precio_unitario,
           0
         );
-        const descuento = updateCompraDto.descuento || 0;
+        // Mantener el descuento original si no se envía explícitamente
+        const descuento = updateCompraDto.descuento !== undefined ? updateCompraDto.descuento : compra.descuento;
         const total = subtotal - descuento;
         const tipoCompraFinal = updateCompraDto.tipo_compra ?? compra.tipo_compra;
         const montoPagado = updateCompraDto.monto_pagado !== undefined ? updateCompraDto.monto_pagado : compra.monto_pagado;

@@ -996,15 +996,6 @@ export default function CompraDetails() {
                     ) : (
                         <div className="empty-state">
                             <p>No se han registrado pagos para esta compra</p>
-                            {compra.monto_adeudado > 0 && (
-                                <button 
-                                    className="btn-primary" 
-                                    onClick={handleAbrirModalPago}
-                                    style={{ marginTop: '1rem' }}
-                                >
-                                    <Plus size={18} /> Registrar Primer Pago
-                                </button>
-                            )}
                         </div>
                     )}
                 </div>
