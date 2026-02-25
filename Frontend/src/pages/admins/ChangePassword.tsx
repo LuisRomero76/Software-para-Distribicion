@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { request } from '../lib/http';
+import { useAuth } from '../../context/AuthContext';
+import { request } from '../../lib/http';
 import { Lock, Eye, EyeOff, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

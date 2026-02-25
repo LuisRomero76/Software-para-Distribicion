@@ -13,6 +13,8 @@ import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 import '../../styles/page.css';
 import '../../styles/table.css';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 export default function VerProveedores() {
     const navigate = useNavigate();
@@ -27,6 +29,41 @@ export default function VerProveedores() {
     const [editProveedor, setEditProveedor] = useState<Proveedor | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const pageIds = paginatedProveedores.map(p => p.proveedor_id);
+        const allSelected = pageIds.every(id => selectedIds.has(id));
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        setBulkDeleting(true);
+        try {
+            await Promise.all([...selectedIds].map(id => deleteProveedorService(id)));
+            setProveedores(prev => prev.filter(p => !selectedIds.has(p.proveedor_id)));
+            setSelectedIds(new Set());
+            setShowBulkDeleteModal(false);
+        } catch (err: any) {
+            alert(err?.message ?? 'Error al eliminar los proveedores seleccionados');
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
     const [formData, setFormData] = useState<CreateProveedorDto>({
         nombre: '',
         nit_ci: '',
@@ -156,8 +193,10 @@ export default function VerProveedores() {
         proveedor.ciudad?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { sorted: sortedProveedores, sort: sortField, handleSort } = useSorting(filteredProveedores);
+
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedProveedores = filteredProveedores.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedProveedores = sortedProveedores.slice(startIndex, startIndex + itemsPerPage);
     
     useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
@@ -202,6 +241,11 @@ export default function VerProveedores() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    {selectedIds.size > 0 && (
+                        <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+                            <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -217,18 +261,29 @@ export default function VerProveedores() {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Nombre del proveedor/empresa</th>
-                                    <th>NIT/CI</th>
-                                    <th>Email</th>
-                                    <th>Teléfono</th>
-                                    <th>Ciudad</th>
+                                    <th className="check-col">
+                                        <input
+                                            type="checkbox"
+                                            checked={paginatedProveedores.length > 0 && paginatedProveedores.every(p => selectedIds.has(p.proveedor_id))}
+                                            onChange={toggleSelectAll}
+                                            title="Seleccionar todos"
+                                        />
+                                    </th>
+                                    <SortableTh label="ID" sortKey="proveedor_id" sort={sortField} onSort={handleSort} />
+                                    <SortableTh label="Nombre del proveedor/empresa" sortKey="nombre" sort={sortField} onSort={handleSort} />
+                                    <SortableTh label="NIT/CI" sortKey="nit_ci" sort={sortField} onSort={handleSort} />
+                                    <SortableTh label="Email" sortKey="email" sort={sortField} onSort={handleSort} />
+                                    <SortableTh label="Teléfono" sortKey="telefono" sort={sortField} onSort={handleSort} />
+                                    <SortableTh label="Ciudad" sortKey="ciudad" sort={sortField} onSort={handleSort} />
                                     <th className='actions-col'>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedProveedores.map(proveedor => (
-                                    <tr key={proveedor.proveedor_id}>
+                                    <tr key={proveedor.proveedor_id} className={selectedIds.has(proveedor.proveedor_id) ? 'row-selected' : ''}>
+                                        <td className="check-col">
+                                            <input type="checkbox" checked={selectedIds.has(proveedor.proveedor_id)} onChange={() => toggleSelect(proveedor.proveedor_id)} />
+                                        </td>
                                         <td className="id-col">{proveedor.proveedor_id}</td>
                                         <td className="font-medium">{proveedor.nombre}</td>
                                         <td>{proveedor.nit_ci || '-'}</td>
@@ -431,6 +486,21 @@ export default function VerProveedores() {
                             </button>
                             <button className="btn danger" onClick={handleDelete} disabled={deleting}>
                                 {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showBulkDeleteModal && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal">
+                        <h3>¿Eliminar {selectedIds.size} proveedor(es)?</h3>
+                        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente los proveedores seleccionados.</p>
+                        <div className="modal-actions">
+                            <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+                            <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
                             </button>
                         </div>
                     </div>

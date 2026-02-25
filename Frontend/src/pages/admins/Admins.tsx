@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { request } from '../lib/http';
-import { useAuth } from '../context/AuthContext';
+import { request } from '../../lib/http';
+import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
-import Pagination from '../components/Pagination';
+import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 export default function DashboardAdmins() {
   const { auth } = useAuth();
@@ -19,6 +21,42 @@ export default function DashboardAdmins() {
   const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '' });
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    // No se puede seleccionar el propio usuario
+    const pageIds = paginatedAdmins.filter(a => a.email !== auth?.email).map(a => a.admin_id);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all([...selectedIds].map(id => request(`/admin/${id}`, { method: 'DELETE' }, auth?.token)));
+      setAdmins(prev => prev.filter(a => !selectedIds.has(a.admin_id)));
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e: any) {
+      alert(e?.message ?? 'Error al eliminar los administradores seleccionados');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const loadAdmins = async () => {
     setLoading(true);
@@ -47,8 +85,11 @@ export default function DashboardAdmins() {
     admin.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Ordenamiento
+  const { sorted: sortedAdmins, sort: sortField, handleSort } = useSorting(filteredAdmins);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedAdmins = filteredAdmins.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedAdmins = sortedAdmins.slice(startIndex, startIndex + itemsPerPage);
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
@@ -172,6 +213,11 @@ export default function DashboardAdmins() {
           <div className="table-info">
             {filteredAdmins.length} de {admins.length} administrador(es)
           </div>
+          {selectedIds.size > 0 && (
+            <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+              <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -184,17 +230,30 @@ export default function DashboardAdmins() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nombre Completo</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Fecha de Creación</th>
+                <th className="check-col">
+                  <input
+                    type="checkbox"
+                    checked={paginatedAdmins.filter(a => a.email !== auth?.email).length > 0 && paginatedAdmins.filter(a => a.email !== auth?.email).every(a => selectedIds.has(a.admin_id))}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <SortableTh label="ID" sortKey="admin_id" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Nombre" sortKey="nombre" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Teléfono" sortKey="telefono" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Email" sortKey="email" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Fecha de Creación" sortKey="createdAt" sort={sortField} onSort={handleSort} />
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {paginatedAdmins.map(admin => (
-                <tr key={admin.admin_id}>
+                <tr key={admin.admin_id} className={selectedIds.has(admin.admin_id) ? 'row-selected' : ''}>
+                  <td className="check-col">
+                    {admin.email !== auth?.email && (
+                      <input type="checkbox" checked={selectedIds.has(admin.admin_id)} onChange={() => toggleSelect(admin.admin_id)} />
+                    )}
+                  </td>
                   <td className="id-col">{admin.admin_id}</td>
                   <td className="name-col">{admin.nombre} {admin.apellido}</td>
                   <td>{admin.telefono}</td>
@@ -318,6 +377,20 @@ export default function DashboardAdmins() {
       </div>
     )
   }
+  {showBulkDeleteModal && (
+    <div className="modal-overlay" role="dialog" aria-modal="true">
+      <div className="modal">
+        <h3>¿Eliminar {selectedIds.size} administrador(es)?</h3>
+        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente los administradores seleccionados.</p>
+        <div className="modal-actions">
+          <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+          <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+            {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
     </div >
   );
 }

@@ -13,7 +13,7 @@ import { AdminModule } from 'src/admin/admin.module';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET_KEY,
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '8h' },
     }),
     AdminModule,
   ],

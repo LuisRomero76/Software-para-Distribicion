@@ -141,6 +141,11 @@
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar.collapsed {
@@ -744,6 +749,72 @@
 
 .actions-col {
   gap: 0.5rem;
+}
+
+/* Bulk selection column */
+.check-col {
+  width: 44px;
+  text-align: center !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.check-col input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  border-radius: 4px;
+}
+
+/* Bulk delete button */
+.btn-bulk-delete {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-bulk-delete:hover {
+  background: #dc2626;
+}
+
+.btn-bulk-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Sortable table headers */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.sortable-th:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+.th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.sort-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.sort-inactive {
+  opacity: 0.3;
 }
 
 .action-btn {

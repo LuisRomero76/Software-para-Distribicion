@@ -14,6 +14,8 @@ import * as XLSX from 'xlsx';
 import '../../styles/page.css';
 import '../../styles/table.css';
 import './compras.css';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 /**
  * Convierte una fecha de input (YYYY-MM-DD) a formato ISO con hora local de mediodía
@@ -43,6 +45,41 @@ export default function VerCompras() {
     const [deleteCompra, setDeleteCompra] = useState<Compra | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const pageIds = paginatedCompras.map(c => c.compra_id);
+        const allSelected = pageIds.every(id => selectedIds.has(id));
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        setBulkDeleting(true);
+        try {
+            await Promise.all([...selectedIds].map(id => deleteCompraService(id)));
+            setCompras(prev => prev.filter(c => !selectedIds.has(c.compra_id)));
+            setSelectedIds(new Set());
+            setShowBulkDeleteModal(false);
+        } catch (err: any) {
+            alert(err?.message ?? 'Error al eliminar las compras seleccionadas');
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
     
     // Estados para modal de pagos
     const [pagoModal, setPagoModal] = useState<{ compra: Compra | null; pagos: PagoCompra[] }>({ compra: null, pagos: [] });
@@ -163,8 +200,13 @@ export default function VerCompras() {
         compra.observaciones?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { sorted: sortedCompras, sort: sortField, handleSort } = useSorting(filteredCompras, (item, key) => {
+        if (key === 'proveedor') return item.proveedor?.nombre ?? '';
+        return (item as any)[key];
+    });
+
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedCompras = filteredCompras.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedCompras = sortedCompras.slice(startIndex, startIndex + itemsPerPage);
     
     useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
@@ -202,6 +244,11 @@ export default function VerCompras() {
                     <div className="table-info">
                         {filteredCompras.length} de {compras.length} compra(s)
                     </div>
+                    {selectedIds.size > 0 && (
+                        <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+                            <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -214,20 +261,31 @@ export default function VerCompras() {
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Proveedor</th>
-                                <th>Fecha</th>
-                                <th>Tipo</th>
-                                <th>Estado</th>
-                                <th className="text-right">Total<br/>(Bs.)</th>
-                                <th className="text-right">Pagado<br/>(Bs.)</th>
-                                <th className="text-right">Adeudado<br/>(Bs.)</th>
+                                <th className="check-col">
+                                    <input
+                                        type="checkbox"
+                                        checked={paginatedCompras.length > 0 && paginatedCompras.every(c => selectedIds.has(c.compra_id))}
+                                        onChange={toggleSelectAll}
+                                        title="Seleccionar todos"
+                                    />
+                                </th>
+                                <SortableTh label="ID" sortKey="compra_id" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Proveedor" sortKey="proveedor" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Fecha" sortKey="fecha_compra" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Tipo" sortKey="tipo_compra" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Estado" sortKey="estado" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Total (Bs.)" sortKey="total" sort={sortField} onSort={handleSort} className="text-right" />
+                                <th className="text-right">Pagado (Bs.)</th>
+                                <th className="text-right">Adeudado (Bs.)</th>
                                 <th className="actions-col">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedCompras.map(compra => (
-                                <tr key={compra.compra_id}>
+                                <tr key={compra.compra_id} className={selectedIds.has(compra.compra_id) ? 'row-selected' : ''}>
+                                    <td className="check-col">
+                                        <input type="checkbox" checked={selectedIds.has(compra.compra_id)} onChange={() => toggleSelect(compra.compra_id)} />
+                                    </td>
                                     <td className="id-col">#{compra.compra_id}</td>
                                     <td>{compra.proveedor?.nombre || '-'}</td>
                                     <td>
@@ -419,6 +477,21 @@ export default function VerCompras() {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {showBulkDeleteModal && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal">
+                        <h3>¿Eliminar {selectedIds.size} compra(s)?</h3>
+                        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente las compras seleccionadas.</p>
+                        <div className="modal-actions">
+                            <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+                            <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

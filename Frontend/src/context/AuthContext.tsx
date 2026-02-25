@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, useCallback } from 'react
 import { AuthService } from '../services/authService';
 import type { AuthResponse, IAuthService, LoginInput } from '../services/authService';
 import { useTokenExpiration } from '../hooks/useTokenExpiration';
+import { useInactivityLogout } from '../hooks/useInactivityLogout';
 
 type AuthState = AuthResponse | null;
 
@@ -10,6 +11,8 @@ interface AuthContextShape {
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
   logout: () => void;
+  inactivityWarning: boolean;
+  dismissInactivityWarning: () => void;
 }
 
 const AuthContext = createContext<AuthContextShape | undefined>(undefined);
@@ -28,15 +31,28 @@ function loadAuth(): AuthState {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState>(() => loadAuth());
+  const [inactivityWarning, setInactivityWarning] = useState(false);
   const service: IAuthService = useMemo(() => new AuthService(), []);
 
   const logout = useCallback(() => {
     setAuth(null);
+    setInactivityWarning(false);
     localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  const dismissInactivityWarning = useCallback(() => {
+    setInactivityWarning(false);
   }, []);
 
   // Validar expiración del token y cerrar sesión automáticamente
   useTokenExpiration(auth?.token, logout);
+
+  // Cerrar sesión por inactividad (aviso 1 min antes)
+  useInactivityLogout(
+    Boolean(auth?.token),
+    () => setInactivityWarning(true),
+    logout,
+  );
 
   const login = async (input: LoginInput) => {
     const res = await service.login({
@@ -52,6 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: Boolean(auth?.token),
     login,
     logout,
+    inactivityWarning,
+    dismissInactivityWarning,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

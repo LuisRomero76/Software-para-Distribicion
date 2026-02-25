@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Moon, Sun, Users, ChevronDown, ChevronUp, UserPlus, LogOut, Menu, TrendingUp, User, Lock, Package, List, Truck, Upload, ShoppingCart, MapPin, BarChart3, Wallet, ShoppingBag, FileText } from 'lucide-react';
@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
     const { theme, toggleTheme } = useTheme();
-    const { auth, logout } = useAuth();
+    const { auth, logout, inactivityWarning, dismissInactivityWarning } = useAuth();
     const location = useLocation();
     const [showLogout, setShowLogout] = useState(false);
     
@@ -36,6 +36,30 @@ export default function DashboardLayout() {
     const [sidebarCollapsed] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(true);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [countdown, setCountdown] = useState(60);
+    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Cuenta regresiva cuando aparece el aviso de inactividad
+    useEffect(() => {
+        if (!inactivityWarning) {
+            setCountdown(60);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            return;
+        }
+        setCountdown(60);
+        countdownRef.current = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    if (countdownRef.current) clearInterval(countdownRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+        };
+    }, [inactivityWarning]);
 
     useEffect(() => {
         setAdminMenuOpen(isAdminRoute);
@@ -321,6 +345,21 @@ export default function DashboardLayout() {
                             <div className="modal-actions">
                                 <button className="btn outline" onClick={() => setShowLogout(false)}>Cancelar</button>
                                 <button className="btn" onClick={logout}>Sí, cerrar sesión</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {inactivityWarning && (
+                    <div className="modal-overlay" role="dialog" aria-modal="true">
+                        <div className="modal">
+                            <h3>⚠️ Sesión por expirar</h3>
+                            <p>
+                                Tu sesión se cerrará automáticamente por inactividad en{' '}
+                                <strong>{countdown} segundo{countdown !== 1 ? 's' : ''}</strong>.
+                            </p>
+                            <div className="modal-actions">
+                                <button className="btn outline" onClick={logout}>Cerrar sesión</button>
+                                <button className="btn" onClick={dismissInactivityWarning}>Continuar sesión</button>
                             </div>
                         </div>
                     </div>

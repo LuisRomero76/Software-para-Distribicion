@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { request } from '../lib/http';
-import { useAuth } from '../context/AuthContext';
+import { request } from '../../lib/http';
+import { useAuth } from '../../context/AuthContext';
 import { UserPlus, CheckCircle } from 'lucide-react';
 
 export default function DashboardAddAdmin() {

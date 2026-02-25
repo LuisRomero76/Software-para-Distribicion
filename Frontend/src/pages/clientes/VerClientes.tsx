@@ -9,6 +9,8 @@ import * as XLSX from 'xlsx';
 import Pagination from '../../components/Pagination';
 import MapSelector from './components/MapSelector';
 import './VerClientes.css';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 export default function VerClientes() {
   const { clientes, loading, error, deleteCliente, updateCliente, fetchClientes } = useClientes();
@@ -26,7 +28,43 @@ export default function VerClientes() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const navigate = useNavigate();
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedClientes.map(c => c.cliente_id);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await deleteCliente(id);
+      }
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   useEffect(() => {
     document.title = 'Grupo Vicorsa | Ver Clientes';
@@ -39,7 +77,11 @@ export default function VerClientes() {
   );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedClientes = filteredClientes.slice(startIndex, startIndex + itemsPerPage);
+  const { sorted: sortedClientes, sort: sortField, handleSort } = useSorting(filteredClientes, (item, key) => {
+    if (key === 'preventista') return (item as any).preventista?.nombre ?? '';
+    return (item as any)[key];
+  });
+  const paginatedClientes = sortedClientes.slice(startIndex, startIndex + itemsPerPage);
 
   // Reset to first page when search term changes
   useEffect(() => {
@@ -254,23 +296,39 @@ export default function VerClientes() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            {selectedIds.size > 0 && (
+              <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+                <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+              </button>
+            )}
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Sub_canal</th>
-                <th>Nombre</th>
-                <th>Nit/CI</th>
-                <th>Teléfono</th>
-                <th>Día de Visita</th>
+                <th className="check-col">
+                  <input
+                    type="checkbox"
+                    checked={paginatedClientes.length > 0 && paginatedClientes.every(c => selectedIds.has(c.cliente_id))}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <SortableTh label="ID" sortKey="cliente_id" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Sub_canal" sortKey="sub_canal" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Nombre" sortKey="nombre" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Nit/CI" sortKey="nit_ci" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Teléfono" sortKey="telefono" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Día de Visita" sortKey="dia_visita" sort={sortField} onSort={handleSort} />
                 <th>Preventista</th>
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {paginatedClientes.map(c => (
-                <tr key={c.cliente_id}>
+                <tr key={c.cliente_id} className={selectedIds.has(c.cliente_id) ? 'row-selected' : ''}>
+                  <td className="check-col">
+                    <input type="checkbox" checked={selectedIds.has(c.cliente_id)} onChange={() => toggleSelect(c.cliente_id)} />
+                  </td>
                   <td>{c.cliente_id}</td>
                   <td>{c.sub_canal}</td>
                   <td>{c.nombre}</td>
@@ -536,6 +594,21 @@ export default function VerClientes() {
             <div className="modal-actions">
               <button className="btn outline" onClick={handleCancelDelete}>Cancelar</button>
               <button className="btn btn-danger" onClick={handleConfirmDelete}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>¿Eliminar {selectedIds.size} cliente(s)?</h3>
+            <p>Esta acción no se puede deshacer. Se eliminarán permanentemente los clientes seleccionados.</p>
+            <div className="modal-actions">
+              <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+              <button className="btn btn-danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
+              </button>
             </div>
           </div>
         </div>

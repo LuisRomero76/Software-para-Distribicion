@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx'
 import { getAllGastosOperativos, updateGastoOperativo, type GastoOperativo, type TipoEgreso } from '../../services/gastoOperativoService'
 import { getAllIngresos, updateIngreso, deleteIngreso, listIngresoCategoriaActivas, type Ingreso, type IngresoCategoria } from '../../services/ingresoService'
 import { listCategoriasActivas, type GastoOperativoCategoria } from '../../services/gastoOperativoCategoriaService'
+import { useSorting } from '../../hooks/useSorting'
+import { SortableTh } from '../../components/SortableTh'
 
 interface Vehicle {
   vehicle_id: number
@@ -53,6 +55,58 @@ export default function VerIngresosEgresos() {
     vehiculo_id: 0
   })
   const [saving, setSaving] = useState(false)
+
+  // Bulk select
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+
+  const toggleSelect = (key: string) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    const pageKeys = paginatedRegistros.map(r => `${r.tipo}_${r.id}`)
+    const allSelected = pageKeys.every(k => selectedKeys.has(k))
+    if (allSelected) {
+      setSelectedKeys(prev => {
+        const next = new Set(prev)
+        pageKeys.forEach(k => next.delete(k))
+        return next
+      })
+    } else {
+      setSelectedKeys(prev => {
+        const next = new Set(prev)
+        pageKeys.forEach(k => next.add(k))
+        return next
+      })
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true)
+    try {
+      for (const key of selectedKeys) {
+        const [tipo, id] = key.split('_')
+        if (tipo === 'EGRESO') {
+          await request(`/gasto-operativo/${id}`, { method: 'DELETE' }, auth?.token)
+        } else {
+          await deleteIngreso(Number(id), auth?.token)
+        }
+      }
+      setRegistros(prev => prev.filter(r => !selectedKeys.has(`${r.tipo}_${r.id}`)))
+      setSelectedKeys(new Set())
+      setShowBulkDeleteModal(false)
+    } catch (e: any) {
+      alert(e?.message ?? 'Error al eliminar los registros')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
 
   const loadDatos = async () => {
     setLoading(true)
@@ -140,8 +194,13 @@ export default function VerIngresosEgresos() {
     (registro.categoriaRelacion?.nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const { sorted: sortedRegistros, sort: sortField, handleSort } = useSorting(filteredRegistros, (item, key) => {
+    if (key === 'categoria') return item.categoriaRelacion?.nombre ?? ''
+    return (item as any)[key]
+  })
+
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedRegistros = filteredRegistros.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedRegistros = sortedRegistros.slice(startIndex, startIndex + itemsPerPage)
   useEffect(() => { setCurrentPage(1) }, [searchTerm])
 
   const handleDelete = async () => {
@@ -294,6 +353,15 @@ export default function VerIngresosEgresos() {
           <div className="table-info">
             {filteredRegistros.length} de {registros.length} registro(s)
           </div>
+          {selectedKeys.size > 0 && (
+            <button
+              className="btn-bulk-delete"
+              onClick={() => setShowBulkDeleteModal(true)}
+              disabled={bulkDeleting}
+            >
+              Eliminar seleccionados ({selectedKeys.size})
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -306,20 +374,35 @@ export default function VerIngresosEgresos() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Tipo</th>
-                <th>ID</th>
+                <th className="check-col">
+                  <input
+                    type="checkbox"
+                    checked={paginatedRegistros.length > 0 && paginatedRegistros.every(r => selectedKeys.has(`${r.tipo}_${r.id}`))}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <SortableTh label="Tipo" sortKey="tipo" sort={sortField} onSort={handleSort} />
+                <SortableTh label="ID" sortKey="id" sort={sortField} onSort={handleSort} />
                 <th>Subtipo</th>
-                <th>Categoría</th>
-                <th>Descripción</th>
-                <th>Monto <br /> (Bs.)</th>
-                <th>Fecha de Creación</th>
+                <SortableTh label="Categoría" sortKey="categoria" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Descripción" sortKey="descripcion" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Monto (Bs.)" sortKey="monto" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Fecha" sortKey="createdAt" sort={sortField} onSort={handleSort} />
                 <th>Vehículo</th>
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {paginatedRegistros.map((registro, idx) => (
-                <tr key={`${registro.tipo}-${registro.id}-${idx}`}>
+                <tr key={`${registro.tipo}-${registro.id}-${idx}`} className={selectedKeys.has(`${registro.tipo}_${registro.id}`) ? 'row-selected' : ''}>
+                  <td className="check-col">
+                    <input
+                      type="checkbox"
+                      checked={selectedKeys.has(`${registro.tipo}_${registro.id}`)}
+                      onChange={() => toggleSelect(`${registro.tipo}_${registro.id}`)}
+                    />
+                  </td>
                   <td>
                     <span style={{
                       padding: '0.25rem 0.75rem',
@@ -484,6 +567,21 @@ export default function VerIngresosEgresos() {
                 )}
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Eliminar registros</h2>
+            <p>¿Estás seguro de que deseas eliminar <strong>{selectedKeys.size}</strong> registro(s)? Esta acción no se puede deshacer.</p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+              <button className="btn-danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                {bulkDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

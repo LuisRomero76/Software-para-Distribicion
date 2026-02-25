@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 export default function CollaboratorsManagement() {
   const { auth } = useAuth();
@@ -21,6 +23,41 @@ export default function CollaboratorsManagement() {
   const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState({ nombre: '', apellido: '', telefono: '', email: '', rol: 'preventista' as 'preventista' | 'distribuidor' });
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedCollaborators.map(c => c.collaborator_id);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all([...selectedIds].map(id => request(`/collaborator/${id}`, { method: 'DELETE' }, auth?.token)));
+      setCollaborators(prev => prev.filter(c => !selectedIds.has(c.collaborator_id)));
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e: any) {
+      alert(e?.message ?? 'Error al eliminar los colaboradores seleccionados');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const loadCollaborators = async () => {
     setLoading(true);
@@ -49,9 +86,12 @@ export default function CollaboratorsManagement() {
     collaborator.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Ordenamiento
+  const { sorted: sortedCollaborators, sort: sortField, handleSort } = useSorting(filteredCollaborators);
+
   // Paginación
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCollaborators = filteredCollaborators.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedCollaborators = sortedCollaborators.slice(startIndex, startIndex + itemsPerPage);
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
@@ -166,6 +206,11 @@ export default function CollaboratorsManagement() {
           <div className="table-info">
             {filteredCollaborators.length} de {collaborators.length} colaborador(es)
           </div>
+          {selectedIds.size > 0 && (
+            <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+              <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -178,17 +223,28 @@ export default function CollaboratorsManagement() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nombre Completo</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Fecha de Creación</th>
+                <th className="check-col">
+                  <input
+                    type="checkbox"
+                    checked={paginatedCollaborators.length > 0 && paginatedCollaborators.every(c => selectedIds.has(c.collaborator_id))}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <SortableTh label="ID" sortKey="collaborator_id" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Nombre" sortKey="nombre" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Teléfono" sortKey="telefono" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Email" sortKey="email" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Fecha de Creación" sortKey="createdAt" sort={sortField} onSort={handleSort} />
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {paginatedCollaborators.map(collaborator => (
-                <tr key={collaborator.collaborator_id}>
+                <tr key={collaborator.collaborator_id} className={selectedIds.has(collaborator.collaborator_id) ? 'row-selected' : ''}>
+                  <td className="check-col">
+                    <input type="checkbox" checked={selectedIds.has(collaborator.collaborator_id)} onChange={() => toggleSelect(collaborator.collaborator_id)} />
+                  </td>
                   <td className="id-col">{collaborator.collaborator_id}</td>
                   <td className="name-col">{collaborator.nombre} {collaborator.apellido}</td>
                   <td>{collaborator.telefono || 'N/A'}</td>
@@ -313,6 +369,21 @@ export default function CollaboratorsManagement() {
                 disabled={deleting}
               >
                 {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>¿Eliminar {selectedIds.size} colaborador(es)?</h3>
+            <p>Esta acción no se puede deshacer. Se eliminarán permanentemente los colaboradores seleccionados.</p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+              <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
               </button>
             </div>
           </div>

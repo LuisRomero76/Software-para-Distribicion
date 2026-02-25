@@ -7,6 +7,8 @@ import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 import '../compras/compras.css';
 import '../../styles/page.css';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 interface VentaDetail extends Venta {
     detalles?: any[];
@@ -23,6 +25,41 @@ export default function VerVentas() {
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteVentaState, setDeleteVentaState] = useState<Venta | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const pageIds = paginatedVentas.map(v => v.venta_id);
+        const allSelected = pageIds.every(id => selectedIds.has(id));
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        setBulkDeleting(true);
+        try {
+            await Promise.all([...selectedIds].map(id => deleteVenta(id, auth?.token)));
+            setVentas(prev => prev.filter(v => !selectedIds.has(v.venta_id)));
+            setSelectedIds(new Set());
+            setShowBulkDeleteModal(false);
+        } catch (err: any) {
+            alert(err?.message ?? 'Error al eliminar las ventas seleccionadas');
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
     
     // Estados para modal de pagos
     const [pagoModal, setPagoModal] = useState<{ venta: Venta | null; pagos: Pago[] }>({ venta: null, pagos: [] });
@@ -144,8 +181,13 @@ export default function VerVentas() {
         venta.observaciones?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { sorted: sortedVentas, sort: sortField, handleSort } = useSorting(filteredVentas, (item, key) => {
+        if (key === 'cliente') return item.cliente?.nombre ?? '';
+        return (item as any)[key];
+    });
+
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedVentas = filteredVentas.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedVentas = sortedVentas.slice(startIndex, startIndex + itemsPerPage);
     
     useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
@@ -190,6 +232,11 @@ export default function VerVentas() {
                     <div className="table-info">
                         {filteredVentas.length} de {ventas.length} venta(s)
                     </div>
+                    {selectedIds.size > 0 && (
+                        <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+                            <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -202,13 +249,21 @@ export default function VerVentas() {
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Cliente</th>
-                                <th>Tipo</th>
+                                <th className="check-col">
+                                    <input
+                                        type="checkbox"
+                                        checked={paginatedVentas.length > 0 && paginatedVentas.every(v => selectedIds.has(v.venta_id))}
+                                        onChange={toggleSelectAll}
+                                        title="Seleccionar todos"
+                                    />
+                                </th>
+                                <SortableTh label="ID" sortKey="venta_id" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Cliente" sortKey="cliente" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Tipo" sortKey="tipo_venta" sort={sortField} onSort={handleSort} />
                                 <th>Factura</th>
-                                <th>Estado</th>
-                                <th>Fecha</th>
-                                <th>Total (Bs.)</th>
+                                <SortableTh label="Estado" sortKey="estado" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Fecha" sortKey="fecha_venta" sort={sortField} onSort={handleSort} />
+                                <SortableTh label="Total (Bs.)" sortKey="total" sort={sortField} onSort={handleSort} />
                                 <th>Adeudado (Bs.)</th>
                                 <th>Artículos</th>
                                 <th className="actions-col">Acciones</th>
@@ -216,7 +271,10 @@ export default function VerVentas() {
                         </thead>
                         <tbody>
                             {paginatedVentas.map(venta => (
-                                <tr key={venta.venta_id}>
+                                <tr key={venta.venta_id} className={selectedIds.has(venta.venta_id) ? 'row-selected' : ''}>
+                                    <td className="check-col">
+                                        <input type="checkbox" checked={selectedIds.has(venta.venta_id)} onChange={() => toggleSelect(venta.venta_id)} />
+                                    </td>
                                     <td className="id-col">#{venta.venta_id}</td>
                                     <td>{venta.cliente?.nombre || 'Cliente General'}</td>
                                     <td>
@@ -275,6 +333,21 @@ export default function VerVentas() {
                             <button className="btn outline" onClick={() => setDeleteVentaState(null)}>Cancelar</button>
                             <button className="btn danger" onClick={handleDelete} disabled={deleting}>
                                 {deleting ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showBulkDeleteModal && (
+                <div className="modal-overlay" role="dialog" aria-modal="true">
+                    <div className="modal">
+                        <h3>¿Eliminar {selectedIds.size} venta(s)?</h3>
+                        <p>Esta acción no se puede deshacer. Se eliminarán permanentemente las ventas seleccionadas.</p>
+                        <div className="modal-actions">
+                            <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+                            <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
                             </button>
                         </div>
                     </div>

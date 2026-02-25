@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useVehicles, useExcelExport } from './hooks';
 import type { VehicleFormData } from './types';
+import { useSorting } from '../../hooks/useSorting';
 import {
   VehiclesHeader,
   VehiclesTableControls,
@@ -31,6 +32,52 @@ export default function Vehicles() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Bulk select
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedVehicles.map(v => v.vehicle_id);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pageIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pageIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await deleteVehicle(id);
+      }
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e: any) {
+      alert(e?.message ?? 'Error al eliminar vehículos');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   // Initialize
   useEffect(() => {
     document.title = 'Grupo Vicorsa | Vehículos';
@@ -47,8 +94,9 @@ export default function Vehicles() {
     vehicle.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const { sorted: sortedVehicles, sort: sortField, handleSort } = useSorting(filteredVehicles);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedVehicles = filteredVehicles.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedVehicles = sortedVehicles.slice(startIndex, startIndex + itemsPerPage);
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   // Handlers
@@ -133,6 +181,17 @@ export default function Vehicles() {
           totalCount={vehicles.length}
         />
 
+        {selectedIds.size > 0 && (
+          <div style={{ padding: '8px 0 4px' }}>
+            <button
+              className="btn-bulk-delete"
+              onClick={() => setShowBulkDeleteModal(true)}
+              disabled={bulkDeleting}
+            >
+              Eliminar seleccionados ({selectedIds.size})
+            </button>
+          </div>
+        )}
         <VehiclesTable
           vehicles={paginatedVehicles}
           isLoading={loading}
@@ -140,6 +199,12 @@ export default function Vehicles() {
           onView={vehicle => { setSelectedVehicle(vehicle); setEditMode(false); }}
           onEdit={handleEdit}
           onDelete={setDeleteTarget}
+          selectedIds={selectedIds}
+          onToggle={toggleSelect}
+          onToggleAll={toggleSelectAll}
+          allSelected={paginatedVehicles.length > 0 && paginatedVehicles.every(v => selectedIds.has(v.vehicle_id))}
+          sort={sortField}
+          onSort={handleSort}
         />
         <Pagination
           currentPage={currentPage}
@@ -148,6 +213,22 @@ export default function Vehicles() {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Bulk Delete Modal */}
+      {showBulkDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Eliminar vehículos</h2>
+            <p>¿Estás seguro de que deseas eliminar <strong>{selectedIds.size}</strong> vehículo(s)? Esta acción no se puede deshacer.</p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+              <button className="btn-danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                {bulkDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <VehicleDetailModal

@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Eye, Edit2, Search, RefreshCw, Trash2, Download } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
+import { useSorting } from '../../hooks/useSorting';
+import { SortableTh } from '../../components/SortableTh';
 
 interface Product {
   product_id: number;
@@ -57,6 +59,41 @@ export default function ViewProducts() {
     sub_category_id: ''
   });
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedProducts.map(p => p.product_id);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      allSelected ? pageIds.forEach(id => next.delete(id)) : pageIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all([...selectedIds].map(id => request(`/product/${id}`, { method: 'DELETE' }, auth?.token)));
+      setProducts(prev => prev.filter(p => !selectedIds.has(p.product_id)));
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e: any) {
+      alert(e?.message ?? 'Error al eliminar los productos seleccionados');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const loadProducts = async () => {
     setLoading(true);
@@ -110,9 +147,15 @@ export default function ViewProducts() {
     return categoryName || '';
   };
 
+  // Ordenamiento
+  const { sorted: sortedProducts, sort: sortField, handleSort } = useSorting(filteredProducts, (item, key) => {
+    if (key === 'categoria') return item.category?.nombre ?? '';
+    return (item as any)[key];
+  });
+
   // Paginación
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   const handleDelete = async () => {
@@ -279,6 +322,11 @@ export default function ViewProducts() {
           <div className="table-info">
             {filteredProducts.length} de {products.length} producto(s)
           </div>
+          {selectedIds.size > 0 && (
+            <button className="btn-bulk-delete" onClick={() => setShowBulkDeleteModal(true)}>
+              <Trash2 size={16} /> Eliminar seleccionados ({selectedIds.size})
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -291,18 +339,29 @@ export default function ViewProducts() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Tamaño</th>
-                <th>Precio <br/> (Bs.)</th>
-                <th>Categoría</th>
+                <th className="check-col">
+                  <input
+                    type="checkbox"
+                    checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedIds.has(p.product_id))}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <SortableTh label="ID" sortKey="product_id" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Código" sortKey="cod_barra" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Nombre" sortKey="nombre" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Tamaño" sortKey="tamaño" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Precio (Bs.)" sortKey="precio_venta_sin_factura" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Categoría" sortKey="categoria" sort={sortField} onSort={handleSort} />
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {paginatedProducts.map(product => (
-                <tr key={product.product_id}>
+                <tr key={product.product_id} className={selectedIds.has(product.product_id) ? 'row-selected' : ''}>
+                  <td className="check-col">
+                    <input type="checkbox" checked={selectedIds.has(product.product_id)} onChange={() => toggleSelect(product.product_id)} />
+                  </td>
                   <td className="id-col">{product.product_id}</td>
                   <td>{product.cod_barra || '-'}</td>
                   <td className="name-col">{product.nombre}</td>
@@ -518,6 +577,21 @@ export default function ViewProducts() {
                 )}
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h3>¿Eliminar {selectedIds.size} producto(s)?</h3>
+            <p>Esta acción no se puede deshacer. Se eliminarán permanentemente los productos seleccionados.</p>
+            <div className="modal-actions">
+              <button className="btn outline" onClick={() => setShowBulkDeleteModal(false)} disabled={bulkDeleting}>Cancelar</button>
+              <button className="btn danger" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                {bulkDeleting ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
+              </button>
+            </div>
           </div>
         </div>
       )}
