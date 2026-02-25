@@ -51,10 +51,11 @@ export class PagoCompraService {
 
     await this.compraRepository.save(compra);
 
-    // Registrar egreso por el pago de compra a crédito
+    // Registrar egreso por el pago de compra a crédito (vinculado al pago)
     await this.gastoOperativoService.create({
       tipo: TipoEgreso.COMPRA,
       monto: createPagoCompraDto.monto,
+      referencia_id: pagoSaved.pago_compra_id,
     });
 
     return pagoSaved;
@@ -128,6 +129,9 @@ export class PagoCompraService {
       }
 
       await this.compraRepository.save(compra);
+
+      // Sincronizar el egreso asociado al pago
+      await this.gastoOperativoService.updateByReferenciaId(id, montoNuevo);
     }
 
     // Actualizar el pago
@@ -152,6 +156,10 @@ export class PagoCompraService {
     compra.estado = EstadoCompra.PENDIENTE;
 
     await this.compraRepository.save(compra);
+
+    // Eliminar el egreso asociado al pago
+    await this.gastoOperativoService.removeByReferenciaId(pago.pago_compra_id);
+
     await this.pagoCompraRepository.remove(pago);
   }
 }

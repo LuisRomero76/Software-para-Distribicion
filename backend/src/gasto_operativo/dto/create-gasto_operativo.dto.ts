@@ -29,4 +29,9 @@ export class CreateGastoOperativoDto {
   @Type(() => Number)
   @IsInt()
   vehiculo_id?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  referencia_id?: number;
 }

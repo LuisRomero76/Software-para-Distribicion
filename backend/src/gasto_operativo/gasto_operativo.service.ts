@@ -126,4 +126,19 @@ export class GastoOperativoService {
     const gasto = await this.findOne(id);
     await this.gastoRepository.remove(gasto);
   }
+
+  async updateByReferenciaId(referenciaId: number, monto: number): Promise<void> {
+    const gasto = await this.gastoRepository.findOne({ where: { referencia_id: referenciaId } });
+    if (gasto) {
+      gasto.monto = monto;
+      await this.gastoRepository.save(gasto);
+    }
+  }
+
+  async removeByReferenciaId(referenciaId: number): Promise<void> {
+    const gasto = await this.gastoRepository.findOne({ where: { referencia_id: referenciaId } });
+    if (gasto) {
+      await this.gastoRepository.remove(gasto);
+    }
+  }
 }

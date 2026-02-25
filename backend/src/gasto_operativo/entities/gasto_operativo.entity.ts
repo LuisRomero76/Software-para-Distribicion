@@ -40,6 +40,9 @@ export class GastoOperativo {
   @Column({ nullable: true })
   vehiculo_id: number | null;
 
+  @Column({ type: 'int', nullable: true })
+  referencia_id: number | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

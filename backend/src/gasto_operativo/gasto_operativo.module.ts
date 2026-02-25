@@ -12,6 +12,6 @@ import { Vehicle } from 'src/vehicle/entities/vehicle.entity';
   imports: [TypeOrmModule.forFeature([GastoOperativo, GastoOperativoCategoria, Vehicle])],
   controllers: [GastoOperativoCategoriaController, GastoOperativoController],
   providers: [GastoOperativoService, GastoOperativoCategoriaService],
-  exports: [GastoOperativoService, GastoOperativoCategoriaService],
+  exports: [GastoOperativoService, GastoOperativoCategoriaService, TypeOrmModule],
 })
 export class GastoOperativoModule {}

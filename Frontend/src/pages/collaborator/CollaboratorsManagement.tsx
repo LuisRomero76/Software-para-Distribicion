@@ -236,6 +236,7 @@ export default function CollaboratorsManagement() {
                 <SortableTh label="Teléfono" sortKey="telefono" sort={sortField} onSort={handleSort} />
                 <SortableTh label="Email" sortKey="email" sort={sortField} onSort={handleSort} />
                 <SortableTh label="Fecha de Creación" sortKey="createdAt" sort={sortField} onSort={handleSort} />
+                <SortableTh label="Rol" sortKey="rol" sort={sortField} onSort={handleSort} />
                 <th className="actions-col">Acciones</th>
               </tr>
             </thead>
@@ -250,6 +251,7 @@ export default function CollaboratorsManagement() {
                   <td>{collaborator.telefono || 'N/A'}</td>
                   <td className="email-col">{collaborator.email}</td>
                   <td>{new Date(collaborator.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td>{collaborator.rol }</td>
                   <td className="actions-col">
                     <button className="action-btn view" onClick={() => navigate(`/colaboradores/${collaborator.collaborator_id}`)} title="Ver información">
                       <Eye size={16}/>

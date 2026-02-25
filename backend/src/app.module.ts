@@ -22,6 +22,7 @@ import { DetalleCompraModule } from './detalle_compra/detalle_compra.module';
 import { LoteModule } from './lote/lote.module';
 import { PagoModule } from './pago/pago.module';
 import { PagoCompraModule } from './pago_compra/pago_compra.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { PagoCompraModule } from './pago_compra/pago_compra.module';
     LoteModule,
     PagoModule,
     PagoCompraModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [],
